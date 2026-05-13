@@ -58,11 +58,11 @@ type Props = {
 
 export default function HostCard({ host, cluster, selected, testing, testResult, onClick, onEdit, onDelete, onTest }: Props) {
     const { t } = useTranslation()
-    const roleLabel = host.role === 'primary'
-        ? t('hostResource.hostRolePrimary')
-        : host.role === 'backup'
-            ? t('hostResource.hostRoleBackup')
-            : null
+    const roleLabel = (() => {
+        if (host.role === 'primary') return t('hostResource.hostRolePrimary')
+        if (host.role === 'backup') return t('hostResource.hostRoleBackup')
+        return null
+    })()
     const testActionLabel = testing ? t('remoteDiagnosis.hosts.testing') : t('remoteDiagnosis.hosts.testConnection')
 
     return (

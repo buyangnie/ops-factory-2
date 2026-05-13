@@ -1,12 +1,22 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import { LOG_FILE_PATH, logError, logInfo } from './logger.js';
 
 const CONTROL_CENTER_URL =
   process.env.CONTROL_CENTER_URL || 'http://127.0.0.1:8094';
-const CONTROL_CENTER_SECRET_KEY =
-  process.env.CONTROL_CENTER_SECRET_KEY || 'change-me';
 const REQUEST_TIMEOUT_MS = 15_000;
 
 export { LOG_FILE_PATH };
+
+function requireControlCenterSecretKey() {
+  const secret = process.env.CONTROL_CENTER_SECRET_KEY;
+  if (!secret || !secret.trim()) {
+    throw new Error('CONTROL_CENTER_SECRET_KEY is required');
+  }
+  return secret.trim();
+}
 
 export async function cc(path, params, init = {}) {
   const startedAt = Date.now();
@@ -32,7 +42,7 @@ export async function cc(path, params, init = {}) {
     const res = await fetch(url, {
       method,
       headers: {
-        'x-secret-key': CONTROL_CENTER_SECRET_KEY,
+        'x-secret-key': requireControlCenterSecretKey(),
         ...(init.body ? { 'content-type': 'application/json' } : {}),
       },
       body: init.body,
@@ -85,7 +95,8 @@ export const tools = [
   {
     name: 'get_platform_status',
     description:
-      'Get platform runtime status: gateway uptime, host/port, running instances, Langfuse status, and idle timeout configuration.',
+      'Get platform runtime status: gateway uptime, host/port, running instances, ' +
+      'Langfuse status, and idle timeout configuration.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -97,7 +108,8 @@ export const tools = [
   {
     name: 'get_observability_data',
     description:
-      'Get observability metrics from Control Center: KPIs, traces, latency, errors, and observation breakdown. Accepts optional hours.',
+      'Get observability metrics from Control Center: KPIs, traces, latency, errors, ' +
+      'and observation breakdown. Accepts optional hours.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -228,12 +240,16 @@ export const tools = [
 ];
 
 function normalizeHours(rawHours) {
-  if (typeof rawHours !== 'number' || !Number.isFinite(rawHours)) return 24;
+  if (typeof rawHours !== 'number' || !Number.isFinite(rawHours)) {
+    return 24;
+  }
   return Math.min(720, Math.max(1, rawHours));
 }
 
 function normalizeLines(rawLines) {
-  if (typeof rawLines !== 'number' || !Number.isFinite(rawLines)) return 200;
+  if (typeof rawLines !== 'number' || !Number.isFinite(rawLines)) {
+    return 200;
+  }
   return Math.min(1000, Math.max(1, Math.round(rawLines)));
 }
 

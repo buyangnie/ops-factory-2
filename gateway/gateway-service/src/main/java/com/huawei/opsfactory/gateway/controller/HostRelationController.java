@@ -4,22 +4,38 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
+import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.service.BusinessServiceService;
 import com.huawei.opsfactory.gateway.service.HostRelationService;
-import com.huawei.opsfactory.gateway.filter.UserContextFilter;
+
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * @deprecated Use {@link ClusterRelationController} instead. Host-level relations are replaced by cluster-level relations.
+ * @deprecated Use {@link ClusterRelationController} instead. Host-level relations are replaced by cluster-level
+ *             relations.
  */
 @Deprecated
 @RestController
@@ -28,9 +44,17 @@ public class HostRelationController {
     private static final Logger log = LoggerFactory.getLogger(HostRelationController.class);
 
     private final HostRelationService hostRelationService;
+
     private final BusinessServiceService businessServiceService;
 
-    public HostRelationController(HostRelationService hostRelationService, BusinessServiceService businessServiceService) {
+    /**
+     * Creates the host relation controller instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
+    public HostRelationController(HostRelationService hostRelationService,
+        BusinessServiceService businessServiceService) {
         this.hostRelationService = hostRelationService;
         this.businessServiceService = businessServiceService;
     }
@@ -38,20 +62,24 @@ public class HostRelationController {
     /**
      * Lists host relations, optionally filtered by host, group, cluster, or source.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param hostId the hostId parameter
+     * @param groupId the groupId parameter
+     * @param clusterId the clusterId parameter
+     * @param sourceType the sourceType parameter
+     * @param sourceId the sourceId parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping
-    public Mono<Map<String, Object>> listRelations(
-            @RequestParam(value = "hostId", required = false) String hostId,
-            @RequestParam(value = "groupId", required = false) String groupId,
-            @RequestParam(value = "clusterId", required = false) String clusterId,
-            @RequestParam(value = "sourceType", required = false) String sourceType,
-            @RequestParam(value = "sourceId", required = false) String sourceId,
-            ServerWebExchange exchange) {
+    public Mono<Map<String, Object>> listRelations(@RequestParam(value = "hostId", required = false) String hostId,
+        @RequestParam(value = "groupId", required = false) String groupId,
+        @RequestParam(value = "clusterId", required = false) String clusterId,
+        @RequestParam(value = "sourceType", required = false) String sourceType,
+        @RequestParam(value = "sourceId", required = false) String sourceId, ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> {
-            List<Map<String, Object>> relations = hostRelationService.listRelations(hostId, groupId, clusterId, sourceType, sourceId);
+            List<Map<String, Object>> relations =
+                hostRelationService.listRelations(hostId, groupId, clusterId, sourceType, sourceId);
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("relations", relations);
             return result;
@@ -61,14 +89,14 @@ public class HostRelationController {
     /**
      * Returns the host relation graph data enriched with business services.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param groupId the groupId parameter
+     * @param clusterId the clusterId parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping("/graph")
-    public Mono<Map<String, Object>> getGraph(
-            @RequestParam(value = "groupId", required = false) String groupId,
-            @RequestParam(value = "clusterId", required = false) String clusterId,
-            ServerWebExchange exchange) {
+    public Mono<Map<String, Object>> getGraph(@RequestParam(value = "groupId", required = false) String groupId,
+        @RequestParam(value = "clusterId", required = false) String clusterId, ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             Map<String, Object> graph = hostRelationService.getGraphData(groupId, clusterId);
@@ -80,28 +108,28 @@ public class HostRelationController {
     /**
      * Returns the neighbor hosts for a given host.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param hostId the hostId parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping("/hosts/{hostId}/neighbors")
-    public Mono<Map<String, Object>> getHostNeighbors(
-            @PathVariable("hostId") String hostId,
-            ServerWebExchange exchange) {
+    public Mono<Map<String, Object>> getHostNeighbors(@PathVariable("hostId") String hostId,
+        ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> hostRelationService.getNeighbors(hostId))
-                .subscribeOn(Schedulers.boundedElastic());
+            .subscribeOn(Schedulers.boundedElastic());
     }
 
     /**
      * Creates a new host relation edge.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param request the request parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PostMapping
-    public Mono<ResponseEntity<Map<String, Object>>> createRelation(
-            @RequestBody Map<String, Object> request,
-            ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> createRelation(@RequestBody Map<String, Object> request,
+        ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             try {
@@ -113,13 +141,7 @@ public class HostRelationController {
             } catch (IllegalArgumentException e) {
                 Map<String, Object> body = new LinkedHashMap<>();
                 body.put("success", false);
-                body.put("error", e.getMessage());
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
-            } catch (Exception e) {
-                log.error("Failed to create host relation", e);
-                Map<String, Object> body = new LinkedHashMap<>();
-                body.put("success", false);
-                body.put("error", e.getMessage());
+                body.put("error", "Invalid host relation request");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
             }
         }).subscribeOn(Schedulers.boundedElastic());
@@ -128,14 +150,14 @@ public class HostRelationController {
     /**
      * Updates a host relation by ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @param request the request parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PutMapping("/{id}")
-    public Mono<ResponseEntity<Map<String, Object>>> updateRelation(
-            @PathVariable("id") String id,
-            @RequestBody Map<String, Object> request,
-            ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> updateRelation(@PathVariable("id") String id,
+        @RequestBody Map<String, Object> request, ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             try {
@@ -147,14 +169,8 @@ public class HostRelationController {
             } catch (IllegalArgumentException e) {
                 Map<String, Object> body = new LinkedHashMap<>();
                 body.put("success", false);
-                body.put("error", e.getMessage());
+                body.put("error", "Host relation not found");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
-            } catch (Exception e) {
-                log.error("Failed to update host relation {}", id, e);
-                Map<String, Object> body = new LinkedHashMap<>();
-                body.put("success", false);
-                body.put("error", e.getMessage());
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
             }
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -162,13 +178,13 @@ public class HostRelationController {
     /**
      * Deletes a host relation by ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Map<String, Object>>> deleteRelation(
-            @PathVariable("id") String id,
-            ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> deleteRelation(@PathVariable("id") String id,
+        ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             boolean deleted = hostRelationService.deleteRelation(id);
@@ -207,9 +223,14 @@ public class HostRelationController {
             List<String> bsHostIds = (List<String>) bs.getOrDefault("hostIds", Collections.emptyList());
             boolean hasOverlap = false;
             for (String hid : bsHostIds) {
-                if (hostNodeIds.contains(hid)) { hasOverlap = true; break; }
+                if (hostNodeIds.contains(hid)) {
+                    hasOverlap = true;
+                    break;
+                }
             }
-            if (!hasOverlap) continue;
+            if (!hasOverlap) {
+                continue;
+            }
 
             // Add BS node
             Map<String, Object> bsNode = new LinkedHashMap<>();
@@ -224,7 +245,8 @@ public class HostRelationController {
             nodes.add(bsNode);
 
             // Add edges from BS to each entry host that exists in the graph, using actual relation descriptions
-            List<Map<String, Object>> bsRelations = hostRelationService.listRelations(null, null, null, "business-service", bsId);
+            List<Map<String, Object>> bsRelations =
+                hostRelationService.listRelations(null, null, null, "business-service", bsId);
             for (Map<String, Object> rel : bsRelations) {
                 String targetId = (String) rel.get("targetHostId");
                 if (targetId != null && hostNodeIds.contains(targetId)) {

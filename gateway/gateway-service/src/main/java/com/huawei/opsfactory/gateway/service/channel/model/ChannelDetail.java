@@ -12,19 +12,7 @@ import java.util.List;
  * @author x00000000
  * @since 2026-05-09
  */
-public record ChannelDetail(
-        String id,
-        String name,
-        String type,
-        boolean enabled,
-        String defaultAgentId,
-        String ownerUserId,
-        String createdAt,
-        String updatedAt,
-        String webhookPath,
-        ChannelConnectionConfig config,
-        ChannelVerificationResult verification,
-        List<ChannelBinding> bindings,
-        List<ChannelEvent> events
-) {
+public record ChannelDetail(String id, String name, String type, boolean enabled, String defaultAgentId,
+    String ownerUserId, String createdAt, String updatedAt, String webhookPath, ChannelConnectionConfig config,
+    ChannelVerificationResult verification, List<ChannelBinding> bindings, List<ChannelEvent> events) {
 }

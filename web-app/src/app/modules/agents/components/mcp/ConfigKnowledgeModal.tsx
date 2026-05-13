@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GATEWAY_URL, KNOWLEDGE_SERVICE_URL, gatewayHeaders } from '../../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../../config/runtime'
 import { getErrorMessage } from '../../../../../utils/errorMessages'
 import Button from '../../../../platform/ui/primitives/Button'
 import { useToast } from '../../../../platform/providers/ToastContext'
@@ -56,11 +56,11 @@ export default function ConfigKnowledgeModal({
       setError(null)
       try {
         const [settingsResponse, sourcesResponse] = await Promise.all([
-          fetch(`${GATEWAY_URL}/agents/${agentId}/mcp/${encodeURIComponent(mcpName)}/settings`, {
+          fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/mcp/${encodeURIComponent(mcpName)}/settings`, {
             headers: gatewayHeaders(userId),
             signal: AbortSignal.timeout(10000),
           }),
-          fetch(`${KNOWLEDGE_SERVICE_URL}/sources?page=1&pageSize=100`, {
+          fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources?page=1&pageSize=100`, {
             signal: AbortSignal.timeout(10000),
           }),
         ])
@@ -121,7 +121,7 @@ export default function ConfigKnowledgeModal({
     setIsVerifying(true)
     setError(null)
     try {
-      const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/sources/${encodeURIComponent(selectedSourceId)}`, {
+      const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources/${encodeURIComponent(selectedSourceId)}`, {
         signal: AbortSignal.timeout(10000),
       })
       const data = await response.json().catch(() => null) as { message?: string; name?: string } | null
@@ -149,7 +149,7 @@ export default function ConfigKnowledgeModal({
     setIsSaving(true)
     setError(null)
     try {
-      const response = await fetch(`${GATEWAY_URL}/agents/${agentId}/mcp/${encodeURIComponent(mcpName)}/settings`, {
+      const response = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/mcp/${encodeURIComponent(mcpName)}/settings`, {
         method: 'PUT',
         headers: gatewayHeaders(userId),
         body: JSON.stringify({

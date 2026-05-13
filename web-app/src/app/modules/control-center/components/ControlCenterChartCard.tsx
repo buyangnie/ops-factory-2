@@ -41,17 +41,23 @@ export default function MonitoringChartCard({
                     {summary && <span className="mon-chart-summary">{summary}</span>}
                 </div>
             </div>
-            {isLoading ? (
-                <div className="mon-chart-empty" style={{ height }}>
-                    {loadingText}
-                </div>
-            ) : isEmpty || !option ? (
-                <div className="mon-chart-empty" style={{ height }}>
-                    {emptyText}
-                </div>
-            ) : (
-                <ReactECharts option={option} style={{ height, width: '100%' }} opts={{ renderer: 'svg' }} notMerge lazyUpdate />
-            )}
+            {(() => {
+                if (isLoading) {
+                    return (
+                        <div className="mon-chart-empty" style={{ height }}>
+                            {loadingText}
+                        </div>
+                    )
+                }
+                if (isEmpty || !option) {
+                    return (
+                        <div className="mon-chart-empty" style={{ height }}>
+                            {emptyText}
+                        </div>
+                    )
+                }
+                return <ReactECharts option={option} style={{ height, width: '100%' }} opts={{ renderer: 'svg' }} notMerge lazyUpdate />
+            })()}
         </div>
     )
 }

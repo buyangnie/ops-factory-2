@@ -12,8 +12,5 @@ import java.util.List;
  * @author x00000000
  * @since 2026-05-09
  */
-public record ChannelVerificationResult(
-        boolean ok,
-        List<String> issues
-) {
+public record ChannelVerificationResult(boolean ok, List<String> issues) {
 }

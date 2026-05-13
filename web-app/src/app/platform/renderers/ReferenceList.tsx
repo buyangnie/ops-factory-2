@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { KNOWLEDGE_SERVICE_URL } from '../../../config/runtime'
+import { runtime } from '../../../config/runtime'
 import { usePreview } from '../providers/PreviewContext'
 import type { Citation } from '../../../utils/citationParser'
 import './ReferenceList.css'
@@ -24,7 +24,7 @@ function buildReferenceKey(citation: Citation): string {
 }
 
 async function loadDocumentPreview(documentId: string) {
-    const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/documents/${documentId}/preview`)
+    const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/documents/${documentId}/preview`)
     const data = await response.json().catch(() => null) as { title?: string; markdownPreview?: string; message?: string } | null
 
     if (!response.ok || !data?.markdownPreview) {

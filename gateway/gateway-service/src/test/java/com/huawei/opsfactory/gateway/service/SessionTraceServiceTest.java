@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.service;
 
 import org.junit.After;
@@ -20,17 +24,29 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Test coverage for Session Trace Service.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class SessionTraceServiceTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     private String previousUserDir;
 
+    /**
+     * Sets the up.
+     */
     @Before
     public void setUp() {
         previousUserDir = System.getProperty("user.dir");
     }
 
+    /**
+     * Executes the tear down operation.
+     */
     @After
     public void tearDown() {
         if (previousUserDir != null) {
@@ -38,6 +54,11 @@ public class SessionTraceServiceTest {
         }
     }
 
+    /**
+     * Tests start trace reuses running job for same session.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testStartTrace_reusesRunningJobForSameSession() throws Exception {
         Path repoRoot = createRepoRoot();
@@ -73,6 +94,11 @@ public class SessionTraceServiceTest {
         }
     }
 
+    /**
+     * Tests start trace allows new job after previous completes.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testStartTrace_allowsNewJobAfterPreviousCompletes() throws Exception {
         Path repoRoot = createRepoRoot();
@@ -92,6 +118,11 @@ public class SessionTraceServiceTest {
         }
     }
 
+    /**
+     * Tests constructor deletes expired trace directories.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testConstructorDeletesExpiredTraceDirectories() throws Exception {
         Path repoRoot = createRepoRoot();

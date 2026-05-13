@@ -620,20 +620,27 @@ export default function ChatInput({
                             {skillQuery && <span className="skill-picker-query">/{skillQuery}</span>}
                         </span>
                     </div>
-                    {skills.length === 0 ? (
-                        <div className="skill-picker-empty">
-                            <p>{t('chat.skillPickerNoSkills')}</p>
-                            {onBrowseSkillMarket && (
-                                <button type="button" className="skill-picker-market-btn" onClick={handleBrowseSkillMarket}>
-                                    {t('chat.skillPickerBrowseMarket')}
-                                </button>
-                            )}
-                        </div>
-                    ) : filteredSkills.length === 0 ? (
-                        <div className="skill-picker-empty">
-                            <p>{t('chat.skillPickerNoMatches')}</p>
-                        </div>
-                    ) : (
+                    {(() => {
+                        if (skills.length === 0) {
+                            return (
+                                <div className="skill-picker-empty">
+                                    <p>{t('chat.skillPickerNoSkills')}</p>
+                                    {onBrowseSkillMarket && (
+                                        <button type="button" className="skill-picker-market-btn" onClick={handleBrowseSkillMarket}>
+                                            {t('chat.skillPickerBrowseMarket')}
+                                        </button>
+                                    )}
+                                </div>
+                            )
+                        }
+                        if (filteredSkills.length === 0) {
+                            return (
+                                <div className="skill-picker-empty">
+                                    <p>{t('chat.skillPickerNoMatches')}</p>
+                                </div>
+                            )
+                        }
+                        return (
                         <>
                         <div className="skill-picker-list">
                             {visibleSkills.map((skill, index) => {
@@ -674,7 +681,8 @@ export default function ChatInput({
                             </div>
                         )}
                         </>
-                    )}
+                    )
+                    })()}
                 </div>
             )}
 
@@ -719,15 +727,15 @@ export default function ChatInput({
                             )}
                             <div className="uploaded-file-info">
                                 <span className="uploaded-file-name">{file.name}</span>
-                                {file.error ? (
-                                    <span className="uploaded-file-error">{file.error}</span>
-                                ) : file.isLoading ? (
-                                    <span className="uploaded-file-loading">{t('common.loading')}</span>
-                                ) : (
-                                    <span className="uploaded-file-size">
-                                        {(file.size / 1024).toFixed(1)} KB
-                                    </span>
-                                )}
+                                {(() => {
+                                    if (file.error) {
+                                        return <span className="uploaded-file-error">{file.error}</span>
+                                    }
+                                    if (file.isLoading) {
+                                        return <span className="uploaded-file-loading">{t('common.loading')}</span>
+                                    }
+                                    return <span className="uploaded-file-size">{(file.size / 1024).toFixed(1)} KB</span>
+                                })()}
                             </div>
                             <button
                                 className="uploaded-file-remove"
@@ -834,52 +842,63 @@ export default function ChatInput({
 
                             <button
                                 className={`chat-send-btn-new ${isGenerating ? 'is-stop' : ''} ${isListening ? 'is-recording' : ''}`}
-                                onClick={
-                                    isGenerating ? handleStopGeneration :
-                                    isListening ? stopListening :
-                                    showMic ? startListening :
-                                    handleSubmit
-                                }
-                                disabled={
-                                    isGenerating ? !onStopGeneration :
-                                    isListening ? false :
-                                    showMic ? disabled :
-                                    (disabled || !hasContent || isAnyFileLoading)
-                                }
-                                aria-label={
-                                    isListening ? t('chat.stopRecording') :
-                                    showMic ? t('chat.voiceInput') :
-                                    isGenerating ? t('chat.stopGeneration') :
-                                    t('chat.sendMessage')
-                                }
-                                title={
-                                    isListening ? t('chat.stopRecording') :
-                                    showMic ? t('chat.voiceInput') :
-                                    isGenerating ? t('chat.stopGeneration') :
-                                    t('chat.sendMessage')
-                                }
+                                onClick={(() => {
+                                    if (isGenerating) return handleStopGeneration
+                                    if (isListening) return stopListening
+                                    if (showMic) return startListening
+                                    return handleSubmit
+                                })()}
+                                disabled={(() => {
+                                    if (isGenerating) return !onStopGeneration
+                                    if (isListening) return false
+                                    if (showMic) return disabled
+                                    return disabled || !hasContent || isAnyFileLoading
+                                })()}
+                                aria-label={(() => {
+                                    if (isListening) return t('chat.stopRecording')
+                                    if (showMic) return t('chat.voiceInput')
+                                    if (isGenerating) return t('chat.stopGeneration')
+                                    return t('chat.sendMessage')
+                                })()}
+                                title={(() => {
+                                    if (isListening) return t('chat.stopRecording')
+                                    if (showMic) return t('chat.voiceInput')
+                                    if (isGenerating) return t('chat.stopGeneration')
+                                    return t('chat.sendMessage')
+                                })()}
                             >
-                                {isGenerating ? (
-                                    <svg className="chat-send-btn-icon is-stop" viewBox="0 0 24 24" fill="currentColor">
-                                        <rect x="5.5" y="5.5" width="13" height="13" rx="2.1" />
-                                    </svg>
-                                ) : isListening ? (
-                                    <svg className="chat-send-btn-icon is-stop" viewBox="0 0 24 24" fill="currentColor">
-                                        <rect x="5.5" y="5.5" width="13" height="13" rx="2.1" />
-                                    </svg>
-                                ) : showMic ? (
-                                    <svg className="chat-send-btn-icon is-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <rect x="9" y="1" width="6" height="12" rx="3" />
-                                        <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
-                                        <line x1="12" y1="18" x2="12" y2="23" />
-                                        <line x1="8" y1="23" x2="16" y2="23" />
-                                    </svg>
-                                ) : (
-                                    <svg className="chat-send-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                                        <path d="M12 19V5" />
-                                        <path d="M6.5 10.5L12 5l5.5 5.5" />
-                                    </svg>
-                                )}
+                                {(() => {
+                                    if (isGenerating) {
+                                        return (
+                                            <svg className="chat-send-btn-icon is-stop" viewBox="0 0 24 24" fill="currentColor">
+                                                <rect x="5.5" y="5.5" width="13" height="13" rx="2.1" />
+                                            </svg>
+                                        )
+                                    }
+                                    if (isListening) {
+                                        return (
+                                            <svg className="chat-send-btn-icon is-stop" viewBox="0 0 24 24" fill="currentColor">
+                                                <rect x="5.5" y="5.5" width="13" height="13" rx="2.1" />
+                                            </svg>
+                                        )
+                                    }
+                                    if (showMic) {
+                                        return (
+                                            <svg className="chat-send-btn-icon is-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="9" y="1" width="6" height="12" rx="3" />
+                                                <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+                                                <line x1="12" y1="18" x2="12" y2="23" />
+                                                <line x1="8" y1="23" x2="16" y2="23" />
+                                            </svg>
+                                        )
+                                    }
+                                    return (
+                                        <svg className="chat-send-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                                            <path d="M12 19V5" />
+                                            <path d="M6.5 10.5L12 5l5.5 5.5" />
+                                        </svg>
+                                    )
+                                })()}
                             </button>
                         </div>
                     )

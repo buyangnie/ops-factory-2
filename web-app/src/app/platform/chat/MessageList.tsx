@@ -6,7 +6,7 @@ import GooseAvatarIcon from './GooseAvatarIcon'
 import { extractFetchedDocuments, extractSourceDocuments, type Citation } from '../../../utils/citationParser'
 import { getReasoningContent, getThinkingContent, hasDisplayTextContent, hasTextContent, hasToolContent } from '../../../utils/messageContent'
 import { useUser } from '../providers/UserContext'
-import { GATEWAY_URL, GATEWAY_SECRET_KEY } from '../../../config/runtime'
+import { runtime } from '../../../config/runtime'
 import type { ChatMessage, DetectedFile, ToolResponseMap } from '../../../types/message'
 
 const BOTTOM_THRESHOLD_PX = 24
@@ -322,7 +322,7 @@ export default function MessageList({
     }, [visibleMessages])
 
     const gatewayHeaders = useCallback((): Record<string, string> => {
-        const h: Record<string, string> = { 'x-secret-key': GATEWAY_SECRET_KEY }
+        const h: Record<string, string> = { 'x-secret-key': runtime.GATEWAY_SECRET_KEY }
         if (userId) h['x-user-id'] = userId
         return h
     }, [userId])
@@ -365,7 +365,7 @@ export default function MessageList({
         })
 
         // Persist to gateway (fire-and-forget)
-        fetch(`${GATEWAY_URL}/agents/${agentId}/file-capsules`, {
+        fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/file-capsules`, {
             method: 'POST',
             headers: { ...gatewayHeaders(), 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -386,7 +386,7 @@ export default function MessageList({
         const loadPersistedCapsules = async () => {
             try {
                 const res = await fetch(
-                    `${GATEWAY_URL}/agents/${agentId}/file-capsules?sessionId=${encodeURIComponent(sessionId)}`,
+                    `${runtime.GATEWAY_URL}/agents/${agentId}/file-capsules?sessionId=${encodeURIComponent(sessionId)}`,
                     { headers: gatewayHeaders() }
                 )
                 if (!res.ok || cancelled) return

@@ -127,21 +127,24 @@ export default function InboxPage() {
                     </ListFooter>
                 ) : undefined}
             >
-                {isLoading ? (
+                {isLoading && (
                     <div className="empty-state">
                         <h3 className="empty-state-title">{t('inbox.loadingInbox')}</h3>
                     </div>
-                ) : unreadSessions.length === 0 ? (
+                )}
+                {!isLoading && unreadSessions.length === 0 && (
                     <div className="empty-state">
                         <h3 className="empty-state-title">{t('inbox.inboxClear')}</h3>
                         <p className="empty-state-description">{t('inbox.noUnreadSessions')}</p>
                     </div>
-                ) : searchTerm && filteredSessions.length === 0 ? (
+                )}
+                {!isLoading && unreadSessions.length > 0 && searchTerm && filteredSessions.length === 0 && (
                     <div className="empty-state">
                         <h3 className="empty-state-title">{t('common.noResults')}</h3>
                         <p className="empty-state-description">{t('inbox.noMatchSessions', { term: searchTerm })}</p>
                     </div>
-                ) : (
+                )}
+                {!isLoading && filteredSessions.length > 0 && (
                     <div className="inbox-list">
                         {paginatedSessions.map((session) => (
                             <ListCard key={`${session.agentId}:${session.id}`} className="inbox-item">

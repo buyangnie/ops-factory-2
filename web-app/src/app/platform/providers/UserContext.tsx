@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
-import { GATEWAY_URL, GATEWAY_SECRET_KEY, isAdminUser } from '../../../config/runtime'
+import { runtime, isAdminUser } from '../../../config/runtime'
 import { getUrlParam } from '../../../utils/urlParams'
 import { updateLoggingContext } from '../logging/context'
 import { trackedFetch } from '../logging/requestClient'
@@ -66,11 +66,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const fetchRole = useCallback(async (uid: string) => {
         try {
-            const res = await trackedFetch(`${GATEWAY_URL}/me`, {
+            const res = await trackedFetch(`${runtime.GATEWAY_URL}/me`, {
                 category: 'request',
                 name: 'request.send',
                 headers: {
-                    'x-secret-key': GATEWAY_SECRET_KEY,
+                    'x-secret-key': runtime.GATEWAY_SECRET_KEY,
                     'x-user-id': uid,
                 },
                 signal: AbortSignal.timeout(5000),

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.filter;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -12,15 +16,27 @@ import reactor.test.StepVerifier;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+/**
+ * Test coverage for Request Context Filter.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class RequestContextFilterTest {
     private RequestContextFilter filter;
 
+    /**
+     * Sets the up.
+     */
     @Before
     public void setUp() {
         GatewayProperties properties = new GatewayProperties();
         filter = new RequestContextFilter(properties);
     }
 
+    /**
+     * Tests generates request id when missing.
+     */
     @Test
     public void testGeneratesRequestIdWhenMissing() {
         MockServerHttpRequest request = MockServerHttpRequest.get("/gateway/status").build();
@@ -35,6 +51,9 @@ public class RequestContextFilterTest {
         assertEquals(requestId, exchange.getResponse().getHeaders().getFirst(RequestContextFilter.REQUEST_ID_HEADER));
     }
 
+    /**
+     * Tests reuses incoming request id.
+     */
     @Test
     public void testReusesIncomingRequestId() {
         MockServerHttpRequest request = MockServerHttpRequest.get("/gateway/status")

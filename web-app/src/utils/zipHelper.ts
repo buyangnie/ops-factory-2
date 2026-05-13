@@ -58,7 +58,7 @@ export function createZip(files: { name: string; data: Uint8Array }[]): Blob {
         view.setUint32(pos, 0x04034B50, true); pos += 4   // Local file header signature
         view.setUint16(pos, 20, true); pos += 2             // Version needed
         view.setUint16(pos, 0, true); pos += 2              // General purpose bit flag
-        view.setUint16(pos, 0, true); pos += 2              // Compression method (STORE)
+        view.setUint16(pos, 0, true); pos += 2              
         view.setUint16(pos, 0, true); pos += 2              // Mod time
         view.setUint16(pos, 0, true); pos += 2              // Mod date
         view.setUint32(pos, e.crc, true); pos += 4          // CRC-32
@@ -78,7 +78,7 @@ export function createZip(files: { name: string; data: Uint8Array }[]): Blob {
         view.setUint16(pos, 20, true); pos += 2             // Version made by
         view.setUint16(pos, 20, true); pos += 2             // Version needed
         view.setUint16(pos, 0, true); pos += 2              // Flags
-        view.setUint16(pos, 0, true); pos += 2              // Compression (STORE)
+        view.setUint16(pos, 0, true); pos += 2          
         view.setUint16(pos, 0, true); pos += 2              // Mod time
         view.setUint16(pos, 0, true); pos += 2              // Mod date
         view.setUint32(pos, e.crc, true); pos += 4          // CRC-32

@@ -112,6 +112,30 @@ class KnowledgeRetrievalIntegrationTest extends KnowledgeApiIntegrationTestSuppo
     }
 
     @Test
+    void shouldRecallChineseContentWithSmartCnLexicalAnalyzer() throws Exception {
+        String sourceId = createSource();
+        uploadMarkdownFile(sourceId, "smartcn-runbook.md", """
+            # 中文检索验证
+
+            运维智能体网关负责会话路由、工具编排和知识库问答。
+            当告警管理流程触发后，值班人员需要检查部署拓扑并确认恢复状态。
+            """);
+
+        JsonNode lexical = search(sourceId, "告警管理 部署拓扑", null, 5, null, """
+            {
+              "mode": "lexical",
+              "includeScores": true
+            }
+            """);
+
+        assertThat(lexical.path("total").asInt()).isGreaterThan(0);
+        JsonNode topHit = lexical.path("hits").get(0);
+        assertThat(topHit.path("snippet").asText()).contains("告警管理");
+        assertThat(topHit.path("snippet").asText()).contains("部署拓扑");
+        assertThat(topHit.path("lexicalScore").asDouble()).isGreaterThan(0);
+    }
+
+    @Test
     void shouldApplyLegacyProfileScoreThresholdForSemanticWhenOverrideOmitsThresholdField() throws Exception {
         String sourceId = createSource();
         uploadInputFiles(sourceId);

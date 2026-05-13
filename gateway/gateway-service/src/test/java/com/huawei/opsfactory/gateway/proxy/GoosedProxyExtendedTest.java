@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.proxy;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -38,6 +42,9 @@ import static org.junit.Assert.assertTrue;
 public class GoosedProxyExtendedTest {
     private GoosedProxy proxy;
 
+    /**
+     * Sets the up.
+     */
     @Before
     public void setUp() {
         GatewayProperties properties = new GatewayProperties();
@@ -46,8 +53,11 @@ public class GoosedProxyExtendedTest {
         proxy = new GoosedProxy(properties);
     }
 
-    // ====================== copyHeaders ======================
-
+    /**
+     * Tests copy headers injects secret key.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testCopyHeaders_injectsSecretKey() throws Exception {
         HttpHeaders source = new HttpHeaders();
@@ -56,7 +66,12 @@ public class GoosedProxyExtendedTest {
 
         HttpHeaders target = new HttpHeaders();
 
-        Method copyHeaders = GoosedProxy.class.getDeclaredMethod("copyHeaders", HttpHeaders.class, HttpHeaders.class, String.class);
+        Method copyHeaders = GoosedProxy.class.getDeclaredMethod(
+                "copyHeaders",
+                HttpHeaders.class,
+                HttpHeaders.class,
+                String.class
+        );
         copyHeaders.setAccessible(true);
         copyHeaders.invoke(proxy, source, target, "my-secret");
 
@@ -65,6 +80,11 @@ public class GoosedProxyExtendedTest {
         assertEquals("my-secret", target.getFirst("x-secret-key"));
     }
 
+    /**
+     * Tests copy headers overrides existing secret key.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testCopyHeaders_overridesExistingSecretKey() throws Exception {
         HttpHeaders source = new HttpHeaders();
@@ -72,7 +92,12 @@ public class GoosedProxyExtendedTest {
 
         HttpHeaders target = new HttpHeaders();
 
-        Method copyHeaders = GoosedProxy.class.getDeclaredMethod("copyHeaders", HttpHeaders.class, HttpHeaders.class, String.class);
+        Method copyHeaders = GoosedProxy.class.getDeclaredMethod(
+                "copyHeaders",
+                HttpHeaders.class,
+                HttpHeaders.class,
+                String.class
+        );
         copyHeaders.setAccessible(true);
         copyHeaders.invoke(proxy, source, target, "my-secret");
 
@@ -80,8 +105,11 @@ public class GoosedProxyExtendedTest {
         assertEquals("my-secret", target.getFirst("x-secret-key"));
     }
 
-    // ====================== copyUpstreamHeaders ======================
-
+    /**
+     * Tests copy upstream headers filters cors headers.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testCopyUpstreamHeaders_filtersCorsHeaders() throws Exception {
         HttpHeaders source = new HttpHeaders();
@@ -96,7 +124,11 @@ public class GoosedProxyExtendedTest {
 
         HttpHeaders target = new HttpHeaders();
 
-        Method copyUpstream = GoosedProxy.class.getDeclaredMethod("copyUpstreamHeaders", HttpHeaders.class, HttpHeaders.class);
+        Method copyUpstream = GoosedProxy.class.getDeclaredMethod(
+                "copyUpstreamHeaders",
+                HttpHeaders.class,
+                HttpHeaders.class
+        );
         copyUpstream.setAccessible(true);
         copyUpstream.invoke(proxy, source, target);
 
@@ -113,28 +145,39 @@ public class GoosedProxyExtendedTest {
         assertEquals("application/json", target.getFirst("Content-Type"));
     }
 
+    /**
+     * Tests copy upstream headers empty source.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testCopyUpstreamHeaders_emptySource() throws Exception {
         HttpHeaders source = new HttpHeaders();
         HttpHeaders target = new HttpHeaders();
 
-        Method copyUpstream = GoosedProxy.class.getDeclaredMethod("copyUpstreamHeaders", HttpHeaders.class, HttpHeaders.class);
+        Method copyUpstream = GoosedProxy.class.getDeclaredMethod(
+                "copyUpstreamHeaders",
+                HttpHeaders.class,
+                HttpHeaders.class
+        );
         copyUpstream.setAccessible(true);
         copyUpstream.invoke(proxy, source, target);
 
         assertTrue(target.isEmpty());
     }
 
-    // ====================== fetchJson ======================
-
+    /**
+     * Tests fetch json returns non null mono.
+     */
     @Test
     public void testFetchJson_returnsNonNullMono() {
         // Construction-level test: verifies Mono is created without errors
         assertNotNull(proxy.fetchJson(99999, "/test", "test-secret"));
     }
 
-    // ====================== proxyWithBody ======================
-
+    /**
+     * Tests proxy with body returns non null mono.
+     */
     @Test
     public void testProxyWithBody_returnsNonNullMono() {
         // Construction-level test: verifies Mono is created
@@ -142,6 +185,9 @@ public class GoosedProxyExtendedTest {
                 org.springframework.http.HttpMethod.POST, "{}", "test-secret"));
     }
 
+    /**
+     * Tests proxy session command with body non2xx throws upstream error without committing response.
+     */
     @Test
     public void testProxySessionCommandWithBody_non2xxThrowsUpstreamErrorWithoutCommittingResponse() {
         DisposableServer server = HttpServer.create()
@@ -168,6 +214,11 @@ public class GoosedProxyExtendedTest {
         }
     }
 
+    /**
+     * Tests emit transformed frame emits original before supplemental event completes.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testEmitTransformedFrame_emitsOriginalBeforeSupplementalEventCompletes() throws Exception {
         Method emitTransformedFrame = GoosedProxy.class.getDeclaredMethod(

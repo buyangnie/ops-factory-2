@@ -1,38 +1,67 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.operationintelligence.qos.dv;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.netty.handler.ssl.SslContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+
 import jakarta.annotation.PreDestroy;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.client.HttpClient;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Dv Auth Service.
+ *
+ * @author x00000000
+ * @since 2026-05-11
+ */
 @Component
 public class DvAuthService {
 
     private static final Logger log = LoggerFactory.getLogger(DvAuthService.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private static final long TOKEN_TTL_MS = 30 * 60 * 1000L; // 30 minutes
 
     private final DvSslContextFactory sslFactory;
+
     private final ConcurrentHashMap<String, TokenInfo> tokenCache = new ConcurrentHashMap<>();
+
     private final ConcurrentHashMap<String, WebClient> clientCache = new ConcurrentHashMap<>();
 
+/**
+ * Dv Auth Service.
+ *
+ * @param sslFactory the sslFactory
+ */
     public DvAuthService(DvSslContextFactory sslFactory) {
         this.sslFactory = sslFactory;
     }
 
+/**
+ * Gets the ssotoken.
+ *
+ * @param env the env
+ * @return the result
+ */
     public synchronized TokenInfo getSSOToken(DvEnvironmentInfo env) {
         String cacheKey = env.getServerUrl() + ":" + env.getUtmUser();
         TokenInfo cached = tokenCache.get(cacheKey);
@@ -44,6 +73,12 @@ public class DvAuthService {
         return newToken;
     }
 
+/**
+ * build Auth Headers.
+ *
+ * @param env the env
+ * @return the result
+ */
     public Map<String, String> buildAuthHeaders(DvEnvironmentInfo env) {
         String cacheKey = env.getServerUrl() + ":" + env.getUtmUser();
         TokenInfo info = tokenCache.get(cacheKey);
@@ -55,6 +90,9 @@ public class DvAuthService {
         return headers;
     }
 
+/**
+ * clear Cache.
+ */
     public void clearCache() {
         tokenCache.clear();
     }
@@ -62,30 +100,28 @@ public class DvAuthService {
     private TokenInfo fetchNewToken(DvEnvironmentInfo env) {
         try {
             WebClient webClient = clientCache.computeIfAbsent(env.getServerUrl(), url -> {
-                SslContext sslCtx = sslFactory.createSslContext(env.getCrtContent(), env.getCrtFileName(), env.isStrictSsl());
+                SslContext sslCtx =
+                    sslFactory.createSslContext(env.getCrtContent(), env.getCrtFileName(), env.isStrictSsl());
                 HttpClient httpClient = HttpClient.create()
-                        .secure(t -> t.sslContext(sslCtx)
-                                .handshakeTimeout(Duration.ofSeconds(10)))
-                        .responseTimeout(Duration.ofSeconds(30));
+                    .secure(t -> t.sslContext(sslCtx).handshakeTimeout(Duration.ofSeconds(10)))
+                    .responseTimeout(Duration.ofSeconds(30));
                 return WebClient.builder()
-                        .clientConnector(new ReactorClientHttpConnector(httpClient))
-                        .baseUrl(url)
-                        .build();
+                    .clientConnector(new ReactorClientHttpConnector(httpClient))
+                    .baseUrl(url)
+                    .build();
             });
 
-            String loginBody = MAPPER.writeValueAsString(Map.of(
-                    "grantType", "password",
-                    "userName", env.getUtmUser(),
-                    "value", env.getUtmPassword()));
+            String loginBody = MAPPER.writeValueAsString(
+                Map.of("grantType", "password", "userName", env.getUtmUser(), "value", env.getUtmPassword()));
 
             String response = webClient.put()
-                    .uri("/rest/plat/smapp/v1/sessions")
-                    .header("Content-Type", "application/json")
-                    .body(Mono.just(loginBody), String.class)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .block(Duration.ofSeconds(30));
+                .uri("/rest/plat/smapp/v1/sessions")
+                .header("Content-Type", "application/json")
+                .body(Mono.just(loginBody), String.class)
+                .retrieve()
+                .bodyToMono(String.class)
+                .subscribeOn(Schedulers.boundedElastic())
+                .block(Duration.ofSeconds(30));
 
             if (response == null || response.isBlank()) {
                 throw new RuntimeException("Empty response from SSO login at " + env.getServerUrl());
@@ -118,6 +154,9 @@ public class DvAuthService {
         }
     }
 
+/**
+ * shutdown.
+ */
     @PreDestroy
     public void shutdown() {
         clientCache.clear();
@@ -125,15 +164,20 @@ public class DvAuthService {
 
     private static class TokenInfo {
         final String token;
+
         final String roaRand;
+
         final long createdAt;
+
         final long ttlMs;
+
         TokenInfo(String token, String roaRand, long createdAt, long ttlMs) {
             this.token = token;
             this.roaRand = roaRand;
             this.createdAt = createdAt;
             this.ttlMs = ttlMs;
         }
+
         boolean isExpired() {
             return System.currentTimeMillis() - createdAt > ttlMs;
         }

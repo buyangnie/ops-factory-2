@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.service;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -14,6 +18,12 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
+/**
+ * Test coverage for Host Group Service.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class HostGroupServiceTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -22,6 +32,11 @@ public class HostGroupServiceTest {
     private GatewayProperties properties;
     private Path groupsDir;
 
+    /**
+     * Sets the up.
+     *
+     * @throws IOException if the operation fails
+     */
     @Before
     public void setUp() throws IOException {
         properties = new GatewayProperties();
@@ -38,6 +53,9 @@ public class HostGroupServiceTest {
 
     // ── createGroup ──────────────────────────────────────────────
 
+    /**
+     * Tests create group enabled by default.
+     */
     @Test
     public void testCreateGroup_enabledByDefault() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -52,6 +70,9 @@ public class HostGroupServiceTest {
         assertEquals(true, result.get("enabled"));
     }
 
+    /**
+     * Tests create group enabled false.
+     */
     @Test
     public void testCreateGroup_enabledFalse() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -63,6 +84,9 @@ public class HostGroupServiceTest {
         assertEquals(false, result.get("enabled"));
     }
 
+    /**
+     * Tests create group enabled true.
+     */
     @Test
     public void testCreateGroup_enabledTrue() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -75,6 +99,9 @@ public class HostGroupServiceTest {
 
     // ── updateGroup ──────────────────────────────────────────────
 
+    /**
+     * Tests update group set enabled.
+     */
     @Test
     public void testUpdateGroup_setEnabled() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -90,6 +117,9 @@ public class HostGroupServiceTest {
         assertEquals("PROD", result.get("name"));
     }
 
+    /**
+     * Tests update group re enable.
+     */
     @Test
     public void testUpdateGroup_reEnable() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -105,6 +135,9 @@ public class HostGroupServiceTest {
         assertEquals(true, result.get("enabled"));
     }
 
+    /**
+     * Tests update group partial update preserves enabled.
+     */
     @Test
     public void testUpdateGroup_partialUpdatePreservesEnabled() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -122,6 +155,9 @@ public class HostGroupServiceTest {
         assertEquals(false, result.get("enabled"));
     }
 
+    /**
+     * Tests update group default enabled remains true.
+     */
     @Test
     public void testUpdateGroup_defaultEnabledRemainsTrue() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -140,6 +176,9 @@ public class HostGroupServiceTest {
 
     // ── getDisabledGroupIds ──────────────────────────────────────
 
+    /**
+     * Tests get disabled group ids no disabled groups.
+     */
     @Test
     public void testGetDisabledGroupIds_noDisabledGroups() {
         createGroup("g1", "PROD", null, true);
@@ -149,6 +188,9 @@ public class HostGroupServiceTest {
         assertTrue(disabled.isEmpty());
     }
 
+    /**
+     * Tests get disabled group ids directly disabled.
+     */
     @Test
     public void testGetDisabledGroupIds_directlyDisabled() {
         createGroup("g1", "PROD", null, false);
@@ -159,6 +201,9 @@ public class HostGroupServiceTest {
         assertTrue(disabled.contains("g1"));
     }
 
+    /**
+     * Tests get disabled group ids inherited from parent.
+     */
     @Test
     public void testGetDisabledGroupIds_inheritedFromParent() {
         createGroup("g1", "PROD", null, false);
@@ -176,6 +221,9 @@ public class HostGroupServiceTest {
         assertFalse(disabled.contains("g2"));
     }
 
+    /**
+     * Tests get disabled group ids deep inheritance.
+     */
     @Test
     public void testGetDisabledGroupIds_deepInheritance() {
         // Root → A (disabled) → B → C (explicitly enabled=true) → D
@@ -195,6 +243,9 @@ public class HostGroupServiceTest {
         assertEquals(4, disabled.size());
     }
 
+    /**
+     * Tests get disabled group ids enabled missing defaults to true.
+     */
     @Test
     public void testGetDisabledGroupIds_enabledMissingDefaultsToTrue() {
         // Group created without enabled field — should be treated as enabled
@@ -204,6 +255,9 @@ public class HostGroupServiceTest {
         assertTrue(disabled.isEmpty());
     }
 
+    /**
+     * Tests get disabled group ids multiple roots.
+     */
     @Test
     public void testGetDisabledGroupIds_multipleRoots() {
         createGroup("g1", "PROD", null, false);
@@ -221,6 +275,9 @@ public class HostGroupServiceTest {
 
     // ── Persistence: enabled state survives read-back ────────────
 
+    /**
+     * Tests enabled state persisted and read back.
+     */
     @Test
     public void testEnabledStatePersistedAndReadBack() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -234,6 +291,9 @@ public class HostGroupServiceTest {
         assertEquals(false, readBack.get("enabled"));
     }
 
+    /**
+     * Tests update enabled persisted and read back.
+     */
     @Test
     public void testUpdateEnabledPersistedAndReadBack() {
         Map<String, Object> body = new LinkedHashMap<>();

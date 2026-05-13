@@ -650,6 +650,8 @@ export function useChat({ sessionId, client }: UseChatOptions): UseChatReturn {
             case 'Notification':
             case 'Ping':
                 break
+            default:
+                break
         }
         return false
     }, [publishSessionError, sessionId])

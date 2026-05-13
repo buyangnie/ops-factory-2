@@ -4,8 +4,9 @@
 
 package com.huawei.opsfactory.gateway.logging;
 
-import java.util.function.Supplier;
 import org.apache.logging.log4j.ThreadContext;
+
+import java.util.function.Supplier;
 
 /**
  * Utility that temporarily sets and restores Log4j ThreadContext entries for request logging.
@@ -20,8 +21,9 @@ public final class GatewayLogContext {
     /**
      * Runs an action with the given request and user context set in the MDC.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param requestId the requestId parameter
+     * @param userId the userId parameter
+     * @param action the action parameter
      */
     public static void run(String requestId, String userId, Runnable action) {
         run(requestId, userId, null, action);
@@ -30,8 +32,10 @@ public final class GatewayLogContext {
     /**
      * Runs an action with the given request, user, and session context set in the MDC.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param requestId the requestId parameter
+     * @param userId the userId parameter
+     * @param sessionId the sessionId parameter
+     * @param action the action parameter
      */
     public static void run(String requestId, String userId, String sessionId, Runnable action) {
         String previousRequestId = ThreadContext.get("requestId");
@@ -52,8 +56,10 @@ public final class GatewayLogContext {
     /**
      * Calls a supplier with the given request and user context set in the MDC.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param requestId the requestId parameter
+     * @param userId the userId parameter
+     * @param action the action parameter
+     * @return the result
      */
     public static <T> T call(String requestId, String userId, Supplier<T> action) {
         return call(requestId, userId, null, action);
@@ -62,8 +68,11 @@ public final class GatewayLogContext {
     /**
      * Calls a supplier with the given request, user, and session context set in the MDC.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param requestId the requestId parameter
+     * @param userId the userId parameter
+     * @param sessionId the sessionId parameter
+     * @param action the action parameter
+     * @return the result
      */
     public static <T> T call(String requestId, String userId, String sessionId, Supplier<T> action) {
         String previousRequestId = ThreadContext.get("requestId");

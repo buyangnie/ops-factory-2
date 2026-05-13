@@ -5,14 +5,14 @@
 package com.huawei.opsfactory.gateway.process;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
+import com.huawei.opsfactory.gateway.common.util.ProcessUtil;
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.huawei.opsfactory.gateway.service.AgentConfigService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import com.huawei.opsfactory.gateway.common.util.ProcessUtil;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,13 +30,21 @@ public class InstanceWatchdog {
     private static final Logger log = LoggerFactory.getLogger(InstanceWatchdog.class);
 
     private final InstanceManager instanceManager;
+
     private final GatewayProperties properties;
+
     private final PrewarmService prewarmService;
+
     private final AgentConfigService agentConfigService;
 
+    /**
+     * Creates the instance watchdog instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public InstanceWatchdog(InstanceManager instanceManager, GatewayProperties properties,
-                            PrewarmService prewarmService,
-                            AgentConfigService agentConfigService) {
+        PrewarmService prewarmService, AgentConfigService agentConfigService) {
         this.instanceManager = instanceManager;
         this.properties = properties;
         this.prewarmService = prewarmService;
@@ -45,9 +53,6 @@ public class InstanceWatchdog {
 
     /**
      * Periodically checks instance health and reaps idle instances.
-     *
-     * @author x00000000
-     * @since 2026-05-09
      */
     @Scheduled(fixedDelayString = "${gateway.idle.check-interval-ms:60000}")
     public void watchInstances() {
@@ -82,7 +87,7 @@ public class InstanceWatchdog {
                 if (instance.getProcess() != null) {
                     exitCode = instance.getProcess().exitValue();
                 }
-            } catch (IllegalThreadStateException ignored) {
+            } catch (IllegalThreadStateException e) {
                 // Should not happen since isAlive() returned false
             }
 
@@ -90,28 +95,26 @@ public class InstanceWatchdog {
             String userId = instance.getUserId();
             int restartCount = instance.getRestartCount();
 
-            log.warn("Watchdog detected dead instance {}:{} (port={}, pid={}, exit={})",
-                    agentId, userId, instance.getPort(), instance.getPid(), exitCode);
+            log.warn("Watchdog detected dead instance {}:{} (port={}, pid={}, exit={})", agentId, userId,
+                instance.getPort(), instance.getPid(), exitCode);
             instanceManager.stopInstance(instance);
 
             // Respawn with backoff
             if (restartCount >= maxRestarts) {
                 log.error("Instance {}:{} exceeded max restart attempts ({}), not respawning. "
-                        + "Will retry on next user request.",
-                        agentId, userId, maxRestarts);
+                    + "Will retry on next user request.", agentId, userId, maxRestarts);
                 continue;
             }
 
             long backoffMs = Math.min(baseDelay * (1L << Math.min(restartCount, 20)), 300_000L);
             long elapsed = now - instance.getLastRestartTime();
             if (instance.getLastRestartTime() > 0 && elapsed < backoffMs) {
-                log.info("Instance {}:{} backing off ({}ms remaining before retry #{})",
-                        agentId, userId, backoffMs - elapsed, restartCount + 1);
+                log.info("Instance {}:{} backing off ({}ms remaining before retry #{})", agentId, userId,
+                    backoffMs - elapsed, restartCount + 1);
                 continue;
             }
 
-            log.info("Watchdog respawning instance {}:{} (attempt #{})",
-                    agentId, userId, restartCount + 1);
+            log.info("Watchdog respawning instance {}:{} (attempt #{})", agentId, userId, restartCount + 1);
             instanceManager.respawnAsync(agentId, userId, restartCount + 1);
         }
     }
@@ -131,10 +134,9 @@ public class InstanceWatchdog {
                 continue;
             }
             if (instance.getStatus() == ManagedInstance.Status.RUNNING
-                    && now - instance.getLastActivity() > maxIdleMs) {
-                log.info("Reaping idle instance {}:{} (idle {}s)",
-                        instance.getAgentId(), instance.getUserId(),
-                        (now - instance.getLastActivity()) / 1000);
+                && now - instance.getLastActivity() > maxIdleMs) {
+                log.info("Reaping idle instance {}:{} (idle {}s)", instance.getAgentId(), instance.getUserId(),
+                    (now - instance.getLastActivity()) / 1000);
                 instanceManager.stopInstance(instance);
                 reapedUsers.add(instance.getUserId());
             }
@@ -142,9 +144,9 @@ public class InstanceWatchdog {
 
         // Reset pre-warm state for users who have no remaining instances
         for (String userId : reapedUsers) {
-            boolean hasRemaining = instanceManager.getAllInstances().stream()
-                    .anyMatch(i -> i.getUserId().equals(userId)
-                            && i.getStatus() == ManagedInstance.Status.RUNNING);
+            boolean hasRemaining = instanceManager.getAllInstances()
+                .stream()
+                .anyMatch(i -> i.getUserId().equals(userId) && i.getStatus() == ManagedInstance.Status.RUNNING);
             if (!hasRemaining) {
                 prewarmService.clearUser(userId);
             }

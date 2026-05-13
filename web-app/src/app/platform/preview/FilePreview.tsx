@@ -13,7 +13,7 @@ import 'highlight.js/styles/github.css'
 import './FilePreview.css'
 import { inferFileType, needsTextContent } from '../../../utils/filePreview'
 import OnlyOfficePreview from './OnlyOfficePreview'
-import { GATEWAY_URL, GATEWAY_SECRET_KEY, KNOWLEDGE_SERVICE_URL, gatewayHeaders, isAdminUser } from '../../../config/runtime'
+import { runtime, gatewayHeaders, isAdminUser } from '../../../config/runtime'
 
 const MAX_LOG_LINE_NUMBER_LINES = 12000
 const MAX_LOG_LINE_NUMBER_CHARS = 1200000
@@ -277,7 +277,7 @@ export default function FilePreview({ embedded = false }: { embedded?: boolean }
         setEditError(null)
 
         try {
-            const response = await fetch(appendRootId(`${GATEWAY_URL}/agents/${targetFile.agentId}/files/${encodeURIComponent(targetFile.path)}`, targetFile.rootId), {
+            const response = await fetch(appendRootId(`${runtime.GATEWAY_URL}/agents/${targetFile.agentId}/files/${encodeURIComponent(targetFile.path)}`, targetFile.rootId), {
                 method: 'PUT',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify({ content: editDraft }),
@@ -312,7 +312,7 @@ export default function FilePreview({ embedded = false }: { embedded?: boolean }
         if (!previewFile.agentId) {
             return ''
         }
-        let url = `${GATEWAY_URL}/agents/${previewFile.agentId}/files/${encodeURIComponent(previewFile.path)}?key=${GATEWAY_SECRET_KEY}`
+        let url = `${runtime.GATEWAY_URL}/agents/${previewFile.agentId}/files/${encodeURIComponent(previewFile.path)}?key=${runtime.GATEWAY_SECRET_KEY}`
         if (previewFile.rootId) url += `&rootId=${encodeURIComponent(previewFile.rootId)}`
         if (userId) url += `&uid=${encodeURIComponent(userId)}`
         return url
@@ -326,7 +326,7 @@ export default function FilePreview({ embedded = false }: { embedded?: boolean }
         setKnowledgeSources([])
 
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/sources?page=1&pageSize=100`)
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources?page=1&pageSize=100`)
             const data = await response.json().catch(() => null) as KnowledgeSourceListResponse | { message?: string } | null
 
             if (!response.ok) {
@@ -395,7 +395,7 @@ export default function FilePreview({ embedded = false }: { embedded?: boolean }
             const formData = new FormData()
             formData.append('files', file)
 
-            const ingestResponse = await fetch(`${KNOWLEDGE_SERVICE_URL}/sources/${source.id}/documents:ingest`, {
+            const ingestResponse = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources/${source.id}/documents:ingest`, {
                 method: 'POST',
                 body: formData,
             })

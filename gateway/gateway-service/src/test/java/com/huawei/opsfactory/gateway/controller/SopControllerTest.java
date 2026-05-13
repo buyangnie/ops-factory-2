@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -22,6 +26,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for Sop Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(SopController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -37,6 +47,9 @@ public class SopControllerTest {
 
     // ── listSops ─────────────────────────────────────────────────
 
+    /**
+     * Tests list sops empty.
+     */
     @Test
     public void testListSops_empty() {
         when(sopService.listSops()).thenReturn(List.of());
@@ -51,6 +64,9 @@ public class SopControllerTest {
                 .jsonPath("$.sops").isEmpty();
     }
 
+    /**
+     * Tests list sops with data.
+     */
     @Test
     public void testListSops_withData() {
         Map<String, Object> sop = new LinkedHashMap<>();
@@ -70,6 +86,9 @@ public class SopControllerTest {
 
     // ── getSop ───────────────────────────────────────────────────
 
+    /**
+     * Tests get sop existing.
+     */
     @Test
     public void testGetSop_existing() {
         Map<String, Object> sop = new LinkedHashMap<>();
@@ -88,6 +107,9 @@ public class SopControllerTest {
                 .jsonPath("$.sop.id").isEqualTo("sop-1");
     }
 
+    /**
+     * Tests get sop not found.
+     */
     @Test
     public void testGetSop_notFound() {
         when(sopService.getSop("nonexistent"))
@@ -102,6 +124,9 @@ public class SopControllerTest {
 
     // ── createSop ────────────────────────────────────────────────
 
+    /**
+     * Tests create sop success.
+     */
     @Test
     public void testCreateSop_success() {
         Map<String, Object> created = new LinkedHashMap<>();
@@ -125,6 +150,9 @@ public class SopControllerTest {
                 .jsonPath("$.sop.id").isEqualTo("new-id");
     }
 
+    /**
+     * Tests create sop error.
+     */
     @Test
     public void testCreateSop_error() {
         when(sopService.createSop(any()))
@@ -139,13 +167,17 @@ public class SopControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .exchange()
-                .expectStatus().isBadRequest()
+                .expectStatus().is5xxServerError()
                 .expectBody()
-                .jsonPath("$.success").isEqualTo(false);
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error").isEqualTo("Internal server error");
     }
 
     // ── updateSop ────────────────────────────────────────────────
 
+    /**
+     * Tests update sop success.
+     */
     @Test
     public void testUpdateSop_success() {
         Map<String, Object> updated = new LinkedHashMap<>();
@@ -168,6 +200,9 @@ public class SopControllerTest {
                 .jsonPath("$.sop.name").isEqualTo("UpdatedSOP");
     }
 
+    /**
+     * Tests update sop not found.
+     */
     @Test
     public void testUpdateSop_notFound() {
         when(sopService.updateSop(eq("nonexistent"), any()))
@@ -187,6 +222,9 @@ public class SopControllerTest {
 
     // ── deleteSop ────────────────────────────────────────────────
 
+    /**
+     * Tests delete sop success.
+     */
     @Test
     public void testDeleteSop_success() {
         when(sopService.deleteSop("sop-1")).thenReturn(true);
@@ -200,6 +238,9 @@ public class SopControllerTest {
                 .jsonPath("$.success").isEqualTo(true);
     }
 
+    /**
+     * Tests delete sop not found.
+     */
     @Test
     public void testDeleteSop_notFound() {
         when(sopService.deleteSop("nonexistent")).thenReturn(false);
@@ -213,6 +254,9 @@ public class SopControllerTest {
                 .jsonPath("$.success").isEqualTo(false);
     }
 
+    /**
+     * Tests create sop duplicate name returns conflict.
+     */
     @Test
     public void testCreateSop_duplicateName_returnsConflict() {
         when(sopService.createSop(any()))
@@ -230,11 +274,14 @@ public class SopControllerTest {
                 .expectStatus().isEqualTo(409)
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
-                .jsonPath("$.error").isEqualTo("SOP name already exists: TestSOP");
+                .jsonPath("$.error").isEqualTo("SOP name already exists");
     }
 
     // ── Auth tests ───────────────────────────────────────────────
 
+    /**
+     * Tests list sops unauthorized no key.
+     */
     @Test
     public void testListSops_unauthorized_noKey() {
         webTestClient.get().uri("/gateway/sops/")
@@ -243,6 +290,9 @@ public class SopControllerTest {
                 .expectStatus().isUnauthorized();
     }
 
+    /**
+     * Tests list sops forbidden non admin.
+     */
     @Test
     public void testListSops_forbidden_nonAdmin() {
         webTestClient.get().uri("/gateway/sops/")
@@ -252,6 +302,9 @@ public class SopControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests create sop forbidden non admin.
+     */
     @Test
     public void testCreateSop_forbidden_nonAdmin() {
         Map<String, Object> body = new LinkedHashMap<>();

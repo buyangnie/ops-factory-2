@@ -10,12 +10,5 @@ package com.huawei.opsfactory.gateway.service.channel.model;
  * @author x00000000
  * @since 2026-05-09
  */
-public record ChannelEvent(
-        String id,
-        String channelId,
-        String level,
-        String type,
-        String summary,
-        String createdAt
-) {
+public record ChannelEvent(String id, String channelId, String level, String type, String summary, String createdAt) {
 }

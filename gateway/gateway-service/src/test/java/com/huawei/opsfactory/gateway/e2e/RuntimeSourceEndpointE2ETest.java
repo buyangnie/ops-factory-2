@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.e2e;
 
 import com.huawei.opsfactory.gateway.common.model.AgentRegistryEntry;
@@ -19,6 +23,10 @@ import static org.mockito.Mockito.when;
  * @since 2026-05-09
  */
 public class RuntimeSourceEndpointE2ETest extends BaseE2ETest {
+
+    /**
+     * Executes the system admin returns system info operation.
+     */
     @Test
     public void system_admin_returnsSystemInfo() {
         when(agentConfigService.getRegistry()).thenReturn(List.of(
@@ -40,6 +48,9 @@ public class RuntimeSourceEndpointE2ETest extends BaseE2ETest {
                 .jsonPath("$.langfuse.configured").isEqualTo(false);
     }
 
+    /**
+     * Executes the system non admin returns403 operation.
+     */
     @Test
     public void system_nonAdmin_returns403() {
         webClient.get().uri("/gateway/runtime-source/system")
@@ -49,6 +60,9 @@ public class RuntimeSourceEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Executes the system unauthenticated returns401 operation.
+     */
     @Test
     public void system_unauthenticated_returns401() {
         webClient.get().uri("/gateway/runtime-source/system")
@@ -56,6 +70,9 @@ public class RuntimeSourceEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().isUnauthorized();
     }
 
+    /**
+     * Executes the instances admin returns instance list operation.
+     */
     @Test
     public void instances_admin_returnsInstanceList() {
         ManagedInstance inst = new ManagedInstance("agent-a", "alice", 9001, 54321L, null, "test-secret");
@@ -83,6 +100,9 @@ public class RuntimeSourceEndpointE2ETest extends BaseE2ETest {
                 .jsonPath("$.byAgent[0].instances[0].idleSinceMs").isNumber();
     }
 
+    /**
+     * Executes the instances non admin returns403 operation.
+     */
     @Test
     public void instances_nonAdmin_returns403() {
         webClient.get().uri("/gateway/runtime-source/instances")
@@ -92,6 +112,9 @@ public class RuntimeSourceEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Executes the metrics admin returns metrics data operation.
+     */
     @Test
     public void metrics_admin_returnsMetricsData() {
         MetricsSnapshot s = new MetricsSnapshot();
@@ -133,6 +156,9 @@ public class RuntimeSourceEndpointE2ETest extends BaseE2ETest {
                 .jsonPath("$.series[0].errors").isEqualTo(1);
     }
 
+    /**
+     * Executes the metrics non admin returns403 operation.
+     */
     @Test
     public void metrics_nonAdmin_returns403() {
         webClient.get().uri("/gateway/runtime-source/metrics")
@@ -142,6 +168,9 @@ public class RuntimeSourceEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Executes the metrics unauthenticated returns401 operation.
+     */
     @Test
     public void metrics_unauthenticated_returns401() {
         webClient.get().uri("/gateway/runtime-source/metrics")

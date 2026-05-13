@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { CONTROL_CENTER_URL, controlCenterHeaders } from '../../../../config/runtime'
+import { runtime, controlCenterHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 
 // ---- Types matching control-center responses ----
@@ -63,7 +63,7 @@ function rangeToISO(range: TimeRange): { from: string; to: string } {
 }
 
 async function cc<T>(path: string, params?: Record<string, string>): Promise<T> {
-  const url = new URL(`${CONTROL_CENTER_URL}${path}`)
+  const url = new URL(`${runtime.CONTROL_CENTER_URL}${path}`)
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       if (v !== undefined && v !== '') url.searchParams.set(k, v)

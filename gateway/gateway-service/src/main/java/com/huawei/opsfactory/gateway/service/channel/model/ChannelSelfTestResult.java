@@ -10,11 +10,6 @@ package com.huawei.opsfactory.gateway.service.channel.model;
  * @author x00000000
  * @since 2026-05-09
  */
-public record ChannelSelfTestResult(
-        String channelId,
-        String selfPhone,
-        String agentId,
-        String sessionId,
-        String replyText
-) {
+public record ChannelSelfTestResult(String channelId, String selfPhone, String agentId, String sessionId,
+    String replyText) {
 }

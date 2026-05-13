@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '../../../platform/providers/UserContext'
 import Button from '../../../platform/ui/primitives/Button'
-import { GATEWAY_URL, gatewayHeaders, slugify } from '../../../../config/runtime'
+import { runtime, gatewayHeaders, slugify } from '../../../../config/runtime'
 
 const DEFAULT_LLM = { provider: 'openai', model: 'qwen/qwen3.5-35b-a3b' }
 
@@ -53,7 +53,7 @@ export function CreateAgentModal({
 
         setCreating(true)
         try {
-            const response = await fetch(`${GATEWAY_URL}/agents`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/agents`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify({ id: id.trim(), name: name.trim() }),

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { CONTROL_CENTER_URL, controlCenterHeaders } from '../../../../config/runtime'
+import { runtime, controlCenterHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 
 export interface ManagedServiceConfigResponse {
@@ -25,7 +25,7 @@ export function useManagedServiceDetail() {
     const [error, setError] = useState<string | null>(null)
 
     const fetchConfig = useCallback(async (serviceId: string) => {
-        const response = await fetch(`${CONTROL_CENTER_URL}/services/${serviceId}/config`, {
+        const response = await fetch(`${runtime.CONTROL_CENTER_URL}/services/${serviceId}/config`, {
             headers: controlCenterHeaders(),
             signal: AbortSignal.timeout(10_000),
         })
@@ -39,7 +39,7 @@ export function useManagedServiceDetail() {
     }, [])
 
     const fetchLogs = useCallback(async (serviceId: string, lines = 200) => {
-        const response = await fetch(`${CONTROL_CENTER_URL}/services/${serviceId}/logs?lines=${lines}`, {
+        const response = await fetch(`${runtime.CONTROL_CENTER_URL}/services/${serviceId}/logs?lines=${lines}`, {
             headers: controlCenterHeaders(),
             signal: AbortSignal.timeout(10_000),
         })
@@ -68,7 +68,7 @@ export function useManagedServiceDetail() {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${CONTROL_CENTER_URL}/services/${serviceId}/config`, {
+            const response = await fetch(`${runtime.CONTROL_CENTER_URL}/services/${serviceId}/config`, {
                 method: 'PUT',
                 headers: controlCenterHeaders(),
                 body: JSON.stringify({ content }),

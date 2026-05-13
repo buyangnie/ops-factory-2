@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { GATEWAY_SECRET_KEY, GATEWAY_URL } from '../../../config/runtime'
+import { runtime } from '../../../config/runtime'
 import { usePreview } from '../providers/PreviewContext'
 import { useUser } from '../providers/UserContext'
 import type { FileCitation } from '../../../utils/fileCitationParser'
@@ -88,11 +88,11 @@ export default function FileReferenceList({
     const handlePreview = useCallback(async (group: FileReferenceGroup) => {
         if (!agentId) return
 
-        const fetchHeaders: Record<string, string> = { 'x-secret-key': GATEWAY_SECRET_KEY }
+        const fetchHeaders: Record<string, string> = { 'x-secret-key': runtime.GATEWAY_SECRET_KEY }
         if (userId) fetchHeaders['x-user-id'] = userId
 
-        const baseUrl = `${GATEWAY_URL}/agents/${agentId}/file-citations/content?path=${encodeURIComponent(group.path)}`
-        const downloadUrl = `${baseUrl}&key=${GATEWAY_SECRET_KEY}${userId ? `&uid=${encodeURIComponent(userId)}` : ''}`
+        const baseUrl = `${runtime.GATEWAY_URL}/agents/${agentId}/file-citations/content?path=${encodeURIComponent(group.path)}`
+        const downloadUrl = `${baseUrl}&key=${runtime.GATEWAY_SECRET_KEY}${userId ? `&uid=${encodeURIComponent(userId)}` : ''}`
         const type = group.title.split('.').pop() || 'txt'
         const previewKind = getPreviewKind({ name: group.title, path: group.path, type })
 

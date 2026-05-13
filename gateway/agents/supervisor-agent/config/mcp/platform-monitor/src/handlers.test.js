@@ -1,9 +1,14 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 let routes = {};
 let originalFetch;
-let originalConsoleError;
+let originalStderrWrite;
+let previousSecretKey;
 let capturedLogs = [];
 
 function mockFetch(input) {
@@ -29,18 +34,26 @@ function mockFetch(input) {
 
 beforeEach(() => {
   originalFetch = globalThis.fetch;
-  originalConsoleError = console.error;
+  originalStderrWrite = process.stderr.write;
+  previousSecretKey = process.env.GATEWAY_SECRET_KEY;
+  process.env.GATEWAY_SECRET_KEY = 'unit-test-secret';
   globalThis.fetch = mockFetch;
   routes = {};
   capturedLogs = [];
-  console.error = (message) => {
-    capturedLogs.push(String(message));
+  process.stderr.write = (chunk) => {
+    capturedLogs.push(String(chunk).trim());
+    return true;
   };
 });
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
-  console.error = originalConsoleError;
+  process.stderr.write = originalStderrWrite;
+  if (previousSecretKey === undefined) {
+    delete process.env.GATEWAY_SECRET_KEY;
+  } else {
+    process.env.GATEWAY_SECRET_KEY = previousSecretKey;
+  }
 });
 
 const {

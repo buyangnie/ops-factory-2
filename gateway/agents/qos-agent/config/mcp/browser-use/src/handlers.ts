@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import puppeteer, { type Browser, type Page } from 'puppeteer'
 import { mkdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -46,7 +50,9 @@ async function getPage(): Promise<Page> {
 export const tools = [
   {
     name: 'browser_navigate',
-    description: 'Open a URL in Chromium and return page title and interactive elements. The browser session persists across calls.',
+    description:
+      'Open a URL in Chromium and return page title and interactive elements. ' +
+      'The browser session persists across calls.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -140,7 +146,9 @@ interface ElementInfo {
 }
 
 async function getElements(): Promise<ElementInfo[]> {
-  if (!page) return []
+  if (!page) {
+    return []
+  }
   return page.evaluate(() => {
     const selectors = 'a, button, input, select, textarea, [role="button"], [onclick]'
     const nodes = Array.from(document.querySelectorAll(selectors))
@@ -170,9 +178,15 @@ async function handleNavigate(args: { url: string }): Promise<string> {
   const elements = await getElements()
   const elList = elements.map(e => {
     const extras: string[] = []
-    if (e.type) extras.push(`type=${e.type}`)
-    if (e.placeholder) extras.push(`placeholder="${e.placeholder}"`)
-    if (e.href && e.tag === 'a') extras.push(`href=${e.href.slice(0, 60)}`)
+    if (e.type) {
+      extras.push(`type=${e.type}`)
+    }
+    if (e.placeholder) {
+      extras.push(`placeholder="${e.placeholder}"`)
+    }
+    if (e.href && e.tag === 'a') {
+      extras.push(`href=${e.href.slice(0, 60)}`)
+    }
     const extra = extras.length ? ` ${extras.join(' ')}` : ''
     return `  [${e.index}] <${e.tag}> "${e.text}"${extra}`
   }).join('\n')
@@ -185,11 +199,15 @@ async function handleClick(args: { index: number }): Promise<string> {
   const result = await p.evaluate((idx: number) => {
     const nodes = document.querySelectorAll('a, button, input, select, textarea, [role="button"], [onclick]')
     const el = nodes[idx] as HTMLElement | undefined
-    if (!el) return null
+    if (!el) {
+      return null
+    }
     el.click()
     return { tag: el.tagName, text: (el.textContent?.trim() || '').slice(0, 60) }
   }, args.index)
-  if (!result) return `Error: No element at index ${args.index}`
+  if (!result) {
+    return `Error: No element at index ${args.index}`
+  }
   await new Promise(r => setTimeout(r, 800))
   return `Clicked [${args.index}] <${result.tag}> "${result.text}"\nURL: ${p.url()}`
 }
@@ -200,12 +218,18 @@ async function handleType(args: { index: number; text: string; press_enter?: boo
   const found = await p.evaluate((idx: number) => {
     const nodes = document.querySelectorAll('a, button, input, select, textarea, [role="button"], [onclick]')
     const el = nodes[idx] as HTMLElement | undefined
-    if (!el) return false
+    if (!el) {
+      return false
+    }
     el.focus()
-    if ((el as HTMLInputElement).value !== undefined) (el as HTMLInputElement).value = ''
+    if ((el as HTMLInputElement).value !== undefined) {
+      (el as HTMLInputElement).value = ''
+    }
     return true
   }, args.index)
-  if (!found) return `Error: No element at index ${args.index}`
+  if (!found) {
+    return `Error: No element at index ${args.index}`
+  }
   await p.keyboard.type(args.text, { delay: 30 })
   if (args.press_enter) {
     await p.keyboard.press('Enter')
@@ -215,13 +239,19 @@ async function handleType(args: { index: number; text: string; press_enter?: boo
 }
 
 async function handleGetState(): Promise<string> {
-  if (!page) return 'Error: No browser session. Call browser_navigate first.'
+  if (!page) {
+    return 'Error: No browser session. Call browser_navigate first.'
+  }
   const title = await page.title()
   const elements = await getElements()
   const elList = elements.map(e => {
     const extras: string[] = []
-    if (e.type) extras.push(`type=${e.type}`)
-    if (e.placeholder) extras.push(`placeholder="${e.placeholder}"`)
+    if (e.type) {
+      extras.push(`type=${e.type}`)
+    }
+    if (e.placeholder) {
+      extras.push(`placeholder="${e.placeholder}"`)
+    }
     const extra = extras.length ? ` ${extras.join(' ')}` : ''
     return `  [${e.index}] <${e.tag}> "${e.text}"${extra}`
   }).join('\n')
@@ -229,7 +259,9 @@ async function handleGetState(): Promise<string> {
 }
 
 async function handleExtract(args: { query?: string }): Promise<string> {
-  if (!page) return 'Error: No browser session.'
+  if (!page) {
+    return 'Error: No browser session.'
+  }
   const query = args.query || 'all'
   if (query === 'all' || query === 'body' || query === 'text') {
     return await page.evaluate(() => document.body.innerText.slice(0, 15000))
@@ -243,8 +275,12 @@ async function handleExtract(args: { query?: string }): Promise<string> {
 }
 
 async function handleScreenshot(args: { full_page?: boolean }): Promise<string> {
-  if (!page) return 'Error: No browser session.'
-  if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true })
+  if (!page) {
+    return 'Error: No browser session.'
+  }
+  if (!existsSync(OUTPUT_DIR)) {
+    mkdirSync(OUTPUT_DIR, { recursive: true })
+  }
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   const path = join(OUTPUT_DIR, `screenshot-${ts}.png`)
   await page.screenshot({ path, fullPage: args.full_page ?? false })
@@ -252,7 +288,9 @@ async function handleScreenshot(args: { full_page?: boolean }): Promise<string> 
 }
 
 async function handleScroll(args: { direction?: string }): Promise<string> {
-  if (!page) return 'Error: No browser session.'
+  if (!page) {
+    return 'Error: No browser session.'
+  }
   const dir = args.direction || 'down'
   const px = 600
   await page.evaluate((d: string, p: number) => window.scrollBy(0, d === 'up' ? -p : p), dir, px)
@@ -272,15 +310,51 @@ async function handleClose(): Promise<string> {
 // ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------
+function requireString(args: Record<string, unknown>, key: string): string {
+  const value = args[key]
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`${key} must be a non-empty string`)
+  }
+  return value
+}
+
+function requireNumber(args: Record<string, unknown>, key: string): number {
+  const value = args[key]
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`${key} must be a finite number`)
+  }
+  return value
+}
+
+function optionalString(args: Record<string, unknown>, key: string): string | undefined {
+  const value = args[key]
+  return typeof value === 'string' ? value : undefined
+}
+
+function optionalBoolean(args: Record<string, unknown>, key: string): boolean | undefined {
+  const value = args[key]
+  return typeof value === 'boolean' ? value : undefined
+}
+
 export async function dispatch(name: string, args: Record<string, unknown>): Promise<string> {
   switch (name) {
-    case 'browser_navigate': return handleNavigate(args as any)
-    case 'browser_click': return handleClick(args as any)
-    case 'browser_type': return handleType(args as any)
+    case 'browser_navigate':
+      return handleNavigate({ url: requireString(args, 'url') })
+    case 'browser_click':
+      return handleClick({ index: requireNumber(args, 'index') })
+    case 'browser_type':
+      return handleType({
+        index: requireNumber(args, 'index'),
+        text: requireString(args, 'text'),
+        press_enter: optionalBoolean(args, 'press_enter'),
+      })
     case 'browser_get_state': return handleGetState()
-    case 'browser_extract': return handleExtract(args as any)
-    case 'browser_screenshot': return handleScreenshot(args as any)
-    case 'browser_scroll': return handleScroll(args as any)
+    case 'browser_extract':
+      return handleExtract({ query: optionalString(args, 'query') })
+    case 'browser_screenshot':
+      return handleScreenshot({ full_page: optionalBoolean(args, 'full_page') })
+    case 'browser_scroll':
+      return handleScroll({ direction: optionalString(args, 'direction') })
     case 'browser_close': return handleClose()
     default: throw new Error(`Unknown tool: ${name}`)
   }

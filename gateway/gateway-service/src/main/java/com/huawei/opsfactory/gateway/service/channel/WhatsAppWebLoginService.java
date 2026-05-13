@@ -4,9 +4,14 @@
 
 package com.huawei.opsfactory.gateway.service.channel;
 
+import com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectionConfig;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelDetail;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelLoginState;
-import com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectionConfig;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -14,14 +19,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.Locale;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Manages WhatsApp Web channel login lifecycle including QR code login, logout, and runtime state file management.
@@ -31,13 +35,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @Service
 public class WhatsAppWebLoginService {
+    private static final Logger log = LoggerFactory.getLogger(WhatsAppWebLoginService.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final ChannelConfigService channelConfigService;
+
     private final ChannelRuntimeStorageService runtimeStorageService;
 
+    /**
+     * Creates the whats app web login service instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public WhatsAppWebLoginService(ChannelConfigService channelConfigService,
-                                   ChannelRuntimeStorageService runtimeStorageService) {
+        ChannelRuntimeStorageService runtimeStorageService) {
         this.channelConfigService = channelConfigService;
         this.runtimeStorageService = runtimeStorageService;
     }
@@ -45,8 +58,8 @@ public class WhatsAppWebLoginService {
     /**
      * Gets the current login state for a WhatsApp channel using the default owner user ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @return the result
      */
     public ChannelLoginState getLoginState(String channelId) {
         return getLoginState(channelId, "admin");
@@ -55,8 +68,9 @@ public class WhatsAppWebLoginService {
     /**
      * Gets the current login state for a WhatsApp channel, merging configuration and runtime state.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @param ownerUserId the ownerUserId parameter
+     * @return the result
      */
     public ChannelLoginState getLoginState(String channelId, String ownerUserId) {
         ChannelDetail channel = requireChannel(channelId, ownerUserId);
@@ -67,12 +81,15 @@ public class WhatsAppWebLoginService {
             status = normalizeStatus(runtimeStatus);
         }
         String message = switch (status) {
-            case "connected" -> "WhatsApp Web session connected";
-            case "pending" -> "Login pending. QR runtime will be attached next.";
-            case "error" -> config.lastError() == null || config.lastError().isBlank()
-                    ? "WhatsApp Web connection error"
+            case "connected":
+                yield "WhatsApp Web session connected";
+            case "pending":
+                yield "Login pending. QR runtime will be attached next.";
+            case "error":
+                yield config.lastError() == null || config.lastError().isBlank() ? "WhatsApp Web connection error"
                     : config.lastError();
-            default -> "WhatsApp Web login required";
+            default:
+                yield "WhatsApp Web login required";
         };
 
         String stateMessage = asString(runtimeState.get("message"));
@@ -85,24 +102,18 @@ public class WhatsAppWebLoginService {
         String stateError = asString(runtimeState.get("lastError"));
         String stateQr = asString(runtimeState.get("qrCodeDataUrl"));
 
-        return new ChannelLoginState(
-                channel.id(),
-                status,
-                message,
-                config.authStateDir(),
-                stateSelfPhone != null ? stateSelfPhone : config.selfPhone(),
-                stateConnectedAt != null ? stateConnectedAt : config.lastConnectedAt(),
-                stateDisconnectedAt != null ? stateDisconnectedAt : config.lastDisconnectedAt(),
-                stateError != null ? stateError : config.lastError(),
-                stateQr
-        );
+        return new ChannelLoginState(channel.id(), status, message, config.authStateDir(),
+            stateSelfPhone != null ? stateSelfPhone : config.selfPhone(),
+            stateConnectedAt != null ? stateConnectedAt : config.lastConnectedAt(),
+            stateDisconnectedAt != null ? stateDisconnectedAt : config.lastDisconnectedAt(),
+            stateError != null ? stateError : config.lastError(), stateQr);
     }
 
     /**
      * Starts the WhatsApp Web QR login flow using the default owner user ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @return the result
      */
     public ChannelLoginState startLogin(String channelId) {
         return startLogin(channelId, "admin");
@@ -111,8 +122,9 @@ public class WhatsAppWebLoginService {
     /**
      * Starts the WhatsApp Web QR login flow, preparing the auth directory and launching the helper process.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @param ownerUserId the ownerUserId parameter
+     * @return the result
      */
     public ChannelLoginState startLogin(String channelId, String ownerUserId) {
         ChannelDetail channel = requireChannel(channelId, ownerUserId);
@@ -137,9 +149,10 @@ public class WhatsAppWebLoginService {
         }
 
         writeInitialStateFile(channel, stateFile);
-        startHelperProcess(channel, authDir, stateFile, pidFile, logFile, inboxDir, outboxPendingDir, outboxSentDir, outboxErrorDir);
+        startHelperProcess(channel, authDir, stateFile, pidFile, logFile, inboxDir, outboxPendingDir, outboxSentDir,
+            outboxErrorDir);
         channelConfigService.recordEvent(channelId, ownerUserId, "info", "whatsapp.login_requested",
-                "WhatsApp Web login requested; auth directory prepared at " + authDir);
+            "WhatsApp Web login requested; auth directory prepared at " + authDir);
 
         return getLoginState(channelId, ownerUserId);
     }
@@ -147,8 +160,8 @@ public class WhatsAppWebLoginService {
     /**
      * Logs out of a WhatsApp channel using the default owner user ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @return the result
      */
     public ChannelLoginState logout(String channelId) {
         return logout(channelId, "admin");
@@ -157,8 +170,9 @@ public class WhatsAppWebLoginService {
     /**
      * Logs out of a WhatsApp channel, stopping the helper process and clearing auth state.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @param ownerUserId the ownerUserId parameter
+     * @return the result
      */
     public ChannelLoginState logout(String channelId, String ownerUserId) {
         ChannelDetail channel = requireChannel(channelId, ownerUserId);
@@ -167,36 +181,24 @@ public class WhatsAppWebLoginService {
         Path pidFile = pidFile(channel);
         try {
             killIfRunning(pidFile);
-        } catch (Throwable ignored) {
-            // best-effort
+        } catch (IllegalStateException e) {
+            log.debug("Failed to stop existing WhatsApp helper for {}", channelId, e);
         }
         try {
             clearDirectory(authDir);
-        } catch (Throwable ignored) {
-            // best-effort
+        } catch (IllegalStateException e) {
+            log.debug("Failed to clear WhatsApp auth dir for {}", channelId, e);
         }
-        try {
-            deleteQuietly(stateFile);
-        } catch (Throwable ignored) {
-            // best-effort
-        }
+        deleteQuietly(stateFile);
 
         writeDisconnectedStateFile(channel, stateFile);
         channelConfigService.recordEvent(channelId, ownerUserId, "info", "whatsapp.logged_out",
-                "Cleared WhatsApp Web auth state");
+            "Cleared WhatsApp Web auth state");
         ChannelDetail updated = channelConfigService.getChannel(channelId, ownerUserId);
 
-        return new ChannelLoginState(
-                updated.id(),
-                "disconnected",
-                "WhatsApp Web login required",
-                updated.config().authStateDir(),
-                updated.config().selfPhone(),
-                updated.config().lastConnectedAt(),
-                updated.config().lastDisconnectedAt(),
-                updated.config().lastError(),
-                null
-        );
+        return new ChannelLoginState(updated.id(), "disconnected", "WhatsApp Web login required",
+            updated.config().authStateDir(), updated.config().selfPhone(), updated.config().lastConnectedAt(),
+            updated.config().lastDisconnectedAt(), updated.config().lastError(), null);
     }
 
     private ChannelDetail requireChannel(String channelId, String ownerUserId) {
@@ -263,7 +265,8 @@ public class WhatsAppWebLoginService {
         payload.put("lastError", "");
         payload.put("qrCodeDataUrl", null);
         try {
-            Files.writeString(stateFile, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(payload), StandardCharsets.UTF_8);
+            Files.writeString(stateFile, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(payload),
+                StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write WhatsApp login state file", e);
         }
@@ -282,21 +285,15 @@ public class WhatsAppWebLoginService {
         payload.put("qrCodeDataUrl", null);
         try {
             Files.createDirectories(stateFile.getParent());
-            Files.writeString(stateFile, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(payload), StandardCharsets.UTF_8);
+            Files.writeString(stateFile, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(payload),
+                StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write WhatsApp login state file", e);
         }
     }
 
-    private void startHelperProcess(ChannelDetail channel,
-                                    Path authDir,
-                                    Path stateFile,
-                                    Path pidFile,
-                                    Path logFile,
-                                    Path inboxDir,
-                                    Path outboxPendingDir,
-                                    Path outboxSentDir,
-                                    Path outboxErrorDir) {
+    private void startHelperProcess(ChannelDetail channel, Path authDir, Path stateFile, Path pidFile, Path logFile,
+        Path inboxDir, Path outboxPendingDir, Path outboxSentDir, Path outboxErrorDir) {
         Path helperDir = channelConfigService.getGatewayRoot().resolve("tools").resolve("whatsapp-web-helper");
         Path helperEntry = helperDir.resolve("index.js");
         if (!Files.exists(helperEntry)) {
@@ -362,15 +359,18 @@ public class WhatsAppWebLoginService {
                 handle.destroy();
                 try {
                     handle.onExit().get();
-                } catch (Exception ignored) {
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    handle.destroyForcibly();
+                } catch (ExecutionException e) {
                     handle.destroyForcibly();
                 }
             });
             Files.deleteIfExists(pidFile);
-        } catch (Exception ignored) {
+        } catch (IOException | NumberFormatException e) {
             try {
                 Files.deleteIfExists(pidFile);
-            } catch (IOException ignoredAgain) {
+            } catch (IOException deleteError) {
                 // ignore
             }
         }
@@ -397,8 +397,7 @@ public class WhatsAppWebLoginService {
             return;
         }
         try (var walk = Files.walk(dir)) {
-            walk.sorted(Comparator.reverseOrder())
-                    .forEach(this::deleteQuietly);
+            walk.sorted(Comparator.reverseOrder()).forEach(this::deleteQuietly);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to clear directory " + dir, e);
         }
@@ -407,7 +406,7 @@ public class WhatsAppWebLoginService {
     private void deleteQuietly(Path path) {
         try {
             Files.deleteIfExists(path);
-        } catch (IOException ignored) {
+        } catch (IOException e) {
             // best-effort cleanup
         }
     }

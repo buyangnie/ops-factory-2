@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useGoosed } from '../../../platform/providers/GoosedContext'
 import { useInbox } from '../../../platform/providers/InboxContext'
 import { useToast } from '../../../platform/providers/ToastContext'
+import { useConfirmDialog } from '../../../platform/providers/ConfirmDialogContext'
 import { useUser } from '../../../platform/providers/UserContext'
 import PageHeader from '../../../platform/ui/primitives/PageHeader'
 import Pagination from '../../../platform/ui/primitives/Pagination'
@@ -13,7 +14,7 @@ import ListToolbar from '../../../platform/ui/list/ListToolbar'
 import ListWorkbench from '../../../platform/ui/list/ListWorkbench'
 import FilterSelect from '../../../platform/ui/filters/FilterSelect'
 import { buildChatSessionState } from '../../../platform/chat/chatRouteState'
-import { GATEWAY_URL, gatewayHeaders, isAdminUser, isScheduledSession } from '../../../../config/runtime'
+import { runtime, gatewayHeaders, isAdminUser, isScheduledSession } from '../../../../config/runtime'
 import { trackedFetch } from '../../../platform/logging/requestClient'
 import RenameSessionDialog from '../components/RenameSessionDialog'
 import SessionList, { type SessionWithAgent } from '../components/SessionList'
@@ -86,6 +87,7 @@ export default function HistoryPage() {
     const { t } = useTranslation()
     const navigate = useNavigate()
     const { showToast } = useToast()
+    const { requestConfirm } = useConfirmDialog()
     const { userId, role } = useUser()
     const [searchParams, setSearchParams] = useSearchParams()
     const { getClient, agents, isConnected, error: connectionError } = useGoosed()
@@ -197,7 +199,7 @@ export default function HistoryPage() {
     const pollTraceJob = useCallback(async (jobId: string): Promise<TraceJobResponse> => {
         const startedAt = Date.now()
         while (Date.now() - startedAt < TRACE_POLL_TIMEOUT_MS) {
-            const response = await trackedFetch(`${GATEWAY_URL}/session-traces/${encodeURIComponent(jobId)}`, {
+            const response = await trackedFetch(`${runtime.GATEWAY_URL}/session-traces/${encodeURIComponent(jobId)}`, {
                 category: 'request',
                 name: 'request.send',
                 headers: gatewayHeaders(userId),
@@ -230,7 +232,7 @@ export default function HistoryPage() {
 
         try {
             const startResponse = await trackedFetch(
-                `${GATEWAY_URL}/agents/${encodeURIComponent(resolvedAgentId)}/sessions/${encodeURIComponent(session.id)}/trace`,
+                `${runtime.GATEWAY_URL}/agents/${encodeURIComponent(resolvedAgentId)}/sessions/${encodeURIComponent(session.id)}/trace`,
                 {
                     method: 'POST',
                     category: 'request',
@@ -251,7 +253,7 @@ export default function HistoryPage() {
             }
 
             const downloadResponse = await trackedFetch(
-                `${GATEWAY_URL}/session-traces/${encodeURIComponent(completedJob.jobId)}/download`,
+                `${runtime.GATEWAY_URL}/session-traces/${encodeURIComponent(completedJob.jobId)}/download`,
                 {
                     category: 'request',
                     name: 'request.send',
@@ -280,7 +282,12 @@ export default function HistoryPage() {
     }, [agents, getSessionKey, pollTraceJob, showToast, t, tracingSessionKeys, userId])
 
     const handleDeleteSession = async (session: SessionWithAgent) => {
-        if (!confirm(t('history.confirmDeleteSession'))) return
+        if (!(await requestConfirm({
+            title: t('common.confirmTitle'),
+            message: t('history.confirmDeleteSession'),
+            variant: 'danger',
+            confirmLabel: t('common.delete'),
+        }))) return
         const resolvedAgentId = session.agentId || agents[0]?.id
         const sessionKey = getSessionKey({ ...session, agentId: resolvedAgentId })
         if (deletingSessionKeys.has(sessionKey)) return

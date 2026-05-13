@@ -15,18 +15,38 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { join } from 'node:path'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import net from 'node:net'
+import YAML from 'yaml'
 import { sendSessionReplyAndWait, sleep, type GatewayHandle } from '../../../platform/shared/helpers.js'
 
 const AGENT_ID = 'qa-agent'
 const USER_SYS = 'admin'
 const SECRET_KEY = 'test-secret'
 const PROJECT_ROOT = join(import.meta.dirname, '..', '..', '..', '..')
+const AGENT_CONFIG_PATH = join(PROJECT_ROOT, 'gateway', 'agents', 'qa-agent', 'config', 'config.yaml')
 const MCP_DIR = join(PROJECT_ROOT, 'gateway', 'agents', 'qa-agent', 'config', 'mcp', 'knowledge-service')
 
 let gw: GatewayHandle
+
+function readQaAgentConfig(): Record<string, any> {
+  return YAML.parse(readFileSync(AGENT_CONFIG_PATH, 'utf8')) as Record<string, any>
+}
+
+function readConfiguredKnowledgeSourceId(): string {
+  const parsed = readQaAgentConfig()
+  const sourceId = parsed?.extensions?.['knowledge-service']?.['x-opsfactory']?.knowledgeScope?.sourceId
+  expect(typeof sourceId).toBe('string')
+  return sourceId
+}
+
+function readConfiguredKnowledgeExtension(): Record<string, any> {
+  const parsed = readQaAgentConfig()
+  const extension = parsed?.extensions?.['knowledge-service']
+  expect(extension).toBeDefined()
+  return extension as Record<string, any>
+}
 
 async function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -41,13 +61,17 @@ async function freePort(): Promise<number> {
 
 async function startQaJavaGateway(): Promise<GatewayHandle> {
   const port = await freePort()
-  const baseUrl = `http://127.0.0.1:${port}/ops-gateway`
+  const baseUrl = `http://127.0.0.1:${port}/gateway`
 
   const jarPath = join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'gateway-service.jar')
   const libDir = join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'lib')
-  const log4jConfig = join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'resources', 'log4j2.xml')
+  const log4jConfig = [
+    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'resources', 'log4j2.xml'),
+    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'test-classes', 'log4j2.xml'),
+    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'src', 'test', 'resources', 'log4j2.xml'),
+  ].find(candidate => existsSync(candidate))
 
-  const child = spawn('java', [
+  const javaArgs = [
     `-Dloader.path=${libDir}`,
     `-Dserver.port=${port}`,
     '-Dserver.address=127.0.0.1',
@@ -58,9 +82,13 @@ async function startQaJavaGateway(): Promise<GatewayHandle> {
     '-Dgateway.cors-origin=*',
     '-Dgateway.limits.max-instances-per-user=20',
     '-Dgateway.limits.max-instances-global=100',
-    `-Dlogging.config=file:${log4jConfig}`,
     '-jar', jarPath,
-  ], {
+  ]
+  if (log4jConfig) {
+    javaArgs.splice(javaArgs.length - 1, 0, `-Dlogging.config=file:${log4jConfig}`)
+  }
+
+  const child = spawn('java', javaArgs, {
     cwd: join(PROJECT_ROOT, 'gateway'),
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -81,7 +109,7 @@ async function startQaJavaGateway(): Promise<GatewayHandle> {
     while (Date.now() - start < maxWait) {
       try {
         const res = await fetch(`${baseUrl}/status`, {
-          headers: { 'x-secret-key': SECRET_KEY },
+          headers: { 'x-secret-key': SECRET_KEY, 'x-user-id': USER_SYS },
           signal: AbortSignal.timeout(2_000),
         })
         if (res.ok) return
@@ -222,8 +250,9 @@ describe('qa-agent registration and MCP wiring', () => {
     const qa = (data.agents as Array<Record<string, any>>).find(agent => agent.id === AGENT_ID)
     expect(qa).toBeDefined()
     expect(qa!.name).toBe('QA Agent')
-    expect(qa!.provider).toBe('custom_qwen3-32b')
-    expect(qa!.model).toBe('qwen/qwen3-32b')
+    const config = readQaAgentConfig()
+    expect(qa!.provider).toBe(config.GOOSE_PROVIDER)
+    expect(qa!.model).toBe(config.GOOSE_MODEL)
   })
 
   it('exposes the knowledge-service MCP extension on /agents/qa-agent/mcp', async () => {
@@ -235,8 +264,9 @@ describe('qa-agent registration and MCP wiring', () => {
     expect(knowledge).toBeDefined()
     expect(knowledge!.enabled).toBe(true)
     expect(knowledge!.type).toBe('stdio')
-    expect(knowledge!.cmd).toBe('npx')
-    expect(knowledge!.args).toEqual(['tsx', 'config/mcp/knowledge-service/src/index.ts'])
+    const configuredExtension = readConfiguredKnowledgeExtension()
+    expect(knowledge!.cmd).toBe(configuredExtension.cmd)
+    expect(knowledge!.args).toEqual(configuredExtension.args)
   })
 })
 
@@ -319,9 +349,10 @@ describe('qa-agent MCP runtime', () => {
     expect(payload.toolNames).toContain('search')
     expect(payload.toolNames).toContain('fetch')
     expect(payload.searchTotal).toBeGreaterThan(0)
-    expect(payload.firstHit?.sourceId).toBe('src_ac8da09a7cfd')
+    const configuredSourceId = readConfiguredKnowledgeSourceId()
+    expect(payload.firstHit?.sourceId).toBe(configuredSourceId)
     expect(payload.fetchedChunkId).toBeTruthy()
-    expect(payload.fetchedSourceId).toBe('src_ac8da09a7cfd')
+    expect(payload.fetchedSourceId).toBe(configuredSourceId)
   }, 60_000)
 })
 

@@ -1,11 +1,22 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import { LOG_FILE_PATH, logError, logInfo } from './logger.js';
 
 const GATEWAY_URL = process.env.GATEWAY_URL || 'https://127.0.0.1:3000';
-const GATEWAY_SECRET_KEY = process.env.GATEWAY_SECRET_KEY || 'test';
 const API_PREFIX = '/gateway';
 const REQUEST_TIMEOUT_MS = 15_000;
 
 export { LOG_FILE_PATH };
+
+function requireGatewaySecretKey() {
+  const secret = process.env.GATEWAY_SECRET_KEY;
+  if (!secret || !secret.trim()) {
+    throw new Error('GATEWAY_SECRET_KEY is required');
+  }
+  return secret.trim();
+}
 
 export async function gw(path, params) {
   const startedAt = Date.now();
@@ -27,7 +38,7 @@ export async function gw(path, params) {
   try {
     const res = await fetch(url, {
       headers: {
-        'x-secret-key': GATEWAY_SECRET_KEY,
+        'x-secret-key': requireGatewaySecretKey(),
         'x-user-id': 'admin',
       },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -79,7 +90,8 @@ export const tools = [
   {
     name: 'get_platform_status',
     description:
-      'Get platform health status: gateway uptime, host/port, running instances, Langfuse monitoring status, and idle timeout configuration.',
+      'Get platform health status: gateway uptime, host/port, running instances, ' +
+      'Langfuse monitoring status, and idle timeout configuration.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -97,7 +109,8 @@ export const tools = [
   {
     name: 'get_observability_data',
     description:
-      'Get observability metrics: KPIs (total traces, cost, avg/P95 latency, error count), daily trends, recent traces, and observation breakdown. Requires Langfuse to be configured.',
+      'Get observability metrics: KPIs (total traces, cost, avg/P95 latency, error count), ' +
+      'daily trends, recent traces, and observation breakdown. Requires Langfuse to be configured.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -113,7 +126,10 @@ export const tools = [
   {
     name: 'get_realtime_metrics',
     description:
-      'Get real-time gateway performance metrics: current active instances/tokens/sessions, aggregate stats (request count, error count, avg/P95 latency, avg/P95 TTFT, tokens/sec), time series data (30s intervals, up to 120 slots = 1 hour), and per-agent breakdown. Does NOT require Langfuse.',
+      'Get real-time gateway performance metrics: current active instances/tokens/sessions, ' +
+      'aggregate stats (request count, error count, avg/P95 latency, avg/P95 TTFT, tokens/sec), ' +
+      'time series data (30s intervals, up to 120 slots = 1 hour), and per-agent breakdown. ' +
+      'Does NOT require Langfuse.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -195,7 +211,9 @@ export async function handleGetRealtimeMetrics() {
 }
 
 function normalizeHours(rawHours) {
-  if (typeof rawHours !== 'number' || !Number.isFinite(rawHours)) return 24;
+  if (typeof rawHours !== 'number' || !Number.isFinite(rawHours)) {
+    return 24;
+  }
   return Math.min(720, Math.max(1, rawHours));
 }
 

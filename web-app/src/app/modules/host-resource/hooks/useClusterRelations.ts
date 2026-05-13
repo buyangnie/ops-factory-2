@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { useUser } from '../../../platform/providers/UserContext'
 import type { ClusterRelation, ClusterGraphData } from '../../../../types/host'
 
-function apiBase() { return `${GATEWAY_URL}/cluster-relations` }
+function apiBase() { return `${runtime.GATEWAY_URL}/cluster-relations` }
 
 export function useClusterRelations() {
     const { userId } = useUser()

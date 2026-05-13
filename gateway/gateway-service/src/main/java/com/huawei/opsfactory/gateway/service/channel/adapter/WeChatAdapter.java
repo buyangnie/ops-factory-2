@@ -4,19 +4,21 @@
 
 package com.huawei.opsfactory.gateway.service.channel.adapter;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
 import com.huawei.opsfactory.gateway.service.channel.ChannelAdapter;
 import com.huawei.opsfactory.gateway.service.channel.ChannelConfigService;
-import com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectivityResult;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectionConfig;
+import com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectivityResult;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelDetail;
+
+import reactor.core.publisher.Mono;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 
 import java.util.Locale;
-
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 /**
  * {@link ChannelAdapter} implementation for WeChat channels, providing connectivity testing based on login state.
@@ -28,6 +30,12 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 public class WeChatAdapter implements ChannelAdapter {
     private final ChannelConfigService channelConfigService;
 
+    /**
+     * Creates the we chat adapter instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public WeChatAdapter(ChannelConfigService channelConfigService) {
         this.channelConfigService = channelConfigService;
     }
@@ -35,8 +43,7 @@ public class WeChatAdapter implements ChannelAdapter {
     /**
      * Returns the WeChat channel type identifier.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     @Override
     public String type() {
@@ -46,8 +53,9 @@ public class WeChatAdapter implements ChannelAdapter {
     /**
      * Rejects webhook verification requests since WeChat channels do not use webhooks.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @Override
     public Mono<String> verifyWebhook(String channelId, ServerWebExchange exchange) {
@@ -57,8 +65,10 @@ public class WeChatAdapter implements ChannelAdapter {
     /**
      * Rejects webhook handling requests since WeChat channels do not use webhooks.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @param rawBody the rawBody parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @Override
     public Mono<Void> handleWebhook(String channelId, String rawBody, ServerWebExchange exchange) {
@@ -68,29 +78,31 @@ public class WeChatAdapter implements ChannelAdapter {
     /**
      * Tests the connectivity of a WeChat channel based on its current login status.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @param ownerUserId the ownerUserId parameter
+     * @return the result
      */
     @Override
     public Mono<ChannelConnectivityResult> testConnectivity(String channelId, String ownerUserId) {
         ChannelDetail channel = requireChannel(channelId, ownerUserId);
         ChannelConnectionConfig config = channel.config();
-        String status = config.loginStatus() == null || config.loginStatus().isBlank()
-                ? "disconnected"
-                : config.loginStatus().trim().toLowerCase(Locale.ROOT);
+        String status = config.loginStatus() == null || config.loginStatus().isBlank() ? "disconnected"
+            : config.loginStatus().trim().toLowerCase(Locale.ROOT);
 
         return switch (status) {
-            case "connected" -> {
+            case "connected": {
                 channelConfigService.recordEvent(channelId, ownerUserId, "info", "wechat.status",
-                        "WeChat session is connected");
+                    "WeChat session is connected");
                 yield Mono.just(new ChannelConnectivityResult(true, "WeChat session connected"));
             }
-            case "pending" -> Mono.just(new ChannelConnectivityResult(false, "WeChat QR login is pending"));
-            case "error" -> Mono.just(new ChannelConnectivityResult(false,
-                    config.lastError() == null || config.lastError().isBlank()
-                            ? "WeChat connection error"
-                            : config.lastError()));
-            default -> Mono.just(new ChannelConnectivityResult(false, "WeChat login required"));
+            case "pending":
+                yield Mono.just(new ChannelConnectivityResult(false, "WeChat QR login is pending"));
+            case "error":
+                yield Mono.just(
+                    new ChannelConnectivityResult(false, config.lastError() == null || config.lastError().isBlank()
+                        ? "WeChat connection error" : config.lastError()));
+            default:
+                yield Mono.just(new ChannelConnectivityResult(false, "WeChat login required"));
         };
     }
 

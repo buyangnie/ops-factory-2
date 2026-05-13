@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { SkillMarketDetail, SkillMarketEntry, SkillMarketListResponse, SkillMarketMutationResponse } from '../../../../types/skillMarket'
-import { GATEWAY_URL, SKILL_MARKET_SERVICE_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import { useUser } from '../../../platform/providers/UserContext'
 
@@ -34,7 +34,7 @@ export function useSkillMarket(): UseSkillMarketResult {
         setError(null)
         try {
             const params = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ''
-            const response = await fetch(`${SKILL_MARKET_SERVICE_URL}/skills${params}`, {
+            const response = await fetch(`${runtime.SKILL_MARKET_SERVICE_URL}/skills${params}`, {
                 signal: AbortSignal.timeout(10000),
             })
             if (!response.ok) throw new Error(await response.text())
@@ -49,7 +49,7 @@ export function useSkillMarket(): UseSkillMarketResult {
 
     const createSkill = useCallback(async (payload: { id: string; name: string; description: string; instructions: string }) => {
         try {
-            const response = await fetch(`${SKILL_MARKET_SERVICE_URL}/skills`, {
+            const response = await fetch(`${runtime.SKILL_MARKET_SERVICE_URL}/skills`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -68,7 +68,7 @@ export function useSkillMarket(): UseSkillMarketResult {
 
     const fetchSkill = useCallback(async (skillId: string) => {
         try {
-            const response = await fetch(`${SKILL_MARKET_SERVICE_URL}/skills/${encodeURIComponent(skillId)}`, {
+            const response = await fetch(`${runtime.SKILL_MARKET_SERVICE_URL}/skills/${encodeURIComponent(skillId)}`, {
                 signal: AbortSignal.timeout(10000),
             })
             if (!response.ok) throw new Error(await response.text())
@@ -81,7 +81,7 @@ export function useSkillMarket(): UseSkillMarketResult {
 
     const updateSkill = useCallback(async (skillId: string, payload: { name: string; description: string; instructions: string }) => {
         try {
-            const response = await fetch(`${SKILL_MARKET_SERVICE_URL}/skills/${encodeURIComponent(skillId)}`, {
+            const response = await fetch(`${runtime.SKILL_MARKET_SERVICE_URL}/skills/${encodeURIComponent(skillId)}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -100,7 +100,7 @@ export function useSkillMarket(): UseSkillMarketResult {
             const formData = new FormData()
             formData.append('file', file)
             if (id?.trim()) formData.append('id', id.trim())
-            const response = await fetch(`${SKILL_MARKET_SERVICE_URL}/skills:import`, {
+            const response = await fetch(`${runtime.SKILL_MARKET_SERVICE_URL}/skills:import`, {
                 method: 'POST',
                 body: formData,
             })
@@ -128,7 +128,7 @@ export function useSkillMarket(): UseSkillMarketResult {
 
     const deleteSkill = useCallback(async (skillId: string) => {
         try {
-            const response = await fetch(`${SKILL_MARKET_SERVICE_URL}/skills/${encodeURIComponent(skillId)}`, {
+            const response = await fetch(`${runtime.SKILL_MARKET_SERVICE_URL}/skills/${encodeURIComponent(skillId)}`, {
                 method: 'DELETE',
             })
             if (!response.ok) throw new Error(await response.text())
@@ -141,7 +141,7 @@ export function useSkillMarket(): UseSkillMarketResult {
 
     const installSkill = useCallback(async (agentId: string, skillId: string) => {
         try {
-            const response = await fetch(`${GATEWAY_URL}/agents/${encodeURIComponent(agentId)}/skills/install`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/agents/${encodeURIComponent(agentId)}/skills/install`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify({ skillId }),

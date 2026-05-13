@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import { useUser } from '../../../platform/providers/UserContext'
 
@@ -28,7 +28,7 @@ export function useMemory(): UseMemoryResult {
         setIsLoading(true)
         setError(null)
         try {
-            const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/memory`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/memory`, {
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),
             })
@@ -46,7 +46,7 @@ export function useMemory(): UseMemoryResult {
 
     const saveFile = useCallback(async (agentId: string, category: string, content: string): Promise<boolean> => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/memory/${category}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/memory/${category}`, {
                 method: 'PUT',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify({ content }),
@@ -76,7 +76,7 @@ export function useMemory(): UseMemoryResult {
 
     const deleteFile = useCallback(async (agentId: string, category: string): Promise<boolean> => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/memory/${category}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/memory/${category}`, {
                 method: 'DELETE',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),

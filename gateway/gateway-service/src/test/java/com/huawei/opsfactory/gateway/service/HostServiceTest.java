@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.service;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -14,6 +18,12 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
+/**
+ * Test coverage for Host Service.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class HostServiceTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -22,6 +32,11 @@ public class HostServiceTest {
     private GatewayProperties properties;
     private Path hostsDir;
 
+    /**
+     * Sets the up.
+     *
+     * @throws IOException if the operation fails
+     */
     @Before
     public void setUp() throws IOException {
         properties = new GatewayProperties();
@@ -39,12 +54,18 @@ public class HostServiceTest {
 
     // ── listHosts ──────────────────────────────────────────────────
 
+    /**
+     * Tests list hosts empty.
+     */
     @Test
     public void testListHosts_empty() {
         List<Map<String, Object>> hosts = hostService.listHosts(null);
         assertTrue(hosts.isEmpty());
     }
 
+    /**
+     * Tests list hosts returns all hosts.
+     */
     @Test
     public void testListHosts_returnsAllHosts() {
         createHost("host-1", "Server1", "10.0.0.1", List.of("RCPA"));
@@ -54,6 +75,9 @@ public class HostServiceTest {
         assertEquals(2, hosts.size());
     }
 
+    /**
+     * Tests list hosts credentials masked.
+     */
     @Test
     public void testListHosts_credentialsMasked() {
         createHost("host-1", "Server1", "10.0.0.1", List.of());
@@ -63,6 +87,9 @@ public class HostServiceTest {
         assertEquals("***", hosts.get(0).get("credential"));
     }
 
+    /**
+     * Tests list hosts filter by tag.
+     */
     @Test
     public void testListHosts_filterByTag() {
         createHost("host-1", "Server1", "10.0.0.1", List.of("RCPA"));
@@ -73,6 +100,9 @@ public class HostServiceTest {
         assertEquals(2, hosts.size());
     }
 
+    /**
+     * Tests list hosts filter by tag no match.
+     */
     @Test
     public void testListHosts_filterByTagNoMatch() {
         createHost("host-1", "Server1", "10.0.0.1", List.of("RCPA"));
@@ -81,6 +111,9 @@ public class HostServiceTest {
         assertTrue(hosts.isEmpty());
     }
 
+    /**
+     * Tests list hosts empty tags array.
+     */
     @Test
     public void testListHosts_emptyTagsArray() {
         createHost("host-1", "Server1", "10.0.0.1", List.of());
@@ -91,6 +124,9 @@ public class HostServiceTest {
 
     // ── getHost ────────────────────────────────────────────────────
 
+    /**
+     * Tests get host existing.
+     */
     @Test
     public void testGetHost_existing() {
         createHost("host-1", "Server1", "10.0.0.1", List.of("RCPA"));
@@ -101,6 +137,9 @@ public class HostServiceTest {
         assertEquals("***", host.get("credential"));
     }
 
+    /**
+     * Tests get host not found.
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testGetHost_notFound() {
         hostService.getHost("nonexistent");
@@ -108,6 +147,9 @@ public class HostServiceTest {
 
     // ── getHostWithCredential ──────────────────────────────────────
 
+    /**
+     * Tests get host with credential decrypts credential.
+     */
     @Test
     public void testGetHostWithCredential_decryptsCredential() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -126,6 +168,9 @@ public class HostServiceTest {
         assertEquals("mySecretPassword", host.get("credential"));
     }
 
+    /**
+     * Tests get host with credential not found.
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testGetHostWithCredential_notFound() {
         hostService.getHostWithCredential("nonexistent");
@@ -133,6 +178,9 @@ public class HostServiceTest {
 
     // ── createHost ─────────────────────────────────────────────────
 
+    /**
+     * Tests create host success.
+     */
     @Test
     public void testCreateHost_success() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -160,6 +208,9 @@ public class HostServiceTest {
         assertNotNull(result.get("updatedAt"));
     }
 
+    /**
+     * Tests create host default values.
+     */
     @Test
     public void testCreateHost_defaultValues() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -174,6 +225,11 @@ public class HostServiceTest {
         assertEquals("", result.get("description"));
     }
 
+    /**
+     * Tests create host encrypted credential stored.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testCreateHost_encryptedCredentialStored() throws IOException {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -191,6 +247,9 @@ public class HostServiceTest {
 
     // ── updateHost ─────────────────────────────────────────────────
 
+    /**
+     * Tests update host success.
+     */
     @Test
     public void testUpdateHost_success() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -209,6 +268,9 @@ public class HostServiceTest {
         assertEquals("10.0.0.2", result.get("ip"));
     }
 
+    /**
+     * Tests update host update credential.
+     */
     @Test
     public void testUpdateHost_updateCredential() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -228,6 +290,9 @@ public class HostServiceTest {
         assertEquals("newPassword", withCred.get("credential"));
     }
 
+    /**
+     * Tests update host update tags.
+     */
     @Test
     public void testUpdateHost_updateTags() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -243,6 +308,9 @@ public class HostServiceTest {
         assertEquals(List.of("NEW1", "NEW2"), result.get("tags"));
     }
 
+    /**
+     * Tests update host partial update.
+     */
     @Test
     public void testUpdateHost_partialUpdate() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -261,6 +329,9 @@ public class HostServiceTest {
         assertEquals("new desc", result.get("description"));
     }
 
+    /**
+     * Tests update host not found.
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testUpdateHost_notFound() {
         Map<String, Object> updates = new LinkedHashMap<>();
@@ -268,6 +339,9 @@ public class HostServiceTest {
         hostService.updateHost("nonexistent", updates);
     }
 
+    /**
+     * Tests update host masked credential preserves original.
+     */
     @Test
     public void testUpdateHost_maskedCredentialPreservesOriginal() {
         // Create host with a known password
@@ -290,6 +364,11 @@ public class HostServiceTest {
         assertEquals("UpdatedName", withCred.get("name"));
     }
 
+    /**
+     * Tests update host updated at changes.
+     *
+     * @throws InterruptedException if the operation fails
+     */
     @Test
     public void testUpdateHost_updatedAtChanges() throws InterruptedException {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -298,7 +377,8 @@ public class HostServiceTest {
         String id = getFirstHostId();
 
         String createdAt = (String) hostService.getHost(id).get("createdAt");
-        Thread.sleep(10); // Ensure timestamp difference
+        // Ensure timestamp difference
+        Thread.sleep(10);
 
         Map<String, Object> updates = new LinkedHashMap<>();
         updates.put("name", "Updated");
@@ -310,6 +390,9 @@ public class HostServiceTest {
 
     // ── deleteHost ─────────────────────────────────────────────────
 
+    /**
+     * Tests delete host success.
+     */
     @Test
     public void testDeleteHost_success() {
         createHost("host-del", "ToDelete", "10.0.0.1", List.of());
@@ -319,6 +402,9 @@ public class HostServiceTest {
         assertTrue(hostService.listHosts(null).isEmpty());
     }
 
+    /**
+     * Tests delete host not found.
+     */
     @Test
     public void testDeleteHost_notFound() {
         boolean deleted = hostService.deleteHost("nonexistent");
@@ -327,12 +413,18 @@ public class HostServiceTest {
 
     // ── getAllTags ─────────────────────────────────────────────────
 
+    /**
+     * Tests get all tags empty.
+     */
     @Test
     public void testGetAllTags_empty() {
         List<String> tags = hostService.getAllTags();
         assertTrue(tags.isEmpty());
     }
 
+    /**
+     * Tests get all tags collects unique.
+     */
     @Test
     public void testGetAllTags_collectsUnique() {
         createHost("h1", "S1", "10.0.0.1", List.of("RCPA", "ALL"));
@@ -346,6 +438,9 @@ public class HostServiceTest {
         assertTrue(tags.contains("ALL"));
     }
 
+    /**
+     * Tests get all tags host with no tags.
+     */
     @Test
     public void testGetAllTags_hostWithNoTags() {
         createHost("h1", "S1", "10.0.0.1", null);
@@ -356,6 +451,9 @@ public class HostServiceTest {
 
     // ── testConnection ─────────────────────────────────────────────
 
+    /**
+     * Tests connection host not found.
+     */
     @Test
     public void testConnection_hostNotFound() {
         Map<String, Object> result = hostService.testConnection("nonexistent");
@@ -364,6 +462,11 @@ public class HostServiceTest {
 
     // ── Edge cases ─────────────────────────────────────────────────
 
+    /**
+     * Tests list hosts skips corrupt file.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testListHosts_skipsCorruptFile() throws IOException {
         // Write a corrupt JSON file
@@ -374,6 +477,9 @@ public class HostServiceTest {
         assertNotNull(hosts);
     }
 
+    /**
+     * Tests create host with key auth.
+     */
     @Test
     public void testCreateHost_withKeyAuth() {
         Map<String, Object> body = new LinkedHashMap<>();

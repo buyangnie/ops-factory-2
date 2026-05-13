@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import type { AgentConfig, UpdateAgentConfigRequest, UpdateAgentConfigResponse } from '../../../../types/agentConfig'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import { useUser } from '../../../platform/providers/UserContext'
 
@@ -23,7 +23,7 @@ export function useAgentConfig(): UseAgentConfigResult {
         setError(null)
 
         try {
-            const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/config`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/config`, {
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),
             })
@@ -48,7 +48,7 @@ export function useAgentConfig(): UseAgentConfigResult {
         setError(null)
 
         try {
-            const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/config`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/config`, {
                 method: 'PUT',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify(updates),

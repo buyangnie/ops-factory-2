@@ -8,6 +8,8 @@ import { useClusters } from '../hooks/useClusters'
 import { useHostResource } from '../hooks/useHostResource'
 import { useHostRelations } from '../hooks/useHostRelations'
 import { useClusterRelations } from '../hooks/useClusterRelations'
+import { useToast } from '../../../platform/providers/ToastContext'
+import { useConfirmDialog } from '../../../platform/providers/ConfirmDialogContext'
 import { useBusinessServices } from '../hooks/useBusinessServices'
 import { useClusterTypes } from '../hooks/useClusterTypes'
 import { useBusinessTypes } from '../hooks/useBusinessTypes'
@@ -46,6 +48,8 @@ const PAGE_SIZE = 6
 
 export default function HostResourcePage() {
     const { t } = useTranslation()
+    const { showToast } = useToast()
+    const { requestConfirm } = useConfirmDialog()
     const [activeTab, setActiveTab] = useState<TabKey>('overview')
     const [selected, setSelected] = useState<SelectedNode | null>(null)
     const [focusedHostId, setFocusedHostId] = useState<string | null>(null)
@@ -284,64 +288,100 @@ export default function HostResourcePage() {
 
     const handleTreeDelete = useCallback(async (id: string, type: TreeNodeType) => {
         if (type === 'group' || type === 'subgroup') {
-            if (confirm(t('hostResource.confirmDeleteGroup'))) {
-                try {
-                    await deleteGroup(id)
-                    if (selected?.id === id) setSelected(null)
-                } catch (err) {
-                    if ((err as any)?.status === 409 && confirm(t('hostResource.confirmForceDeleteGroup'))) {
+            const confirmed = await requestConfirm({
+                title: t('common.confirmTitle'),
+                message: t('hostResource.confirmDeleteGroup'),
+                variant: 'danger',
+                confirmLabel: t('common.delete'),
+            })
+            if (!confirmed) return
+            try {
+                await deleteGroup(id)
+                if (selected?.id === id) setSelected(null)
+            } catch (err) {
+                if ((err as any)?.status === 409) {
+                    const forceConfirmed = await requestConfirm({
+                        title: t('common.confirmTitle'),
+                        message: t('hostResource.confirmForceDeleteGroup'),
+                        variant: 'danger',
+                        confirmLabel: t('common.delete'),
+                    })
+                    if (forceConfirmed) {
                         try {
                             await deleteGroup(id, true)
                             if (selected?.id === id) setSelected(null)
                         } catch (err2) {
-                            alert(err2 instanceof Error ? err2.message : 'Failed')
+                            showToast('error', err2 instanceof Error ? err2.message : 'Failed')
                         }
-                    } else if ((err as any)?.status !== 409) {
-                        alert(err instanceof Error ? err.message : 'Failed')
                     }
+                } else {
+                    showToast('error', err instanceof Error ? err.message : 'Failed')
                 }
             }
         } else if (type === 'business-service') {
-            if (confirm(t('hostResource.confirmDeleteBusinessService'))) {
-                try {
-                    await deleteBusinessService(id)
-                    if (selected?.id === id) setSelected(null)
-                } catch (err) {
-                    alert(err instanceof Error ? err.message : 'Failed')
-                }
+            const confirmed = await requestConfirm({
+                title: t('common.confirmTitle'),
+                message: t('hostResource.confirmDeleteBusinessService'),
+                variant: 'danger',
+                confirmLabel: t('common.delete'),
+            })
+            if (!confirmed) return
+            try {
+                await deleteBusinessService(id)
+                if (selected?.id === id) setSelected(null)
+            } catch (err) {
+                showToast('error', err instanceof Error ? err.message : 'Failed')
             }
         } else if (type === 'cluster') {
-            if (confirm(t('hostResource.confirmDeleteCluster'))) {
-                try {
-                    await deleteCluster(id)
-                    if (selected?.id === id) setSelected(null)
-                } catch (err) {
-                    if ((err as any)?.status === 409 && confirm(t('hostResource.confirmForceDeleteCluster'))) {
+            const confirmed = await requestConfirm({
+                title: t('common.confirmTitle'),
+                message: t('hostResource.confirmDeleteCluster'),
+                variant: 'danger',
+                confirmLabel: t('common.delete'),
+            })
+            if (!confirmed) return
+            try {
+                await deleteCluster(id)
+                if (selected?.id === id) setSelected(null)
+            } catch (err) {
+                if ((err as any)?.status === 409) {
+                    const forceConfirmed = await requestConfirm({
+                        title: t('common.confirmTitle'),
+                        message: t('hostResource.confirmForceDeleteCluster'),
+                        variant: 'danger',
+                        confirmLabel: t('common.delete'),
+                    })
+                    if (forceConfirmed) {
                         try {
                             await deleteCluster(id, true)
                             if (selected?.id === id) setSelected(null)
                         } catch (err2) {
-                            alert(err2 instanceof Error ? err2.message : 'Failed')
+                            showToast('error', err2 instanceof Error ? err2.message : 'Failed')
                         }
-                    } else if ((err as any)?.status !== 409) {
-                        alert(err instanceof Error ? err.message : 'Failed')
                     }
+                } else {
+                    showToast('error', err instanceof Error ? err.message : 'Failed')
                 }
             }
         }
-    }, [deleteGroup, deleteCluster, deleteBusinessService, selected, t])
+    }, [deleteGroup, deleteCluster, deleteBusinessService, selected, t, requestConfirm, showToast])
 
     const handleDeleteHost = useCallback(async (host: Host) => {
-        if (confirm(t('hostResource.confirmDeleteHost'))) {
-            try {
-                await deleteHost(host.id)
-                if (focusedHostId === host.id) setFocusedHostId(null)
-                refreshHostList()
-            } catch (err) {
-                alert(err instanceof Error ? err.message : 'Failed')
-            }
+        const confirmed = await requestConfirm({
+            title: t('common.confirmTitle'),
+            message: t('hostResource.confirmDeleteHost'),
+            variant: 'danger',
+            confirmLabel: t('common.delete'),
+        })
+        if (!confirmed) return
+        try {
+            await deleteHost(host.id)
+            if (focusedHostId === host.id) setFocusedHostId(null)
+            refreshHostList()
+        } catch (err) {
+            showToast('error', err instanceof Error ? err.message : 'Failed')
         }
-    }, [deleteHost, focusedHostId, t, refreshHostList])
+    }, [deleteHost, focusedHostId, t, refreshHostList, requestConfirm, showToast])
 
     const handleTestHost = useCallback(async (host: Host) => {
         setTestingId(host.id)
@@ -632,7 +672,16 @@ export default function HostResourcePage() {
             {/* Create/Edit Modal */}
             {showModal && (
                 <ResourceFormModal
-                    key={editingItem?.type === 'business-service' ? `bs-${editingItem.data.id}` : editingItem?.type === 'cluster' ? `cl-${editingItem.data.id}` : editingItem?.type === 'group' ? `gr-${editingItem.data.id}` : editingItem?.type === 'host' ? `h-${editingItem.data.id}` : 'create'}
+                    key={(() => {
+                        if (!editingItem) return 'create'
+                        switch (editingItem.type) {
+                            case 'business-service': return `bs-${editingItem.data.id}`
+                            case 'cluster': return `cl-${editingItem.data.id}`
+                            case 'group': return `gr-${editingItem.data.id}`
+                            case 'host': return `h-${editingItem.data.id}`
+                            default: return 'create'
+                        }
+                    })()}
                     editingItem={editingItem}
                     groups={groups}
                     clusters={clusters}

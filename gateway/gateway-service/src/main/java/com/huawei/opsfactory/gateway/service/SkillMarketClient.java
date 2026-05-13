@@ -5,15 +5,18 @@
 package com.huawei.opsfactory.gateway.service;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
-import java.time.Duration;
-import java.util.Map;
+
+import reactor.netty.http.client.HttpClient;
+
 import org.springframework.core.io.buffer.DataBufferLimitException;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
+
+import java.time.Duration;
+import java.util.Map;
 
 /**
  * HTTP client for the Skill Market API that fetches skill metadata and downloads packages.
@@ -24,37 +27,45 @@ import reactor.netty.http.client.HttpClient;
 @Service
 public class SkillMarketClient {
     private final GatewayProperties properties;
+
     private final WebClient webClient;
 
+    /**
+     * Creates the skill market client instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public SkillMarketClient(GatewayProperties properties) {
         this.properties = properties;
         int maxBytes = properties.getSkillMarket().getMaxPackageSizeMb() * 1024 * 1024;
         ExchangeStrategies strategies = ExchangeStrategies.builder()
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxBytes))
-                .build();
+            .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxBytes))
+            .build();
         this.webClient = WebClient.builder()
-                .exchangeStrategies(strategies)
-                .clientConnector(new ReactorClientHttpConnector(HttpClient.create()))
-                .build();
+            .exchangeStrategies(strategies)
+            .clientConnector(new ReactorClientHttpConnector(HttpClient.create()))
+            .build();
     }
 
     /**
      * Fetches skill metadata from the skill market by skill ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param skillId the skillId parameter
+     * @return the result
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> getSkill(String skillId) {
         Object response = webClient.get()
-                .uri(baseUrl() + "/skill-market/skills/{skillId}", skillId)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .onStatus(status -> status.isError(), res -> res.bodyToMono(String.class)
-                        .map(body -> new IllegalStateException("Skill Market detail request failed: HTTP "
-                                + res.statusCode().value() + " " + body)))
-                .bodyToMono(Map.class)
-                .block(timeout());
+            .uri(baseUrl() + "/skill-market/skills/{skillId}", skillId)
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .onStatus(status -> status.isError(),
+                res -> res.bodyToMono(String.class)
+                    .map(body -> new IllegalStateException(
+                        "Skill Market detail request failed: HTTP " + res.statusCode().value() + " " + body)))
+            .bodyToMono(Map.class)
+            .block(timeout());
         if (!(response instanceof Map<?, ?> map)) {
             throw new IllegalStateException("Skill Market returned an invalid skill detail response");
         }
@@ -64,20 +75,21 @@ public class SkillMarketClient {
     /**
      * Downloads a skill package as a byte array from the skill market.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param skillId the skillId parameter
+     * @return the result
      */
     public byte[] downloadPackage(String skillId) {
         try {
             byte[] data = webClient.get()
-                    .uri(baseUrl() + "/skill-market/skills/{skillId}/package", skillId)
-                    .accept(MediaType.parseMediaType("application/zip"))
-                    .retrieve()
-                    .onStatus(status -> status.isError(), res -> res.bodyToMono(String.class)
-                            .map(body -> new IllegalStateException("Skill Market package request failed: HTTP "
-                                    + res.statusCode().value() + " " + body)))
-                    .bodyToMono(byte[].class)
-                    .block(timeout());
+                .uri(baseUrl() + "/skill-market/skills/{skillId}/package", skillId)
+                .accept(MediaType.parseMediaType("application/zip"))
+                .retrieve()
+                .onStatus(status -> status.isError(),
+                    res -> res.bodyToMono(String.class)
+                        .map(body -> new IllegalStateException(
+                            "Skill Market package request failed: HTTP " + res.statusCode().value() + " " + body)))
+                .bodyToMono(byte[].class)
+                .block(timeout());
             if (data == null || data.length == 0) {
                 throw new IllegalStateException("Skill Market returned an empty package");
             }

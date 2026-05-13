@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react'
 import { GoosedClient } from '@goosed/sdk'
 import { useUser } from './UserContext'
-import { GATEWAY_URL, GATEWAY_SECRET_KEY } from '../../../config/runtime'
+import { runtime } from '../../../config/runtime'
 import { getErrorMessage } from '../../../utils/errorMessages'
 import { trackedFetch } from '../logging/requestClient'
 import type { SkillEntry } from '../../../types/skill'
@@ -43,8 +43,8 @@ export function GoosedProvider({ children }: { children: ReactNode }) {
         const cacheKey = `${agentId}:${userId || ''}`
         if (!clientCache.current[cacheKey]) {
             clientCache.current[cacheKey] = new GoosedClient({
-                baseUrl: `${GATEWAY_URL}/agents/${agentId}`,
-                secretKey: GATEWAY_SECRET_KEY,
+                baseUrl: `${runtime.GATEWAY_URL}/agents/${agentId}`,
+                secretKey: runtime.GATEWAY_SECRET_KEY,
                 timeout: 3 * 60 * 1000, // 3 minutes — gateway SSE timeouts handle earlier detection
                 userId: userId || undefined,
             })
@@ -54,9 +54,9 @@ export function GoosedProvider({ children }: { children: ReactNode }) {
 
     const fetchAgents = useCallback(async () => {
         try {
-            const headers: Record<string, string> = { 'x-secret-key': GATEWAY_SECRET_KEY }
+            const headers: Record<string, string> = { 'x-secret-key': runtime.GATEWAY_SECRET_KEY }
             if (userId) headers['x-user-id'] = userId
-            const res = await trackedFetch(`${GATEWAY_URL}/agents`, {
+            const res = await trackedFetch(`${runtime.GATEWAY_URL}/agents`, {
                 category: 'data',
                 name: 'data.load',
                 headers,

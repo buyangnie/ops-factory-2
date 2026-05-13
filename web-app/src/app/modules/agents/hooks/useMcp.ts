@@ -7,7 +7,7 @@ import type {
   CategorizedMcpEntries,
 } from '../../../../types/mcp'
 import { categorizeMcpEntries } from '../../../../types/mcp'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import { useToast } from '../../../platform/providers/ToastContext'
 import { useUser } from '../../../platform/providers/UserContext'
@@ -40,7 +40,7 @@ export function useMcp(agentId: string | null): UseMcpResult {
     setError(null)
 
     try {
-      const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/mcp`, {
+      const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/mcp`, {
         headers: gatewayHeaders(userId),
         signal: AbortSignal.timeout(10000),
       })
@@ -75,7 +75,7 @@ export function useMcp(agentId: string | null): UseMcpResult {
       // Extract config from entry (everything except enabled)
       const { enabled: _currentEnabled, ...config } = entry
 
-      const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/mcp`, {
+      const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/mcp`, {
         method: 'POST',
         headers: gatewayHeaders(userId),
         body: JSON.stringify({
@@ -112,7 +112,7 @@ export function useMcp(agentId: string | null): UseMcpResult {
     try {
       const { enabled, ...config } = request
 
-      const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/mcp`, {
+      const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/mcp`, {
         method: 'POST',
         headers: gatewayHeaders(userId),
         body: JSON.stringify({
@@ -141,7 +141,7 @@ export function useMcp(agentId: string | null): UseMcpResult {
     setError(null)
 
     try {
-      const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/mcp/${encodeURIComponent(name)}`, {
+      const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/mcp/${encodeURIComponent(name)}`, {
         method: 'DELETE',
         headers: gatewayHeaders(userId),
         signal: AbortSignal.timeout(10000),

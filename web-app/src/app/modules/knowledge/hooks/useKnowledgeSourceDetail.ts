@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { KNOWLEDGE_SERVICE_URL } from '../../../../config/runtime'
+import { runtime } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import type {
     KnowledgeCapabilities,
@@ -113,7 +113,7 @@ export function useKnowledgeSourceDetail(sourceId: string | undefined): UseKnowl
 
         try {
             const sourceData = await requestJson<KnowledgeSource>(
-                `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}`
+                `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}`
             )
 
             const [
@@ -125,26 +125,26 @@ export function useKnowledgeSourceDetail(sourceId: string | undefined): UseKnowl
                 maintenanceResult,
             ] = await Promise.allSettled([
                 requestJson<KnowledgeSourceStats>(
-                    `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/stats`
+                    `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/stats`
                 ),
                 requestJson<KnowledgeCapabilities>(
-                    `${KNOWLEDGE_SERVICE_URL}/capabilities`
+                    `${runtime.KNOWLEDGE_SERVICE_URL}/capabilities`
                 ),
                 requestJson<KnowledgeDefaults>(
-                    `${KNOWLEDGE_SERVICE_URL}/system/defaults`
+                    `${runtime.KNOWLEDGE_SERVICE_URL}/system/defaults`
                 ),
                 sourceData.indexProfileId
                     ? requestJson<KnowledgeSourceProfileConfig>(
-                        `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/index-profile`
+                        `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/index-profile`
                     )
                     : Promise.resolve(null),
                 sourceData.retrievalProfileId
                     ? requestJson<KnowledgeSourceProfileConfig>(
-                        `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/retrieval-profile`
+                        `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/retrieval-profile`
                     )
                     : Promise.resolve(null),
                 requestJson<KnowledgeMaintenanceOverview>(
-                    `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/maintenance`
+                    `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/maintenance`
                 ),
             ])
 
@@ -195,7 +195,7 @@ export function useKnowledgeSourceDetail(sourceId: string | undefined): UseKnowl
 
         try {
             const updatedSource = await requestJson<KnowledgeSource>(
-                `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}`,
+                `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -233,7 +233,7 @@ export function useKnowledgeSourceDetail(sourceId: string | undefined): UseKnowl
 
         try {
             const detail = await requestJson<KnowledgeSourceProfileConfig>(
-                `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/index-profile`,
+                `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/index-profile`,
                 {
                     method: 'PUT',
                     headers: {
@@ -270,7 +270,7 @@ export function useKnowledgeSourceDetail(sourceId: string | undefined): UseKnowl
 
         try {
             const detail = await requestJson<KnowledgeSourceProfileConfig>(
-                `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/retrieval-profile`,
+                `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/retrieval-profile`,
                 {
                     method: 'PUT',
                     headers: {
@@ -307,7 +307,7 @@ export function useKnowledgeSourceDetail(sourceId: string | undefined): UseKnowl
 
         try {
             const detail = await requestJson<KnowledgeSourceProfileConfig>(
-                `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/index-profile:reset`,
+                `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/index-profile:reset`,
                 {
                     method: 'POST',
                 }
@@ -340,7 +340,7 @@ export function useKnowledgeSourceDetail(sourceId: string | undefined): UseKnowl
 
         try {
             const detail = await requestJson<KnowledgeSourceProfileConfig>(
-                `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/retrieval-profile:reset`,
+                `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/config/retrieval-profile:reset`,
                 {
                     method: 'POST',
                 }
@@ -373,7 +373,7 @@ export function useKnowledgeSourceDetail(sourceId: string | undefined): UseKnowl
 
         try {
             await requestJson<{ sourceId: string; deleted: boolean }>(
-                `${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}`,
+                `${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}`,
                 {
                     method: 'DELETE',
                 }
@@ -392,7 +392,7 @@ export function useKnowledgeSourceDetail(sourceId: string | undefined): UseKnowl
 
     const loadMaintenanceFailures = useCallback(async (jobId: string): Promise<KnowledgeMaintenanceFailure[]> => {
         const response = await requestJson<{ jobId: string; items: KnowledgeMaintenanceFailure[] }>(
-            `${KNOWLEDGE_SERVICE_URL}/jobs/${jobId}/failures`
+            `${runtime.KNOWLEDGE_SERVICE_URL}/jobs/${jobId}/failures`
         )
         return response.items || []
     }, [])

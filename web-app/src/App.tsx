@@ -19,11 +19,11 @@ function AppContent() {
     const { isMarketOpen } = useRightPanel()
     const isPreviewOpen = !!previewFile
     const isRightPanelOpen = isMarketOpen || isPreviewOpen
-    const rightPanelMode = isMarketOpen
-        ? 'panel-drawer'
-        : isPreviewOpen
-            ? `panel-preview${isPreviewFullscreen ? ' panel-preview-fullscreen' : ''}`
-            : ''
+    const rightPanelMode = (() => {
+        if (isMarketOpen) return 'panel-drawer'
+        if (isPreviewOpen) return `panel-preview${isPreviewFullscreen ? ' panel-preview-fullscreen' : ''}`
+        return ''
+    })()
     const isEmbed = IS_EMBED
     const enabledModules = useEnabledModules()
     const routes = buildRoutes(enabledModules)

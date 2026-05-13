@@ -223,21 +223,25 @@ export default function RelationGraph({ data, focusedHostId, hopFocusId, onNodeC
             const pos = positions.get(n.id) ?? { x: dims.w / 2, y: dims.h / 2 }
             const isDownstream = focusedHostId ? downstreamNodes.has(n.id) : n.id === highlightId
             const isSource = n.id === focusedHostId
-            const nodeKind = n.nodeType === 'business-service'
-                ? 'business'
-                : n.nodeType === 'cluster'
-                ? 'cluster'
-                : 'host'
+            const nodeKind = (() => {
+                if (n.nodeType === 'business-service') return 'business'
+                if (n.nodeType === 'cluster') return 'cluster'
+                return 'host'
+            })()
             const isBs = nodeKind === 'business'
             const isCluster = nodeKind === 'cluster'
             const accentColor = isBs
                 ? iconPalette.businessAccent
                 : iconPalette.clusterAccent
-            const symbolSize = isBs
-                ? (isSource ? 52 : 46)
-                : isCluster
-                ? (isSource ? 50 : isDownstream ? 44 : 40)
-                : (isSource ? 48 : isDownstream ? 42 : 38)
+            const symbolSize = (() => {
+                if (isBs) return isSource ? 52 : 46
+                if (isCluster) {
+                    if (isSource) return 50
+                    return isDownstream ? 44 : 40
+                }
+                if (isSource) return 48
+                return isDownstream ? 42 : 38
+            })()
             return {
                 id: n.id,
                 name: n.name,
@@ -258,7 +262,11 @@ export default function RelationGraph({ data, focusedHostId, hopFocusId, onNodeC
                 },
                 label: {
                     show: true,
-                    fontSize: isSource ? 12 : isDownstream ? 11 : 10,
+                    fontSize: (() => {
+                        if (isSource) return 12
+                        if (isDownstream) return 11
+                        return 10
+                    })(),
                     fontWeight: isBs ? 'bold' as const : 'normal' as const,
                     position: 'bottom' as const,
                 },
@@ -295,13 +303,16 @@ export default function RelationGraph({ data, focusedHostId, hopFocusId, onNodeC
                     curveness: 0.15,
                     ...(focusedHostId ? {
                         width: isDownstream ? 3 : 1,
-                        color: isDownstream ? (isBsEdge ? BS_NODE_COLOR : '#5470c6') : '#d0d5dd',
+                        color: (() => {
+                            if (!isDownstream) return '#d0d5dd'
+                            return isBsEdge ? BS_NODE_COLOR : '#5470c6'
+                        })(),
                         opacity: isDownstream ? 1 : 0.4,
                         type: isDownstream ? 'dashed' as const : 'solid' as const,
-                    } : isBsEdge ? {
-                        type: 'dashed' as const,
-                        color: BS_EDGE_COLOR,
-                    } : {}),
+                    } : (() => {
+                        if (isBsEdge) return { type: 'dashed' as const, color: BS_EDGE_COLOR }
+                        return {}
+                    })()),
                 },
                 label: { show: !focusedHostId || isDownstream, formatter: e.description || '', fontSize: 10 },
                 symbol: ['none', 'arrow'] as [string, string],

@@ -5,6 +5,7 @@
 package com.huawei.opsfactory.gateway.process;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,12 @@ public class RuntimePreparer {
 
     private final GatewayProperties properties;
 
+    /**
+     * Creates the runtime preparer instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public RuntimePreparer(GatewayProperties properties) {
         this.properties = properties;
     }
@@ -37,7 +44,10 @@ public class RuntimePreparer {
      * Prepare the per-user runtime directory for an agent instance.
      * Creates directories and symlinks to shared agent config.
      *
+     * @param agentId the agentId parameter
+     * @param userId the userId parameter
      * @return the runtime root path for this (agentId, userId)
+     * @throws IOException if the operation fails
      */
     public Path prepare(String agentId, String userId) throws IOException {
         Path gatewayRoot = properties.getGatewayRootPath();
@@ -75,13 +85,11 @@ public class RuntimePreparer {
     }
 
     private void cleanDisallowedSkillDirs(Path userAgentDir) throws IOException {
-        List<Path> skillDirs = List.of(
-                userAgentDir.resolve(".goose").resolve("skills"),
-                userAgentDir.resolve(".claude").resolve("skills"),
-                userAgentDir.resolve(".agents").resolve("skills"),
-                userAgentDir.resolve("home").resolve(".agents").resolve("skills"),
-                userAgentDir.resolve("home").resolve(".claude").resolve("skills"),
-                userAgentDir.resolve("home").resolve(".config").resolve("agents").resolve("skills"));
+        List<Path> skillDirs = List.of(userAgentDir.resolve(".goose").resolve("skills"),
+            userAgentDir.resolve(".claude").resolve("skills"), userAgentDir.resolve(".agents").resolve("skills"),
+            userAgentDir.resolve("home").resolve(".agents").resolve("skills"),
+            userAgentDir.resolve("home").resolve(".claude").resolve("skills"),
+            userAgentDir.resolve("home").resolve(".config").resolve("agents").resolve("skills"));
 
         for (Path skillDir : skillDirs) {
             deleteIfExists(skillDir);

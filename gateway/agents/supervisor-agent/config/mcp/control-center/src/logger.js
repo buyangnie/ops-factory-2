@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -16,7 +20,9 @@ function sanitizeValue(value) {
     };
   }
 
-  if (value === undefined) return undefined;
+  if (value === undefined) {
+    return undefined;
+  }
 
   try {
     return JSON.parse(JSON.stringify(value));
@@ -35,11 +41,13 @@ export function log(level, event, details = {}) {
 
   for (const [key, value] of Object.entries(details)) {
     const sanitized = sanitizeValue(value);
-    if (sanitized !== undefined) payload[key] = sanitized;
+    if (sanitized !== undefined) {
+      payload[key] = sanitized;
+    }
   }
 
   const line = JSON.stringify(payload);
-  console.error(line);
+  process.stderr.write(`${line}\n`);
   appendFileSync(LOG_FILE_PATH, `${line}\n`, 'utf8');
 }
 

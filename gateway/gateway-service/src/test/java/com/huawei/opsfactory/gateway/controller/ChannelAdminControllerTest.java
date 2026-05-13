@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -22,17 +26,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for Channel Admin Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(ChannelAdminController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -58,6 +70,9 @@ public class ChannelAdminControllerTest {
     @MockBean
     private PrewarmService prewarmService;
 
+    /**
+     * Tests get login state dispatches to we chat service.
+     */
     @Test
     public void testGetLoginStateDispatchesToWeChatService() {
         when(channelConfigService.getChannel("wechat-main", "admin")).thenReturn(channelDetail("wechat"));
@@ -79,6 +94,9 @@ public class ChannelAdminControllerTest {
         verify(whatsAppWebLoginService, never()).getLoginState(Mockito.anyString(), Mockito.anyString());
     }
 
+    /**
+     * Tests start login dispatches to we chat service.
+     */
     @Test
     public void testStartLoginDispatchesToWeChatService() {
         when(channelConfigService.getChannel("wechat-main", "admin")).thenReturn(channelDetail("wechat"));
@@ -100,6 +118,9 @@ public class ChannelAdminControllerTest {
         verify(whatsAppWebLoginService, never()).startLogin(eq("wechat-main"), eq("admin"));
     }
 
+    /**
+     * Tests probe passes current user to adapter.
+     */
     @Test
     public void testProbePassesCurrentUserToAdapter() {
         ChannelAdapter adapter = Mockito.mock(ChannelAdapter.class);
@@ -119,6 +140,57 @@ public class ChannelAdminControllerTest {
                 .jsonPath("$.connectivity.ok").isEqualTo(true);
 
         verify(adapter).testConnectivity("wechat-main", "admin");
+    }
+
+    /**
+     * Tests create channel unexpected failure is sanitized.
+     */
+    @Test
+    public void testCreateChannel_unexpectedFailureIsSanitized() {
+        when(channelConfigService.createChannel(any(), eq("admin")))
+                .thenThrow(new IllegalStateException("disk full"));
+
+        webTestClient.post().uri("/gateway/channels")
+                .header("x-secret-key", "test")
+                .header("x-user-id", "admin")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "id": "wechat-main",
+                          "name": "WeChat Main",
+                          "type": "wechat",
+                          "defaultAgentId": "fo-copilot",
+                          "config": {
+                            "authStateDir": "auth"
+                          }
+                        }
+                        """)
+                .exchange()
+                .expectStatus().is5xxServerError()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error").isEqualTo("Internal server error");
+    }
+
+    /**
+     * Tests logout falls back to disconnected state when helper cleanup fails.
+     */
+    @Test
+    public void testLogout_fallsBackToDisconnectedStateWhenHelperCleanupFails() {
+        when(channelConfigService.getChannel("wechat-main", "admin")).thenReturn(channelDetail("wechat"));
+        when(channelConfigService.resetChannelRuntimeState("wechat-main", "admin")).thenReturn(channelDetail("wechat"));
+        when(weChatLoginService.logout("wechat-main", "admin"))
+                .thenThrow(new IllegalStateException("helper process still running"));
+
+        webTestClient.post().uri("/gateway/channels/wechat-main/logout")
+                .header("x-secret-key", "test")
+                .header("x-user-id", "admin")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.state.status").isEqualTo("disconnected")
+                .jsonPath("$.state.message").isEqualTo("WeChat login required");
     }
 
     private ChannelDetail channelDetail(String type) {

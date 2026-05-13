@@ -4,20 +4,26 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
 import com.huawei.opsfactory.gateway.common.util.JsonUtil;
-import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.filter.RequestContextFilter;
+import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.hook.HookContext;
-import com.huawei.opsfactory.gateway.logging.GatewayLogContext;
 import com.huawei.opsfactory.gateway.hook.HookPipeline;
+import com.huawei.opsfactory.gateway.logging.GatewayLogContext;
 import com.huawei.opsfactory.gateway.process.InstanceManager;
 import com.huawei.opsfactory.gateway.proxy.GoosedProxy;
 import com.huawei.opsfactory.gateway.service.AgentConfigService;
 import com.huawei.opsfactory.gateway.service.FileService;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -35,19 +41,18 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriUtils;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -61,22 +66,33 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequestMapping("/gateway/agents/{agentId}")
 public class ReplyController {
     private static final Logger log = LoggerFactory.getLogger(ReplyController.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final InstanceManager instanceManager;
+
     private final GoosedProxy goosedProxy;
+
     private final HookPipeline hookPipeline;
+
     private final AgentConfigService agentConfigService;
+
     private final FileService fileService;
+
     private final ConcurrentHashMap<String, Mono<String>> inFlightResumes = new ConcurrentHashMap<>();
+
     private final ConcurrentHashMap<String, List<Map<String, Object>>> fileSnapshots = new ConcurrentHashMap<>();
+
     private final ConcurrentHashMap<String, String> pendingFileSnapshotRequests = new ConcurrentHashMap<>();
 
-    public ReplyController(InstanceManager instanceManager,
-                           GoosedProxy goosedProxy,
-                           HookPipeline hookPipeline,
-                           AgentConfigService agentConfigService,
-                           FileService fileService) {
+    /**
+     * Creates the reply controller instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
+    public ReplyController(InstanceManager instanceManager, GoosedProxy goosedProxy, HookPipeline hookPipeline,
+        AgentConfigService agentConfigService, FileService fileService) {
         this.instanceManager = instanceManager;
         this.goosedProxy = goosedProxy;
         this.hookPipeline = hookPipeline;
@@ -87,129 +103,144 @@ public class ReplyController {
     /**
      * Submits a chat reply to an active session and proxies the response from goosed.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param sessionId the sessionId parameter
+     * @param body the body parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PostMapping(value = "/sessions/{sessionId}/reply", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<Void> sessionReply(@PathVariable String agentId,
-                                   @PathVariable String sessionId,
-                                   @RequestBody String body,
-                                   ServerWebExchange exchange) {
+    public Mono<Void> sessionReply(@PathVariable("agentId") String agentId, @PathVariable("sessionId") String sessionId,
+        @RequestBody String body, ServerWebExchange exchange) {
         long requestStart = System.currentTimeMillis();
         String userId = exchange.getAttribute(UserContextFilter.USER_ID_ATTR);
         String requestId = exchange.getAttribute(RequestContextFilter.REQUEST_ID_ATTR);
         HookContext ctx = new HookContext(body, agentId, userId);
-        GatewayLogContext.run(requestId, userId, sessionId, () -> log.info("[SESSION-REPLY] request received agentId={} userId={} sessionId={} bodyLen={}",
+        GatewayLogContext.run(requestId, userId, sessionId,
+            () -> log.info("[SESSION-REPLY] request received " + "agentId={} userId={} sessionId={} bodyLen={}",
                 agentId, userId, sessionId, body.length()));
         String chatRequestId = extractRequestId(body);
 
         return hookPipeline.executeRequest(ctx)
-                .map(this::normalizeReplyUserMessageCreated)
-                .flatMap(processedBody -> instanceManager.getOrSpawn(agentId, userId)
-                        .flatMap(instance -> {
-                            instance.touch();
-                            instanceManager.touchAllForUser(userId);
-                            String path = goosedSessionPath(sessionId, "reply");
-                            return ensureSessionResumed(instance, sessionId)
-                                    .then(snapshotFilesBeforeReply(agentId, userId, sessionId, chatRequestId))
-                                    .then(goosedProxy.proxySessionCommandWithBody(exchange.getResponse(), instance.getPort(), path,
-                                            HttpMethod.POST, processedBody, instance.getSecretKey()))
-                                    .doOnSubscribe(sub -> GatewayLogContext.run(requestId, userId, sessionId, () -> log.info("[SESSION-REPLY] forwarding agentId={} userId={} sessionId={} port={} path={}",
-                                            agentId, userId, sessionId, instance.getPort(), path)))
-                                    .doOnSuccess(ignored -> {
-                                        if (exchange.getResponse().getStatusCode() == null
-                                                || !exchange.getResponse().getStatusCode().is2xxSuccessful()) {
-                                            removeFileSnapshot(agentId, userId, sessionId, chatRequestId);
-                                        }
-                                        GatewayLogContext.run(requestId, userId, sessionId, () -> log.info("[SESSION-REPLY] completed agentId={} userId={} sessionId={} totalMs={} status={}",
-                                                agentId, userId, sessionId, System.currentTimeMillis() - requestStart,
-                                                exchange.getResponse().getStatusCode()));
-                                    })
-                                    .doOnError(err -> {
-                                        removeFileSnapshot(agentId, userId, sessionId, chatRequestId);
-                                        GatewayLogContext.run(requestId, userId, sessionId, () -> log.warn("[SESSION-REPLY] failed agentId={} userId={} sessionId={} totalMs={} error={}",
-                                                agentId, userId, sessionId, System.currentTimeMillis() - requestStart,
-                                                err.getMessage()));
-                                    });
-                        }))
-                .onErrorResume(err -> writeSessionError(exchange, err, agentId, userId, sessionId, chatRequestId,
-                        "gateway_submit_failed", requestStart));
+            .map(this::normalizeReplyUserMessageCreated)
+            .flatMap(processedBody -> instanceManager.getOrSpawn(agentId, userId).flatMap(instance -> {
+                instance.touch();
+                instanceManager.touchAllForUser(userId);
+                String path = goosedSessionPath(sessionId, "reply");
+                return ensureSessionResumed(instance, sessionId)
+                    .then(snapshotFilesBeforeReply(agentId, userId, sessionId, chatRequestId))
+                    .then(goosedProxy.proxySessionCommandWithBody(exchange.getResponse(), instance.getPort(), path,
+                        HttpMethod.POST, processedBody, instance.getSecretKey()))
+                    .doOnSubscribe(sub -> GatewayLogContext.run(requestId, userId, sessionId,
+                        () -> log.info(
+                            "[SESSION-REPLY] forwarding agentId={} " + "userId={} sessionId={} port={} path={}",
+                            agentId, userId, sessionId, instance.getPort(), path)))
+                    .doOnSuccess(ignored -> {
+                        if (exchange.getResponse().getStatusCode() == null
+                            || !exchange.getResponse().getStatusCode().is2xxSuccessful()) {
+                            removeFileSnapshot(agentId, userId, sessionId, chatRequestId);
+                        }
+                        GatewayLogContext
+                            .run(requestId, userId, sessionId,
+                                () -> log.info(
+                                    "[SESSION-REPLY] completed agentId={} userId={} sessionId={} "
+                                        + "totalMs={} status={}",
+                                    agentId, userId, sessionId, System.currentTimeMillis() - requestStart,
+                                    exchange.getResponse().getStatusCode()));
+                    })
+                    .doOnError(err -> {
+                        removeFileSnapshot(agentId, userId, sessionId, chatRequestId);
+                        GatewayLogContext.run(requestId, userId, sessionId,
+                            () -> log.warn(
+                                "[SESSION-REPLY] failed agentId={} userId={} sessionId={} " + "totalMs={} error={}",
+                                agentId, userId, sessionId, System.currentTimeMillis() - requestStart,
+                                err.getMessage()));
+                    });
+            }))
+            .onErrorResume(err -> writeSessionError(exchange, err, agentId, userId, sessionId, chatRequestId,
+                "gateway_submit_failed", requestStart));
     }
 
     /**
      * Subscribes to the SSE event stream for an active session.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param sessionId the sessionId parameter
+     * @param lastEventId the lastEventId parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping(value = "/sessions/{sessionId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Mono<Void> sessionEvents(@PathVariable String agentId,
-                                    @PathVariable String sessionId,
-                                    @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId,
-                                    ServerWebExchange exchange) {
+    public Mono<Void> sessionEvents(@PathVariable("agentId") String agentId, @PathVariable("sessionId") String sessionId,
+        @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId, ServerWebExchange exchange) {
         long requestStart = System.currentTimeMillis();
         String userId = exchange.getAttribute(UserContextFilter.USER_ID_ATTR);
         String requestId = exchange.getAttribute(RequestContextFilter.REQUEST_ID_ATTR);
-        GatewayLogContext.run(requestId, userId, sessionId, () -> log.info("[SESSION-EVENTS] subscribe agentId={} userId={} sessionId={} lastEventId={}",
-                agentId, userId, sessionId, lastEventId));
+        GatewayLogContext.run(requestId, userId, sessionId,
+            () -> log.info("[SESSION-EVENTS] subscribe agentId={} " + "userId={} sessionId={} lastEventId={}", agentId,
+                userId, sessionId, lastEventId));
 
-        return instanceManager.getOrSpawn(agentId, userId)
-                .flatMap(instance -> {
-                    instance.touch();
-                    instanceManager.touchAllForUser(userId);
-                    String path = goosedSessionPath(sessionId, "events");
-                    return ensureSessionResumed(instance, sessionId)
-                            .then(goosedProxy.proxySessionEvents(exchange.getResponse(), instance.getPort(), path,
-                                    instance.getSecretKey(), lastEventId, agentId, userId, sessionId,
-                                    eventJson -> outputFilesBeforeTerminalEvent(agentId, userId, sessionId, eventJson)))
-                            .doOnSubscribe(sub -> GatewayLogContext.run(requestId, userId, sessionId, () -> log.info("[SESSION-EVENTS] forwarding agentId={} userId={} sessionId={} port={} path={}",
-                                    agentId, userId, sessionId, instance.getPort(), path)))
-                            .doOnSuccess(ignored -> GatewayLogContext.run(requestId, userId, sessionId, () -> log.info("[SESSION-EVENTS] ended agentId={} userId={} sessionId={} totalMs={} status={}",
-                                    agentId, userId, sessionId, System.currentTimeMillis() - requestStart,
-                                    exchange.getResponse().getStatusCode())))
-                            .doOnError(err -> GatewayLogContext.run(requestId, userId, sessionId, () -> log.warn("[SESSION-EVENTS] failed agentId={} userId={} sessionId={} totalMs={} error={}",
-                                    agentId, userId, sessionId, System.currentTimeMillis() - requestStart,
-                                    err.getMessage())));
-                })
-                .onErrorResume(err -> writeSessionError(exchange, err, agentId, userId, sessionId, null,
-                        "gateway_events_failed", requestStart));
+        return instanceManager.getOrSpawn(agentId, userId).flatMap(instance -> {
+            instance.touch();
+            instanceManager.touchAllForUser(userId);
+            String path = goosedSessionPath(sessionId, "events");
+            return ensureSessionResumed(instance, sessionId)
+                .then(goosedProxy.proxySessionEvents(exchange.getResponse(), instance.getPort(), path,
+                    instance.getSecretKey(), lastEventId, agentId, userId, sessionId,
+                    eventJson -> outputFilesBeforeTerminalEvent(agentId, userId, sessionId, eventJson)))
+                .doOnSubscribe(sub -> GatewayLogContext.run(requestId, userId, sessionId,
+                    () -> log.info("[SESSION-EVENTS] forwarding agentId={} userId={} sessionId={} " + "port={} path={}",
+                        agentId, userId, sessionId, instance.getPort(), path)))
+                .doOnSuccess(ignored -> GatewayLogContext.run(requestId, userId, sessionId,
+                    () -> log.info("[SESSION-EVENTS] ended agentId={} userId={} sessionId={} " + "totalMs={} status={}",
+                        agentId, userId, sessionId, System.currentTimeMillis() - requestStart,
+                        exchange.getResponse().getStatusCode())))
+                .doOnError(err -> GatewayLogContext.run(requestId, userId, sessionId,
+                    () -> log.warn("[SESSION-EVENTS] failed agentId={} userId={} sessionId={} " + "totalMs={} error={}",
+                        agentId, userId, sessionId, System.currentTimeMillis() - requestStart, err.getMessage())));
+        })
+            .onErrorResume(err -> writeSessionError(exchange, err, agentId, userId, sessionId, null,
+                "gateway_events_failed", requestStart));
     }
 
     /**
      * Cancels an in-progress request within a session.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param sessionId the sessionId parameter
+     * @param body the body parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PostMapping(value = "/sessions/{sessionId}/cancel", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<Void> sessionCancel(@PathVariable String agentId,
-                                    @PathVariable String sessionId,
-                                    @RequestBody String body,
-                                    ServerWebExchange exchange) {
+    public Mono<Void> sessionCancel(@PathVariable("agentId") String agentId, @PathVariable("sessionId") String sessionId,
+        @RequestBody String body, ServerWebExchange exchange) {
         long requestStart = System.currentTimeMillis();
         String userId = exchange.getAttribute(UserContextFilter.USER_ID_ATTR);
-        log.info("[SESSION-CANCEL] request received agentId={} userId={} sessionId={} bodyLen={}",
-                agentId, userId, sessionId, body.length());
+        log.info("[SESSION-CANCEL] request received agentId={} userId={} sessionId={} bodyLen={}", agentId, userId,
+            sessionId, body.length());
         String requestId = extractRequestId(body);
 
-        return instanceManager.getOrSpawn(agentId, userId)
-                .flatMap(instance -> {
-                    instance.touch();
-                    instanceManager.touchAllForUser(userId);
-                    String path = goosedSessionPath(sessionId, "cancel");
-                    return goosedProxy.proxySessionCommandWithBody(exchange.getResponse(), instance.getPort(), path,
-                                    HttpMethod.POST, body, instance.getSecretKey())
-                            .doOnSubscribe(sub -> log.info("[SESSION-CANCEL] forwarding agentId={} userId={} sessionId={} port={} path={}",
-                                    agentId, userId, sessionId, instance.getPort(), path))
-                            .doOnSuccess(ignored -> log.info("[SESSION-CANCEL] completed agentId={} userId={} sessionId={} totalMs={} status={}",
-                                    agentId, userId, sessionId, System.currentTimeMillis() - requestStart,
-                                    exchange.getResponse().getStatusCode()))
-                            .doOnError(err -> log.warn("[SESSION-CANCEL] failed agentId={} userId={} sessionId={} totalMs={} error={}",
-                                    agentId, userId, sessionId, System.currentTimeMillis() - requestStart,
-                                    err.getMessage()));
-                })
-                .onErrorResume(err -> writeSessionError(exchange, err, agentId, userId, sessionId, requestId,
-                        "gateway_cancel_failed", requestStart));
+        return instanceManager.getOrSpawn(agentId, userId).flatMap(instance -> {
+            instance.touch();
+            instanceManager.touchAllForUser(userId);
+            String path = goosedSessionPath(sessionId, "cancel");
+            return goosedProxy
+                .proxySessionCommandWithBody(exchange.getResponse(), instance.getPort(), path, HttpMethod.POST, body,
+                    instance.getSecretKey())
+                .doOnSubscribe(sub -> log.info(
+                    "[SESSION-CANCEL] forwarding agentId={} " + "userId={} sessionId={} port={} path={}", agentId,
+                    userId, sessionId, instance.getPort(), path))
+                .doOnSuccess(ignored -> log.info(
+                    "[SESSION-CANCEL] completed agentId={} userId={} " + "sessionId={} totalMs={} status={}", agentId,
+                    userId, sessionId, System.currentTimeMillis() - requestStart,
+                    exchange.getResponse().getStatusCode()))
+                .doOnError(err -> log.warn(
+                    "[SESSION-CANCEL] failed agentId={} userId={} " + "sessionId={} totalMs={} error={}", agentId,
+                    userId, sessionId, System.currentTimeMillis() - requestStart, err.getMessage()));
+        })
+            .onErrorResume(err -> writeSessionError(exchange, err, agentId, userId, sessionId, requestId,
+                "gateway_cancel_failed", requestStart));
     }
 
     private String goosedSessionPath(String sessionId, String suffix) {
@@ -224,7 +255,7 @@ public class ReplyController {
             JsonNode rootNode = MAPPER.readTree(body);
             JsonNode requestIdNode = rootNode.get("request_id");
             return requestIdNode != null && requestIdNode.isTextual() ? requestIdNode.asText() : null;
-        } catch (Exception ignored) {
+        } catch (JsonProcessingException e) {
             return null;
         }
     }
@@ -234,64 +265,57 @@ public class ReplyController {
             return Mono.empty();
         }
         return Mono.fromRunnable(() -> {
-                    Path workingDir = agentConfigService.getUserAgentDir(userId, agentId);
-                    List<Map<String, Object>> beforeFiles = snapshotFiles(workingDir);
-                    String key = fileSnapshotKey(agentId, userId, sessionId, requestId);
-                    String sessionKey = fileSnapshotSessionKey(agentId, userId, sessionId);
-                    fileSnapshots.put(key, beforeFiles);
-                    pendingFileSnapshotRequests.put(sessionKey, requestId);
-                    scheduleFileSnapshotRemoval(key, sessionKey, requestId);
-                    log.debug("[SESSION-REPLY] captured {} file snapshot entries agentId={} userId={} sessionId={} requestId={}",
-                            beforeFiles.size(), agentId, userId, sessionId, requestId);
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .then();
+            Path workingDir = agentConfigService.getUserAgentDir(userId, agentId);
+            List<Map<String, Object>> beforeFiles = snapshotFiles(workingDir);
+            String key = fileSnapshotKey(agentId, userId, sessionId, requestId);
+            String sessionKey = fileSnapshotSessionKey(agentId, userId, sessionId);
+            fileSnapshots.put(key, beforeFiles);
+            pendingFileSnapshotRequests.put(sessionKey, requestId);
+            scheduleFileSnapshotRemoval(key, sessionKey, requestId);
+            log.debug(
+                "[SESSION-REPLY] captured {} file snapshot entries agentId={} userId={} sessionId={} " + "requestId={}",
+                beforeFiles.size(), agentId, userId, sessionId, requestId);
+        }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
-    private Mono<String> outputFilesBeforeTerminalEvent(String agentId, String userId, String sessionId, String eventJson) {
+    private Mono<String> outputFilesBeforeTerminalEvent(String agentId, String userId, String sessionId,
+        String eventJson) {
         return Mono.fromCallable(() -> {
-                    JsonNode event = MAPPER.readTree(eventJson);
-                    String type = event.path("type").asText("");
-                    boolean activeRequestsDrained = "ActiveRequests".equals(type)
-                            && event.path("request_ids").isArray()
-                            && event.path("request_ids").isEmpty();
-                    if (!"Finish".equals(type) && !"Error".equals(type) && !activeRequestsDrained) {
-                        return "";
-                    }
-                    String requestId = resolveEventRequestId(agentId, userId, sessionId, event);
-                    if (requestId == null || requestId.isBlank()) {
-                        return "";
-                    }
+            JsonNode event = MAPPER.readTree(eventJson);
+            String type = event.path("type").asText("");
+            boolean activeRequestsDrained = "ActiveRequests".equals(type) && event.path("request_ids").isArray()
+                && event.path("request_ids").isEmpty();
+            if (!"Finish".equals(type) && !"Error".equals(type) && !activeRequestsDrained) {
+                return "";
+            }
+            String requestId = resolveEventRequestId(agentId, userId, sessionId, event);
+            if (requestId == null || requestId.isBlank()) {
+                return "";
+            }
 
-                    String key = fileSnapshotKey(agentId, userId, sessionId, requestId);
-                    List<Map<String, Object>> beforeFiles = fileSnapshots.remove(key);
-                    pendingFileSnapshotRequests.remove(fileSnapshotSessionKey(agentId, userId, sessionId), requestId);
-                    if (beforeFiles == null) {
-                        return "";
-                    }
+            String key = fileSnapshotKey(agentId, userId, sessionId, requestId);
+            List<Map<String, Object>> beforeFiles = fileSnapshots.remove(key);
+            pendingFileSnapshotRequests.remove(fileSnapshotSessionKey(agentId, userId, sessionId), requestId);
+            if (beforeFiles == null) {
+                return "";
+            }
 
-                    Path workingDir = agentConfigService.getUserAgentDir(userId, agentId);
-                    List<Map<String, String>> changed = fileService.diffFiles(beforeFiles, snapshotFiles(workingDir));
-                    if (changed.isEmpty()) {
-                        return "";
-                    }
+            Path workingDir = agentConfigService.getUserAgentDir(userId, agentId);
+            List<Map<String, String>> changed = fileService.diffFiles(beforeFiles, snapshotFiles(workingDir));
+            if (changed.isEmpty()) {
+                return "";
+            }
 
-                    String json = MAPPER.writeValueAsString(Map.of(
-                            "type", "OutputFiles",
-                            "sessionId", sessionId,
-                            "request_id", requestId,
-                            "chat_request_id", requestId,
-                            "files", changed));
-                    log.info("[SESSION-EVENTS] detected {} output files agentId={} userId={} sessionId={} requestId={}",
-                            changed.size(), agentId, userId, sessionId, requestId);
-                    return "data: " + json + "\n\n";
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .onErrorResume(err -> {
-                    log.warn("[SESSION-EVENTS] failed to build OutputFiles event agentId={} userId={} sessionId={}: {}",
-                            agentId, userId, sessionId, err.getMessage());
-                    return Mono.just("");
-                });
+            String json = MAPPER.writeValueAsString(Map.of("type", "OutputFiles", "sessionId", sessionId, "request_id",
+                requestId, "chat_request_id", requestId, "files", changed));
+            log.info("[SESSION-EVENTS] detected {} output files agentId={} userId={} sessionId={} requestId={}",
+                changed.size(), agentId, userId, sessionId, requestId);
+            return "data: " + json + "\n\n";
+        }).subscribeOn(Schedulers.boundedElastic()).onErrorResume(err -> {
+            log.warn("[SESSION-EVENTS] failed to build OutputFiles event agentId={} userId={} sessionId={}: {}",
+                agentId, userId, sessionId, err.getMessage());
+            return Mono.just("");
+        });
     }
 
     private String resolveEventRequestId(String agentId, String userId, String sessionId, JsonNode event) {
@@ -322,47 +346,46 @@ public class ReplyController {
     }
 
     private void scheduleFileSnapshotRemoval(String key, String sessionKey, String requestId) {
-        Mono.delay(Duration.ofMinutes(5))
-                .doOnNext(ignored -> {
-                    fileSnapshots.remove(key);
-                    pendingFileSnapshotRequests.remove(sessionKey, requestId);
-                })
-                .subscribe();
+        Mono.delay(Duration.ofMinutes(5)).doOnNext(ignored -> {
+            fileSnapshots.remove(key);
+            pendingFileSnapshotRequests.remove(sessionKey, requestId);
+        }).subscribe();
     }
 
     private List<Map<String, Object>> snapshotFiles(Path workingDir) {
         try {
             List<Map<String, Object>> files = fileService.listCapsuleRelevantFiles(workingDir);
             return files != null ? files : Collections.emptyList();
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.debug("[SESSION-REPLY] file snapshot failed (best-effort): {}", e.getMessage());
             return Collections.emptyList();
         }
     }
 
     private Mono<Void> writeSessionError(ServerWebExchange exchange, Throwable err, String agentId, String userId,
-                                         String sessionId, String requestId, String fallbackCode, long requestStart) {
+        String sessionId, String requestId, String fallbackCode, long requestStart) {
         if (exchange.getResponse().isCommitted()) {
             return Mono.error(err);
         }
 
         HttpStatus status = sessionErrorStatus(err);
-        Map<String, Object> body = sessionErrorBody(err, status, agentId, userId, sessionId, requestId,
-                fallbackCode, System.currentTimeMillis() - requestStart);
+        Map<String, Object> body = sessionErrorBody(err, status, agentId, userId, sessionId, requestId, fallbackCode,
+            System.currentTimeMillis() - requestStart);
         try {
             byte[] bytes = MAPPER.writeValueAsBytes(body);
             exchange.getResponse().setStatusCode(status);
             exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
             DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
             return exchange.getResponse().writeWith(Mono.just(buffer));
-        } catch (Exception writeErr) {
+        } catch (JsonProcessingException writeErr) {
             return Mono.error(writeErr);
         }
     }
 
     private HttpStatus sessionErrorStatus(Throwable err) {
         if (err instanceof ResponseStatusException responseStatusException) {
-            return responseStatusException.getStatus();
+            HttpStatus status = HttpStatus.resolve(responseStatusException.getStatusCode().value());
+            return status != null ? status : HttpStatus.INTERNAL_SERVER_ERROR;
         }
         if (err instanceof WebClientResponseException webClientResponseException) {
             HttpStatus status = HttpStatus.resolve(webClientResponseException.getRawStatusCode());
@@ -372,8 +395,7 @@ public class ReplyController {
     }
 
     private Map<String, Object> sessionErrorBody(Throwable err, HttpStatus status, String agentId, String userId,
-                                                 String sessionId, String requestId, String fallbackCode,
-                                                 long elapsedMs) {
+        String sessionId, String requestId, String fallbackCode, long elapsedMs) {
         String code = sessionErrorCode(err, status, fallbackCode);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "Error");
@@ -415,7 +437,8 @@ public class ReplyController {
             }
             if (status == HttpStatus.BAD_REQUEST) {
                 String message = sessionErrorMessage(err, status);
-                if (message != null && message.toLowerCase(Locale.ROOT).contains("session already has an active request")) {
+                if (message != null
+                    && message.toLowerCase(Locale.ROOT).contains("session already has an active " + "request")) {
                     return "goosed_active_request_conflict";
                 }
                 return "goosed_request_rejected";
@@ -448,11 +471,11 @@ public class ReplyController {
 
     private String sessionErrorMessage(Throwable err, HttpStatus status) {
         if (err instanceof ResponseStatusException responseStatusException
-                && responseStatusException.getReason() != null) {
+            && responseStatusException.getReason() != null) {
             return responseStatusException.getReason();
         }
         if (err instanceof WebClientResponseException webClientResponseException
-                && !webClientResponseException.getResponseBodyAsString().isBlank()) {
+            && !webClientResponseException.getResponseBodyAsString().isBlank()) {
             return webClientResponseException.getResponseBodyAsString();
         }
         if (err.getMessage() != null && !err.getMessage().isBlank()) {
@@ -465,45 +488,69 @@ public class ReplyController {
         if (status.is5xxServerError()) {
             return true;
         }
-        return "goosed_active_request_conflict".equals(code)
-                || "gateway_rate_limited".equals(code)
-                || "gateway_submit_timeout".equals(code)
-                || "gateway_goosed_unavailable".equals(code);
+        return "goosed_active_request_conflict".equals(code) || "gateway_rate_limited".equals(code)
+            || "gateway_submit_timeout".equals(code) || "gateway_goosed_unavailable".equals(code);
     }
 
     private List<String> sessionSuggestedActions(String code) {
         return switch (code) {
-            case "gateway_unauthorized" -> List.of("contact_support");
-            case "gateway_agent_not_found", "gateway_agent_unavailable" -> List.of("retry", "contact_support");
-            case "gateway_submit_timeout", "gateway_goosed_unavailable", "gateway_rate_limited" -> List.of("retry");
-            case "goosed_active_request_conflict" -> List.of("wait", "cancel", "retry");
-            case "goosed_request_rejected" -> List.of("retry");
-            default -> List.of("contact_support");
+            case "gateway_unauthorized":
+                yield List.of("contact_support");
+            case "gateway_agent_not_found", "gateway_agent_unavailable":
+                yield List.of("retry", "contact_support");
+            case "gateway_submit_timeout", "gateway_goosed_unavailable", "gateway_rate_limited":
+                yield List.of("retry");
+            case "goosed_active_request_conflict":
+                yield List.of("wait", "cancel", "retry");
+            case "goosed_request_rejected":
+                yield List.of("retry");
+            default:
+                yield List.of("contact_support");
         };
     }
 
     private String sessionErrorMessageKey(String code) {
         return switch (code) {
-            case "gateway_submit_timeout" -> "chat.sessionErrors.gatewaySubmitTimeout";
-            case "gateway_submit_failed" -> "chat.sessionErrors.gatewaySubmitFailed";
-            case "gateway_events_failed" -> "chat.sessionErrors.gatewayEventsFailed";
-            case "gateway_cancel_failed" -> "chat.sessionErrors.gatewayCancelFailed";
-            case "gateway_unauthorized" -> "chat.sessionErrors.gatewayUnauthorized";
-            case "gateway_agent_not_found" -> "chat.sessionErrors.gatewayAgentNotFound";
-            case "gateway_agent_unavailable" -> "chat.sessionErrors.gatewayAgentUnavailable";
-            case "gateway_goosed_unavailable" -> "chat.sessionErrors.gatewayGoosedUnavailable";
-            case "gateway_max_duration_reached" -> "chat.sessionErrors.gatewayMaxDurationReached";
-            case "gateway_rate_limited" -> "chat.sessionErrors.gatewayRateLimited";
-            case "goosed_active_request_conflict" -> "chat.sessionErrors.goosedActiveRequestConflict";
-            case "goosed_request_rejected" -> "chat.sessionErrors.goosedRequestRejected";
-            case "goosed_error" -> "chat.sessionErrors.goosedError";
-            case "provider_timeout" -> "chat.sessionErrors.providerTimeout";
-            case "provider_rate_limited" -> "chat.sessionErrors.providerRateLimited";
-            case "provider_auth_or_quota_failed" -> "chat.sessionErrors.providerAuthOrQuotaFailed";
-            case "tool_execution_failed" -> "chat.sessionErrors.toolExecutionFailed";
-            case "mcp_unavailable" -> "chat.sessionErrors.mcpUnavailable";
-            case "context_too_large" -> "chat.sessionErrors.contextTooLarge";
-            default -> "chat.sessionErrors.unknown";
+            case "gateway_submit_timeout":
+                yield "chat.sessionErrors.gatewaySubmitTimeout";
+            case "gateway_submit_failed":
+                yield "chat.sessionErrors.gatewaySubmitFailed";
+            case "gateway_events_failed":
+                yield "chat.sessionErrors.gatewayEventsFailed";
+            case "gateway_cancel_failed":
+                yield "chat.sessionErrors.gatewayCancelFailed";
+            case "gateway_unauthorized":
+                yield "chat.sessionErrors.gatewayUnauthorized";
+            case "gateway_agent_not_found":
+                yield "chat.sessionErrors.gatewayAgentNotFound";
+            case "gateway_agent_unavailable":
+                yield "chat.sessionErrors.gatewayAgentUnavailable";
+            case "gateway_goosed_unavailable":
+                yield "chat.sessionErrors.gatewayGoosedUnavailable";
+            case "gateway_max_duration_reached":
+                yield "chat.sessionErrors.gatewayMaxDurationReached";
+            case "gateway_rate_limited":
+                yield "chat.sessionErrors.gatewayRateLimited";
+            case "goosed_active_request_conflict":
+                yield "chat.sessionErrors.goosedActiveRequestConflict";
+            case "goosed_request_rejected":
+                yield "chat.sessionErrors.goosedRequestRejected";
+            case "goosed_error":
+                yield "chat.sessionErrors.goosedError";
+            case "provider_timeout":
+                yield "chat.sessionErrors.providerTimeout";
+            case "provider_rate_limited":
+                yield "chat.sessionErrors.providerRateLimited";
+            case "provider_auth_or_quota_failed":
+                yield "chat.sessionErrors.providerAuthOrQuotaFailed";
+            case "tool_execution_failed":
+                yield "chat.sessionErrors.toolExecutionFailed";
+            case "mcp_unavailable":
+                yield "chat.sessionErrors.mcpUnavailable";
+            case "context_too_large":
+                yield "chat.sessionErrors.contextTooLarge";
+            default:
+                yield "chat.sessionErrors.unknown";
         };
     }
 
@@ -534,11 +581,11 @@ public class ReplyController {
 
             if (log.isDebugEnabled()) {
                 Long delta = previousCreated != null ? created - previousCreated : null;
-                log.debug("[REPLY] normalized user_message.created old={} new={} deltaSeconds={}",
-                        previousCreated, created, delta);
+                log.debug("[REPLY] normalized user_message.created old={} new={} deltaSeconds={}", previousCreated,
+                    created, delta);
             }
             return MAPPER.writeValueAsString(root);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             log.warn("[REPLY] failed to normalize user_message.created: {}", e.getMessage());
             return body;
         }
@@ -547,7 +594,7 @@ public class ReplyController {
     /**
      * Ensure that any follow-up reply against an existing session first restores that
      * session on the current goosed instance (provider + extensions loaded).
-     *
+     * <p>
      * We intentionally do not trust the gateway's local resumed-session cache here:
      * stop/recycle/page-switch flows can leave the cache and goosed's real state out
      * of sync. Treating resume as the standard precondition for session continuation
@@ -559,60 +606,59 @@ public class ReplyController {
             return Mono.empty();
         }
         String resumeBody = "{\"session_id\":\"" + sessionId + "\",\"load_model_and_extensions\":true}";
-        return resumeSession(instance, sessionId, resumeBody, "[REPLY]")
-                .onErrorResume(e -> {
-                    log.warn("[REPLY] session {} resume failed on instance {}:{}: {} (will retry next request)",
-                            sessionId, instance.getAgentId(), instance.getUserId(), e.getMessage());
-                    return Mono.empty();
-                })
-                .then();
+        return resumeSession(instance, sessionId, resumeBody, "[REPLY]").onErrorResume(e -> {
+            log.warn("[REPLY] session {} resume failed on instance {}:{}: {} (will retry next request)", sessionId,
+                instance.getAgentId(), instance.getUserId(), e.getMessage());
+            return Mono.empty();
+        }).then();
     }
 
     private Mono<String> resumeSession(ManagedInstance instance, String sessionId, String body, String logPrefix) {
         if (sessionId == null || sessionId.isBlank()) {
-            return goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", body, 120, instance.getSecretKey());
+            return goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", body, 120,
+                instance.getSecretKey());
         }
 
         String dedupeKey = instance.getKey() + ":" + sessionId;
         return inFlightResumes.computeIfAbsent(dedupeKey, ignored -> {
             long resumeStart = System.currentTimeMillis();
-            log.info("{} session {} not yet resumed on instance {}:{} (port={}), calling /agent/resume",
-                    logPrefix, sessionId, instance.getAgentId(), instance.getUserId(), instance.getPort());
-            return goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", body, 120, instance.getSecretKey())
-                    .doOnNext(r -> {
-                        long resumeMs = System.currentTimeMillis() - resumeStart;
-                        instance.markSessionResumed(sessionId);
-                        log.info("{} session {} resumed in {}ms on instance {}:{}",
-                                logPrefix, sessionId, resumeMs, instance.getAgentId(), instance.getUserId());
-                    })
-                    .doOnSubscribe(sub -> log.debug("{} joining in-flight resume key={}", logPrefix, dedupeKey))
-                    .doFinally(signalType -> inFlightResumes.remove(dedupeKey))
-                    .cache();
+            log.info("{} session {} not yet resumed on instance {}:{} (port={}), calling /agent/resume", logPrefix,
+                sessionId, instance.getAgentId(), instance.getUserId(), instance.getPort());
+            return goosedProxy
+                .fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", body, 120, instance.getSecretKey())
+                .doOnNext(r -> {
+                    long resumeMs = System.currentTimeMillis() - resumeStart;
+                    instance.markSessionResumed(sessionId);
+                    log.info("{} session {} resumed in {}ms on instance {}:{}", logPrefix, sessionId, resumeMs,
+                        instance.getAgentId(), instance.getUserId());
+                })
+                .doOnSubscribe(sub -> log.debug("{} joining in-flight resume key={}", logPrefix, dedupeKey))
+                .doFinally(signalType -> inFlightResumes.remove(dedupeKey))
+                .cache();
         });
     }
 
     /**
      * Resumes an existing session, loading model and extensions.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param body the body parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PostMapping(value = {"/resume", "/agent/resume"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<String> resume(@PathVariable String agentId,
-                               @RequestBody String body,
-                               ServerWebExchange exchange) {
+    public Mono<String> resume(@PathVariable("agentId") String agentId, @RequestBody String body, ServerWebExchange exchange) {
         String userId = exchange.getAttribute(UserContextFilter.USER_ID_ATTR);
         String sessionId = JsonUtil.extractSessionId(body);
         return instanceManager.getOrSpawn(agentId, userId)
-                .flatMap(instance -> resumeSession(instance, sessionId, body, "[RESUME]"))
-                .doOnNext(json -> logResumeConversationDigest(agentId, userId, sessionId, json))
-                .onErrorResume(WebClientResponseException.class, e -> {
-                    if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                        return Mono.error(new ResponseStatusException(
-                                HttpStatus.NOT_FOUND, "Session not found"));
-                    }
-                    return Mono.error(e);
-                });
+            .flatMap(instance -> resumeSession(instance, sessionId, body, "[RESUME]"))
+            .doOnNext(json -> logResumeConversationDigest(agentId, userId, sessionId, json))
+            .onErrorResume(WebClientResponseException.class, e -> {
+                if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
+                }
+                return Mono.error(e);
+            });
     }
 
     private void logResumeConversationDigest(String agentId, String userId, String sessionId, String json) {
@@ -623,14 +669,14 @@ public class ReplyController {
             JsonNode root = MAPPER.readTree(json);
             JsonNode sessionNode = root.get("session");
             if (sessionNode == null || sessionNode.isNull()) {
-                log.debug("[CHAT-ORDER] resume agentId={} userId={} sessionId={} noSessionNode jsonLen={}",
-                        agentId, userId, sessionId, json != null ? json.length() : 0);
+                log.debug("[CHAT-ORDER] resume agentId={} userId={} sessionId={} noSessionNode jsonLen={}", agentId,
+                    userId, sessionId, json != null ? json.length() : 0);
                 return;
             }
             JsonNode conv = sessionNode.get("conversation");
             if (conv == null || !conv.isArray()) {
-                log.debug("[CHAT-ORDER] resume agentId={} userId={} sessionId={} noConversation jsonLen={}",
-                        agentId, userId, sessionId, json != null ? json.length() : 0);
+                log.debug("[CHAT-ORDER] resume agentId={} userId={} sessionId={} noConversation jsonLen={}", agentId,
+                    userId, sessionId, json != null ? json.length() : 0);
                 return;
             }
 
@@ -675,28 +721,29 @@ public class ReplyController {
                 }
             }
 
-            log.debug("[CHAT-ORDER] resume agentId={} userId={} sessionId={} total={} createdCount={} inversionCount={} head={}",
-                    agentId, userId, sessionId, total, createdCount, inversionCount, head);
-        } catch (Exception e) {
-            log.debug("[CHAT-ORDER] resume agentId={} userId={} sessionId={} parseFailed err={}",
-                    agentId, userId, sessionId, e.getMessage());
+            log.debug(
+                "[CHAT-ORDER] resume agentId={} userId={} sessionId={} total={} createdCount={} "
+                    + "inversionCount={} head={}",
+                agentId, userId, sessionId, total, createdCount, inversionCount, head);
+        } catch (JsonProcessingException e) {
+            log.debug("[CHAT-ORDER] resume agentId={} userId={} sessionId={} parseFailed err={}", agentId, userId,
+                sessionId, e.getMessage());
         }
     }
 
     /**
      * Restarts the agent instance with a fresh configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param body the body parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PostMapping({"/restart", "/agent/restart"})
-    public Mono<Void> restart(@PathVariable String agentId,
-                               @RequestBody String body,
-                               ServerWebExchange exchange) {
+    public Mono<Void> restart(@PathVariable("agentId") String agentId, @RequestBody String body, ServerWebExchange exchange) {
         String userId = exchange.getAttribute(UserContextFilter.USER_ID_ATTR);
         return instanceManager.getOrSpawn(agentId, userId)
-                .flatMap(instance -> goosedProxy.proxyWithBody(
-                        exchange.getResponse(), instance.getPort(), "/agent/restart",
-                        HttpMethod.POST, body, instance.getSecretKey()));
+            .flatMap(instance -> goosedProxy.proxyWithBody(exchange.getResponse(), instance.getPort(), "/agent/restart",
+                HttpMethod.POST, body, instance.getSecretKey()));
     }
 }

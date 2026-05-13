@@ -1,21 +1,37 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.operationintelligence.controller;
 
 import com.huawei.opsfactory.operationintelligence.qos.model.ProductConfigRule;
 import com.huawei.opsfactory.operationintelligence.service.QosService;
+
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Qos Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-11
+ */
 @RestController
 @RequestMapping("/operation-intelligence/qos")
 public class QosController {
@@ -24,10 +40,47 @@ public class QosController {
 
     private final QosService qosService;
 
+/**
+ * Qos Controller.
+ *
+ * @param qosService the qosService
+ */
     public QosController(QosService qosService) {
         this.qosService = qosService;
     }
 
+    static long toLong(Object val) {
+        if (val instanceof Number)
+            return ((Number) val).longValue();
+        if (val instanceof String) {
+            try {
+                return Long.parseLong((String) val);
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid numeric value: " + val);
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid numeric value: " + val);
+    }
+
+    static int toInt(Object val) {
+        if (val instanceof Number)
+            return ((Number) val).intValue();
+        if (val instanceof String) {
+            try {
+                return Integer.parseInt((String) val);
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid numeric value: " + val);
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid numeric value: " + val);
+    }
+
+/**
+ * Gets the health indicator.
+ *
+ * @param req the req
+ * @return the result
+ */
     @PostMapping("/getHealthIndicator")
     public Mono<Map<String, Object>> getHealthIndicator(@RequestBody Map<String, Object> req) {
         return Mono.fromCallable(() -> {
@@ -43,16 +96,34 @@ public class QosController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+/**
+ * Gets the available indicator detail.
+ *
+ * @param req the req
+ * @return the result
+ */
     @PostMapping("/getAvailableIndicatorDetail")
     public Mono<Map<String, Object>> getAvailableIndicatorDetail(@RequestBody Map<String, Object> req) {
         return getIndicatorDetail(req, "A");
     }
 
+/**
+ * Gets the performance indicator detail.
+ *
+ * @param req the req
+ * @return the result
+ */
     @PostMapping("/getPerformanceIndicatorDetail")
     public Mono<Map<String, Object>> getPerformanceIndicatorDetail(@RequestBody Map<String, Object> req) {
         return getIndicatorDetail(req, "P");
     }
 
+/**
+ * Gets the resource indicator detail.
+ *
+ * @param req the req
+ * @return the result
+ */
     @PostMapping("/getResourceIndicatorDetail")
     public Mono<Map<String, Object>> getResourceIndicatorDetail(@RequestBody Map<String, Object> req) {
         return Mono.fromCallable(() -> {
@@ -68,6 +139,12 @@ public class QosController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+/**
+ * Gets the contribution data.
+ *
+ * @param req the req
+ * @return the result
+ */
     @PostMapping("/getContributionData")
     public Mono<Map<String, Object>> getContributionData(@RequestBody Map<String, Object> req) {
         return Mono.fromCallable(() -> {
@@ -83,6 +160,12 @@ public class QosController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+/**
+ * Gets the alarm indicator detail.
+ *
+ * @param req the req
+ * @return the result
+ */
     @PostMapping("/getAlarmIndicatorDetail")
     public Mono<Map<String, Object>> getAlarmIndicatorDetail(@RequestBody Map<String, Object> req) {
         return Mono.fromCallable(() -> {
@@ -97,6 +180,12 @@ public class QosController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+/**
+ * Gets the product config rule.
+ *
+ * @param req the req
+ * @return the result
+ */
     @PostMapping("/getProductConfigRule")
     public Mono<ResponseEntity<Map<String, Object>>> getProductConfigRule(@RequestBody Map<String, Object> req) {
         return Mono.fromCallable(() -> {
@@ -111,6 +200,11 @@ public class QosController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+/**
+ * Gets the environments.
+ *
+ * @return the result
+ */
     @GetMapping("/getEnvironments")
     public Mono<Map<String, Object>> getEnvironments() {
         return Mono.fromCallable(() -> {
@@ -150,33 +244,5 @@ public class QosController {
         if (envCode == null || envCode.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "envCode is required");
         }
-    }
-
-    static long toLong(Object val) {
-        if (val instanceof Number) return ((Number) val).longValue();
-        if (val instanceof String) {
-            try {
-                return Long.parseLong((String) val);
-            } catch (NumberFormatException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Invalid numeric value: " + val);
-            }
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid numeric value: " + val);
-    }
-
-    static int toInt(Object val) {
-        if (val instanceof Number) return ((Number) val).intValue();
-        if (val instanceof String) {
-            try {
-                return Integer.parseInt((String) val);
-            } catch (NumberFormatException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Invalid numeric value: " + val);
-            }
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid numeric value: " + val);
     }
 }

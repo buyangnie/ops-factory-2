@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useUser } from '../../../platform/providers/UserContext'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import type { WhitelistCommand } from '../../../../types/commandWhitelist'
 
@@ -14,7 +14,7 @@ export function useCommandWhitelist() {
         setIsLoading(true)
         setError(null)
         try {
-            const res = await fetch(`${GATEWAY_URL}/command-whitelist`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/command-whitelist`, {
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),
             })
@@ -30,7 +30,7 @@ export function useCommandWhitelist() {
 
     const addCommand = useCallback(async (cmd: WhitelistCommand): Promise<boolean> => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/command-whitelist`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/command-whitelist`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify(cmd),
@@ -52,7 +52,7 @@ export function useCommandWhitelist() {
 
     const updateCommand = useCallback(async (pattern: string, updates: Partial<WhitelistCommand>): Promise<boolean> => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/command-whitelist/${encodeURIComponent(pattern)}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/command-whitelist/${encodeURIComponent(pattern)}`, {
                 method: 'PUT',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify(updates),
@@ -69,7 +69,7 @@ export function useCommandWhitelist() {
 
     const deleteCommand = useCallback(async (pattern: string): Promise<boolean> => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/command-whitelist/${encodeURIComponent(pattern)}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/command-whitelist/${encodeURIComponent(pattern)}`, {
                 method: 'DELETE',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.operationintelligence.config;
 
 import org.springframework.context.annotation.Bean;
@@ -10,15 +14,31 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Web Config.
+ *
+ * @author x00000000
+ * @since 2026-05-11
+ */
 @Configuration
 public class WebConfig {
 
     private final OperationIntelligenceProperties properties;
 
+/**
+ * Web Config.
+ *
+ * @param properties the properties
+ */
     public WebConfig(OperationIntelligenceProperties properties) {
         this.properties = properties;
     }
 
+/**
+ * cors Web Filter.
+ *
+ * @return the result
+ */
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();

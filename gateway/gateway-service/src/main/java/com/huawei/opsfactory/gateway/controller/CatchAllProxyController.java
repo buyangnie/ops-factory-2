@@ -8,13 +8,15 @@ import com.huawei.opsfactory.gateway.common.model.UserRole;
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.process.InstanceManager;
 import com.huawei.opsfactory.gateway.proxy.GoosedProxy;
+
+import reactor.core.publisher.Mono;
+
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 
 import java.util.Set;
 
@@ -27,16 +29,20 @@ import java.util.Set;
 @RequestMapping(value = "/gateway")
 @Order(999)
 public class CatchAllProxyController {
-    private static final Set<String> USER_ACCESSIBLE_PATHS = Set.of(
-            "/system_info", "/status"
-    );
-    private static final Set<String> REMOVED_CHAT_PATHS = Set.of(
-            "/reply", "/agent/reply", "/agent/stop", "/stop"
-    );
+    private static final Set<String> USER_ACCESSIBLE_PATHS = Set.of("/system_info", "/status");
+
+    private static final Set<String> REMOVED_CHAT_PATHS = Set.of("/reply", "/agent/reply", "/agent/stop", "/stop");
 
     private final InstanceManager instanceManager;
+
     private final GoosedProxy goosedProxy;
 
+    /**
+     * Creates the catch all proxy controller instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public CatchAllProxyController(InstanceManager instanceManager, GoosedProxy goosedProxy) {
         this.instanceManager = instanceManager;
         this.goosedProxy = goosedProxy;
@@ -45,8 +51,8 @@ public class CatchAllProxyController {
     /**
      * Forwards unmatched agent requests to the appropriate goosed instance.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @RequestMapping("/agents/{agentId}/**")
     public Mono<Void> catchAll(ServerWebExchange exchange) {
@@ -56,9 +62,7 @@ public class CatchAllProxyController {
         // Remove /gateway prefix if present
         // Full path format: /gateway/agents/{agentId}/{remainder}
         // or: /agents/{agentId}/{remainder} (for direct method calls in tests)
-        String pathToParse = path.startsWith("/gateway")
-                ? path.substring("/gateway".length())
-                : path;
+        String pathToParse = path.startsWith("/gateway") ? path.substring("/gateway".length()) : path;
 
         // Extract agentId and the remainder path
         // Path format: /agents/{agentId}/{remainder}
@@ -94,15 +98,14 @@ public class CatchAllProxyController {
 
         final String target = proxyTarget;
         return instanceManager.getOrSpawn(agentId, userId)
-                .flatMap(instance -> goosedProxy.proxy(
-                        exchange.getRequest(), exchange.getResponse(),
-                        instance.getPort(), target, instance.getSecretKey()));
+            .flatMap(instance -> goosedProxy.proxy(exchange.getRequest(), exchange.getResponse(), instance.getPort(),
+                target, instance.getSecretKey()));
     }
 
     private boolean isUserAccessible(String remainder) {
         for (String allowed : USER_ACCESSIBLE_PATHS) {
             if (remainder.equals(allowed) || remainder.startsWith(allowed + "/")
-                    || remainder.startsWith(allowed + "?")) {
+                || remainder.startsWith(allowed + "?")) {
                 return true;
             }
         }
@@ -111,8 +114,7 @@ public class CatchAllProxyController {
 
     private boolean isRemovedChatPath(String remainder) {
         String normalized = remainder != null && remainder.length() > 1 && remainder.endsWith("/")
-                ? remainder.substring(0, remainder.length() - 1)
-                : remainder;
+            ? remainder.substring(0, remainder.length() - 1) : remainder;
         return REMOVED_CHAT_PATHS.contains(normalized);
     }
 }

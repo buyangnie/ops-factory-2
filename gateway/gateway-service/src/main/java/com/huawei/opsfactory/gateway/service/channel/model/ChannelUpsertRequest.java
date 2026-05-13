@@ -10,12 +10,6 @@ package com.huawei.opsfactory.gateway.service.channel.model;
  * @author x00000000
  * @since 2026-05-09
  */
-public record ChannelUpsertRequest(
-        String id,
-        String name,
-        String type,
-        Boolean enabled,
-        String defaultAgentId,
-        ChannelConnectionConfig config
-) {
+public record ChannelUpsertRequest(String id, String name, String type, Boolean enabled, String defaultAgentId,
+    ChannelConnectionConfig config) {
 }

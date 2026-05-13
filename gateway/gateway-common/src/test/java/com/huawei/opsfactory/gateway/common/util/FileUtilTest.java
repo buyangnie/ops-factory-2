@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.common.util;
 
 import org.junit.Rule;
@@ -13,10 +17,21 @@ import java.nio.file.Path;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Test coverage for File Util.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class FileUtilTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
+    /**
+     * Tests delete recursively single file.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testDeleteRecursively_singleFile() throws IOException {
         File file = tempFolder.newFile("test.txt");
@@ -25,6 +40,11 @@ public class FileUtilTest {
         assertFalse(file.exists());
     }
 
+    /**
+     * Tests delete recursively empty directory.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testDeleteRecursively_emptyDirectory() throws IOException {
         File dir = tempFolder.newFolder("emptyDir");
@@ -33,6 +53,11 @@ public class FileUtilTest {
         assertFalse(dir.exists());
     }
 
+    /**
+     * Tests delete recursively nested directories.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testDeleteRecursively_nestedDirectories() throws IOException {
         File dir = tempFolder.newFolder("parent");
@@ -51,6 +76,11 @@ public class FileUtilTest {
         assertFalse(dir.exists());
     }
 
+    /**
+     * Tests delete recursively non existent path.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testDeleteRecursively_nonExistentPath() throws IOException {
         Path nonExistent = tempFolder.getRoot().toPath().resolve("does-not-exist");
@@ -59,6 +89,11 @@ public class FileUtilTest {
         FileUtil.deleteRecursively(nonExistent);
     }
 
+    /**
+     * Tests delete recursively directory with mixed content.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testDeleteRecursively_directoryWithMixedContent() throws IOException {
         File dir = tempFolder.newFolder("mixed");

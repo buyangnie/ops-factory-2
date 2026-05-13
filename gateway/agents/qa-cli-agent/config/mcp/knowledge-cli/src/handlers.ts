@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import { execFile as execFileCallback, spawn } from 'node:child_process'
 import { readFile, realpath, stat } from 'node:fs/promises'
 import { promisify } from 'node:util'
@@ -66,7 +70,9 @@ export const tools = [
         },
         glob: {
           type: 'string',
-          description: 'Optional file name glob. Prefer the configured knowledge artifact type before probing unrelated file types.',
+          description:
+            'Optional file name glob. ' +
+            'Prefer the configured knowledge artifact type before probing unrelated file types.',
         },
         limit: {
           type: 'number',
@@ -115,7 +121,9 @@ export const tools = [
   },
   {
     name: 'read_file',
-    description: 'Read a file or a specific line range under the configured root directory. Results are capped to keep context small; truncated responses include the returned end line and next startLine.',
+    description:
+      'Read a file or a specific line range under the configured root directory. ' +
+      'Results are capped to keep context small; truncated responses include the returned end line and next startLine.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -290,7 +298,9 @@ async function runCommandLines(command: string, args: string[], limit: number): 
     let settled = false
 
     const finish = (result: LineCommandResult) => {
-      if (settled) return
+      if (settled) {
+        return
+      }
       settled = true
       clearTimeout(timeout)
       logInfo('command_succeeded', {
@@ -303,14 +313,18 @@ async function runCommandLines(command: string, args: string[], limit: number): 
     }
 
     const fail = (error: unknown) => {
-      if (settled) return
+      if (settled) {
+        return
+      }
       settled = true
       clearTimeout(timeout)
       reject(error)
     }
 
     const stopEarly = () => {
-      if (truncated) return
+      if (truncated) {
+        return
+      }
       truncated = true
       child.kill()
     }
@@ -334,7 +348,9 @@ async function runCommandLines(command: string, args: string[], limit: number): 
       stdoutRemainder = parts.pop() ?? ''
       for (const part of parts) {
         pushLine(part)
-        if (truncated) break
+        if (truncated) {
+          break
+        }
       }
     })
 
@@ -351,7 +367,12 @@ async function runCommandLines(command: string, args: string[], limit: number): 
       }
 
       if (timedOut) {
-        fail(new Error(`${command} timed out after ${COMMAND_TIMEOUT_MS / 1000}s. Try a narrower pathPrefix, glob, or query.`))
+        fail(
+          new Error(
+            `${command} timed out after ${COMMAND_TIMEOUT_MS / 1000}s. ` +
+              'Try a narrower pathPrefix, glob, or query.',
+          ),
+        )
         return
       }
 
@@ -382,7 +403,9 @@ async function getSearchEngine(): Promise<SearchEngine> {
 
 function parseRgLine(line: string): SearchHit | null {
   const match = /^(.*?):(\d+):(\d+):(.*)$/.exec(line)
-  if (!match) return null
+  if (!match) {
+    return null
+  }
   return {
     path: match[1],
     line: Number.parseInt(match[2], 10),
@@ -393,7 +416,9 @@ function parseRgLine(line: string): SearchHit | null {
 
 function parseGrepLine(line: string): SearchHit | null {
   const match = /^(.*?):(\d+):(.*)$/.exec(line)
-  if (!match) return null
+  if (!match) {
+    return null
+  }
   return {
     path: match[1],
     line: Number.parseInt(match[2], 10),
@@ -465,12 +490,16 @@ export async function handleFindFiles(args: ToolArgs = {}): Promise<string> {
 
   if (engine === 'rg') {
     const commandArgs = ['--files', '--hidden', '--no-ignore']
-    if (glob) commandArgs.push('--glob', glob)
+    if (glob) {
+      commandArgs.push('--glob', glob)
+    }
     commandArgs.push(scope.scopePath)
     result = await runCommandLines('rg', commandArgs, limit)
   } else {
     const commandArgs = [scope.scopePath, '-type', 'f']
-    if (glob) commandArgs.push('-name', glob)
+    if (glob) {
+      commandArgs.push('-name', glob)
+    }
     result = await runCommandLines('find', commandArgs, limit)
   }
 
@@ -522,17 +551,38 @@ export async function handleSearchContent(args: ToolArgs = {}): Promise<string> 
   let result: LineCommandResult
 
   if (engine === 'rg') {
-    const commandArgs = ['-n', '--no-heading', '--with-filename', '--column', '--max-columns', '500', '--hidden', '--no-ignore']
-    if (glob) commandArgs.push('--glob', glob)
-    if (!args.caseSensitive) commandArgs.push('-i')
-    if (!args.regex) commandArgs.push('-F')
+    const commandArgs = [
+      '-n',
+      '--no-heading',
+      '--with-filename',
+      '--column',
+      '--max-columns',
+      '500',
+      '--hidden',
+      '--no-ignore',
+    ]
+    if (glob) {
+      commandArgs.push('--glob', glob)
+    }
+    if (!args.caseSensitive) {
+      commandArgs.push('-i')
+    }
+    if (!args.regex) {
+      commandArgs.push('-F')
+    }
     commandArgs.push('-e', query, scope.scopePath)
     result = await runCommandLines('rg', commandArgs, limit)
   } else {
     const commandArgs = ['-R', '-n', '-I']
-    if (glob) commandArgs.push(`--include=${glob}`)
-    if (!args.caseSensitive) commandArgs.push('-i')
-    if (!args.regex) commandArgs.push('-F')
+    if (glob) {
+      commandArgs.push(`--include=${glob}`)
+    }
+    if (!args.caseSensitive) {
+      commandArgs.push('-i')
+    }
+    if (!args.regex) {
+      commandArgs.push('-F')
+    }
     commandArgs.push('--', query, scope.scopePath)
     result = await runCommandLines('grep', commandArgs, limit)
   }

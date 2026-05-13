@@ -4,8 +4,9 @@ import { useSops } from '../hooks/useSops'
 import { useCommandWhitelist } from '../hooks/useCommandWhitelist'
 import { useClusterTypes } from '../hooks/useClusterTypes'
 import { useToast } from '../../../platform/providers/ToastContext'
+import { useConfirmDialog } from '../../../platform/providers/ConfirmDialogContext'
 import { useUser } from '../../../platform/providers/UserContext'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import DetailDialog from '../../../platform/ui/primitives/DetailDialog'
 import ListSearchInput from '../../../platform/ui/list/ListSearchInput'
 import ListResultsMeta from '../../../platform/ui/list/ListResultsMeta'
@@ -857,22 +858,20 @@ function SopExpandableRow({ sop, onEdit, onDelete, onToggleEnabled }: {
                                                 </p>
                                                 <span
                                                     className={`sop-workflow-node-type ${
-                                                        node.type === 'start'
-                                                            ? 'sop-workflow-node-type-start'
-                                                            : node.type === 'browser'
-                                                              ? 'sop-workflow-node-type-browser'
-                                                              : node.type === 'end'
-                                                                ? 'sop-workflow-node-type-end'
-                                                                : 'sop-workflow-node-type-analysis'
+                                                        (() => {
+                                                            if (node.type === 'start') return 'sop-workflow-node-type-start'
+                                                            if (node.type === 'browser') return 'sop-workflow-node-type-browser'
+                                                            if (node.type === 'end') return 'sop-workflow-node-type-end'
+                                                            return 'sop-workflow-node-type-analysis'
+                                                        })()
                                                     }`}
                                                 >
-                                                    {node.type === 'start'
-                                                        ? t('remoteDiagnosis.sops.startNode')
-                                                        : node.type === 'browser'
-                                                          ? t('remoteDiagnosis.sops.browserNode')
-                                                          : node.type === 'end'
-                                                            ? t('remoteDiagnosis.sops.endNode')
-                                                            : t('remoteDiagnosis.sops.analysisNode')}
+                                                    {(() => {
+                                                        if (node.type === 'start') return t('remoteDiagnosis.sops.startNode')
+                                                        if (node.type === 'browser') return t('remoteDiagnosis.sops.browserNode')
+                                                        if (node.type === 'end') return t('remoteDiagnosis.sops.endNode')
+                                                        return t('remoteDiagnosis.sops.analysisNode')
+                                                    })()}
                                                 </span>
                                             </div>
                                             <div className="sop-workflow-node-grid">
@@ -971,6 +970,7 @@ export function SopsTab() {
     const { sops, isLoading, error, fetchSops, createSop, updateSop, deleteSop } = useSops()
     const { clusterTypes } = useClusterTypes()
     const { showToast } = useToast()
+    const { requestConfirm } = useConfirmDialog()
     const { userId } = useUser()
 
     const PAGE_SIZE = 10
@@ -1000,10 +1000,13 @@ export function SopsTab() {
     )
 
     const handleDelete = useCallback(
-        (sop: Sop) => {
-            const confirmed = window.confirm(
-                t('remoteDiagnosis.sops.deleteConfirm', { name: sop.name }),
-            )
+        async (sop: Sop) => {
+            const confirmed = await requestConfirm({
+                title: t('common.confirmTitle'),
+                message: t('remoteDiagnosis.sops.deleteConfirm', { name: sop.name }),
+                variant: 'danger',
+                confirmLabel: t('common.delete'),
+            })
             if (!confirmed) return
             deleteSop(sop.id)
                 .then(() => {
@@ -1020,7 +1023,7 @@ export function SopsTab() {
     const handleToggleEnabled = useCallback(
         async (sop: Sop, enabled: boolean) => {
             try {
-                const res = await fetch(`${GATEWAY_URL}/sops/${sop.id}`, {
+                const res = await fetch(`${runtime.GATEWAY_URL}/sops/${sop.id}`, {
                     method: 'PUT',
                     headers: gatewayHeaders(userId),
                     body: JSON.stringify({ enabled }),

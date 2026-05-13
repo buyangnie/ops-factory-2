@@ -4,16 +4,23 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import com.huawei.opsfactory.gateway.service.BusinessTypeService;
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ServerWebExchange;
+import com.huawei.opsfactory.gateway.service.BusinessTypeService;
+
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,10 +35,14 @@ import java.util.Map;
 @RestController
 @RequestMapping("/gateway/business-types")
 public class BusinessTypeController {
-    private static final Logger log = LoggerFactory.getLogger(BusinessTypeController.class);
-
     private final BusinessTypeService businessTypeService;
 
+    /**
+     * Creates the business type controller instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public BusinessTypeController(BusinessTypeService businessTypeService) {
         this.businessTypeService = businessTypeService;
     }
@@ -39,8 +50,8 @@ public class BusinessTypeController {
     /**
      * Lists all business type definitions.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping
     public Mono<Map<String, Object>> listBusinessTypes(ServerWebExchange exchange) {
@@ -56,13 +67,13 @@ public class BusinessTypeController {
     /**
      * Gets a business type by ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<Map<String, Object>>> getBusinessType(
-            @PathVariable("id") String id,
-            ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> getBusinessType(@PathVariable("id") String id,
+        ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             try {
@@ -74,7 +85,7 @@ public class BusinessTypeController {
             } catch (IllegalArgumentException e) {
                 Map<String, Object> body = new LinkedHashMap<>();
                 body.put("success", false);
-                body.put("error", e.getMessage());
+                body.put("error", "Business type not found");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
             }
         }).subscribeOn(Schedulers.boundedElastic());
@@ -83,13 +94,13 @@ public class BusinessTypeController {
     /**
      * Creates a new business type.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param request the request parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PostMapping
-    public Mono<ResponseEntity<Map<String, Object>>> createBusinessType(
-            @RequestBody Map<String, Object> request,
-            ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> createBusinessType(@RequestBody Map<String, Object> request,
+        ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             try {
@@ -98,11 +109,10 @@ public class BusinessTypeController {
                 body.put("success", true);
                 body.put("businessType", bt);
                 return ResponseEntity.status(HttpStatus.CREATED).body(body);
-            } catch (Exception e) {
-                log.error("Failed to create business type", e);
+            } catch (IllegalArgumentException e) {
                 Map<String, Object> body = new LinkedHashMap<>();
                 body.put("success", false);
-                body.put("error", e.getMessage());
+                body.put("error", "Invalid business type request");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
             }
         }).subscribeOn(Schedulers.boundedElastic());
@@ -111,14 +121,14 @@ public class BusinessTypeController {
     /**
      * Updates a business type by ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @param request the request parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PutMapping("/{id}")
-    public Mono<ResponseEntity<Map<String, Object>>> updateBusinessType(
-            @PathVariable("id") String id,
-            @RequestBody Map<String, Object> request,
-            ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> updateBusinessType(@PathVariable("id") String id,
+        @RequestBody Map<String, Object> request, ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             try {
@@ -130,14 +140,8 @@ public class BusinessTypeController {
             } catch (IllegalArgumentException e) {
                 Map<String, Object> body = new LinkedHashMap<>();
                 body.put("success", false);
-                body.put("error", e.getMessage());
+                body.put("error", "Business type not found");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
-            } catch (Exception e) {
-                log.error("Failed to update business type {}", id, e);
-                Map<String, Object> body = new LinkedHashMap<>();
-                body.put("success", false);
-                body.put("error", e.getMessage());
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
             }
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -145,13 +149,13 @@ public class BusinessTypeController {
     /**
      * Deletes a business type by ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Map<String, Object>>> deleteBusinessType(
-            @PathVariable("id") String id,
-            ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> deleteBusinessType(@PathVariable("id") String id,
+        ServerWebExchange exchange) {
         UserContextFilter.requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             boolean deleted = businessTypeService.deleteBusinessType(id);

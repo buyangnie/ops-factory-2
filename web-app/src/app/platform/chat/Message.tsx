@@ -14,7 +14,7 @@ import { usePreview } from '../providers/PreviewContext'
 import { mergeCitationMetadata, parseCitations, replaceCitationsWithPlaceholders, type Citation } from '../../../utils/citationParser'
 import { parseFileCitations, replaceFileCitationsWithPlaceholders, type FileCitation } from '../../../utils/fileCitationParser'
 import { getDisplayTextContent, getFullTextContent, getReasoningContent, getThinkingContent } from '../../../utils/messageContent'
-import { GATEWAY_URL, GATEWAY_SECRET_KEY } from '../../../config/runtime'
+import { runtime } from '../../../config/runtime'
 import type { ChatMessage, DetectedFile, ToolResponseMap } from '../../../types/message'
 import GooseAvatarIcon from './GooseAvatarIcon'
 import UserAvatarIcon from './UserAvatarIcon'
@@ -218,7 +218,7 @@ function FileCapsule({ filePath, fileName, fileExt, rootId, displayPath, agentId
     filePath: string; fileName: string; fileExt: string; rootId?: string; displayPath?: string; agentId?: string; userId?: string | null
 }) {
     const { t } = useTranslation()
-    const downloadUrl = `${GATEWAY_URL}/agents/${agentId}/files/${encodeURIComponent(filePath)}?key=${GATEWAY_SECRET_KEY}${rootId ? `&rootId=${encodeURIComponent(rootId)}` : ''}${userId ? `&uid=${encodeURIComponent(userId)}` : ''}`
+    const downloadUrl = `${runtime.GATEWAY_URL}/agents/${agentId}/files/${encodeURIComponent(filePath)}?key=${runtime.GATEWAY_SECRET_KEY}${rootId ? `&rootId=${encodeURIComponent(rootId)}` : ''}${userId ? `&uid=${encodeURIComponent(userId)}` : ''}`
     const { openPreview, isPreviewable } = usePreview()
     const canPreview = isPreviewable(fileExt, fileName, filePath)
     const { name: visibleName, fullPath } = getFileDisplayParts(fileName, displayPath, filePath)
@@ -801,7 +801,11 @@ function MessageInner({
                                 }
 
                                 const toolCall = entry.toolCall!
-                                const indicatorTone = toolCall.isError ? 'error' : toolCall.isPending ? 'pending' : 'success'
+                                const indicatorTone = (() => {
+                                    if (toolCall.isError) return 'error'
+                                    if (toolCall.isPending) return 'pending'
+                                    return 'success'
+                                })()
 
                                 return (
                                     <div key={entry.key} className={`process-step process-step-tool process-step-tool-${indicatorTone}${stepClass}`}>

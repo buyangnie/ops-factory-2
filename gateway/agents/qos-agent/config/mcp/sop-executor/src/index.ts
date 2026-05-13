@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import process from 'node:process'
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -16,6 +20,9 @@ import { tools, dispatch } from './handlers.js'
 // JSON parsers decode \uXXXX back to the correct Unicode character.
 // ---------------------------------------------------------------------------
 
+type StdoutWriteArgs = Parameters<typeof process.stdout.write>
+type StdoutWriteReturn = ReturnType<typeof process.stdout.write>
+
 const _origWrite = process.stdout.write.bind(process.stdout)
 
 function escapeNonAscii(s: string): string {
@@ -25,13 +32,14 @@ function escapeNonAscii(s: string): string {
   )
 }
 
-// @ts-ignore -- overriding write signatures
-process.stdout.write = function (chunk: any, ...rest: any[]): any {
+process.stdout.write = ((...args: StdoutWriteArgs): StdoutWriteReturn => {
+  const chunk = args[0]
   if (typeof chunk === 'string') {
-    return _origWrite(escapeNonAscii(chunk), ...rest)
+    const patched = [escapeNonAscii(chunk), ...args.slice(1)] as unknown as StdoutWriteArgs
+    return _origWrite(...patched)
   }
-  return _origWrite(chunk, ...rest)
-}
+  return _origWrite(...args)
+}) as typeof process.stdout.write
 
 // ---------------------------------------------------------------------------
 // Server setup
@@ -55,4 +63,4 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 const transport = new StdioServerTransport()
 await server.connect(transport)
-console.error('[sop-executor] MCP server running on stdio')
+process.stderr.write('[sop-executor] MCP server running on stdio\n')

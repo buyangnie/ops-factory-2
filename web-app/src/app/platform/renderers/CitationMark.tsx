@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { KNOWLEDGE_SERVICE_URL } from '../../../config/runtime'
+import { runtime } from '../../../config/runtime'
 import type { Citation } from '../../../utils/citationParser'
 import './CitationMark.css'
 
@@ -103,7 +103,7 @@ export default function CitationMark({ citation }: CitationMarkProps) {
         }
 
         let cancelled = false
-        fetch(`${KNOWLEDGE_SERVICE_URL}/sources/${citation.sourceId}`)
+        fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources/${citation.sourceId}`)
             .then(async response => {
                 if (!response.ok) throw new Error(String(response.status))
                 return response.json() as Promise<{ name?: string }>

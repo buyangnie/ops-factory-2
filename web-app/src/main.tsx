@@ -5,10 +5,13 @@ import App from './App'
 import { UserProvider } from './app/platform/providers/UserContext'
 import { GoosedProvider } from './app/platform/providers/GoosedContext'
 import { ToastProvider } from './app/platform/providers/ToastContext'
+import { ConfirmDialogProvider } from './app/platform/providers/ConfirmDialogContext'
 import ErrorBoundary from './app/platform/runtime/ErrorBoundary'
 import { initializeRuntimeConfig } from './config/runtime'
 import { installGlobalErrorCapture } from './app/platform/logging/errorCapture'
-import { logError, logInfo } from './app/platform/logging/logger'
+import { logInfo } from './app/platform/logging/logger'
+import { logError } from './app/platform/logging/logger'
+
 import './i18n'
 import './App.css'
 import './app/platform/styles/UIPrimitives.css'
@@ -69,11 +72,13 @@ async function bootstrap() {
             <ErrorBoundary>
                 <HashRouter>
                     <ToastProvider>
-                        <UserProvider>
-                            <GoosedProvider>
-                                <App />
-                            </GoosedProvider>
-                        </UserProvider>
+                        <ConfirmDialogProvider>
+                            <UserProvider>
+                                <GoosedProvider>
+                                    <App />
+                                </GoosedProvider>
+                            </UserProvider>
+                        </ConfirmDialogProvider>
                     </ToastProvider>
                 </HashRouter>
             </ErrorBoundary>

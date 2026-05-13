@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -18,6 +22,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+/**
+ * Test coverage for Agent Skill Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(AgentSkillController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -31,6 +41,11 @@ public class AgentSkillControllerTest {
     @MockBean
     private AgentSkillInstallService installService;
 
+    /**
+     * Executes the install skill as admin operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void installSkill_asAdmin() throws Exception {
         Mockito.when(installService.install("agent1", "log-analysis"))
@@ -52,6 +67,9 @@ public class AgentSkillControllerTest {
                 .jsonPath("$.restartRequired").isEqualTo(true);
     }
 
+    /**
+     * Executes the install skill non admin forbidden operation.
+     */
     @Test
     public void installSkill_nonAdminForbidden() {
         webTestClient.post().uri("/gateway/agents/agent1/skills/install")
@@ -63,6 +81,11 @@ public class AgentSkillControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Executes the install skill conflict operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void installSkill_conflict() throws Exception {
         Mockito.when(installService.install("agent1", "log-analysis"))
@@ -79,6 +102,11 @@ public class AgentSkillControllerTest {
                 .jsonPath("$.success").isEqualTo(false);
     }
 
+    /**
+     * Executes the uninstall skill as admin operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void uninstallSkill_asAdmin() throws Exception {
         Mockito.when(installService.uninstall("agent1", "log-analysis"))
@@ -98,6 +126,9 @@ public class AgentSkillControllerTest {
                 .jsonPath("$.restartRequired").isEqualTo(true);
     }
 
+    /**
+     * Executes the uninstall skill non admin forbidden operation.
+     */
     @Test
     public void uninstallSkill_nonAdminForbidden() {
         webTestClient.delete().uri("/gateway/agents/agent1/skills/log-analysis")

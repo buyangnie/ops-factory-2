@@ -40,7 +40,7 @@ describe('operation intelligence frontend structure', () => {
 
         expect(apiSource).toContain('OPERATION_INTELLIGENCE_SERVICE_URL')
         expect(apiSource).toContain('OPERATION_INTELLIGENCE_SECRET_KEY')
-        expect(apiSource).toContain("'x-secret-key': OPERATION_INTELLIGENCE_SECRET_KEY")
+        expect(apiSource).toContain("'x-secret-key': runtime.OPERATION_INTELLIGENCE_SECRET_KEY")
         expect(apiSource).toContain('/qos/getHealthIndicator')
         expect(apiSource).toContain('/qos/getResourceIndicatorDetail')
         expect(apiSource).toContain('/qos/getContributionData')

@@ -4,25 +4,25 @@
 
 package com.huawei.opsfactory.gateway.service;
 
+import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import javax.crypto.Cipher;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,6 +34,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import jakarta.annotation.PostConstruct;
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
 /**
  * Manages host entities with AES-GCM encrypted credentials, SSH connection testing, and cluster-based filtering.
  *
@@ -43,22 +48,41 @@ import java.util.UUID;
 @Service
 public class HostService {
     private static final Logger log = LoggerFactory.getLogger(HostService.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private static final String AES_ALGORITHM = "AES/GCM/NoPadding";
+
     private static final int GCM_IV_LENGTH = 12;
+
     private static final int GCM_TAG_LENGTH = 128;
 
     private final GatewayProperties properties;
+
     private Path gatewayRoot;
+
     private Path hostsDir;
+
     private SecretKeySpec aesKey;
+
     private HostRelationService hostRelationService;
+
     private HostGroupService hostGroupService;
+
     private ClusterService clusterService;
+
     private BusinessServiceService businessServiceService;
+
     private ClusterTypeService clusterTypeService;
+
     private ClusterRelationService clusterRelationService;
 
+    /**
+     * Creates the host service instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public HostService(GatewayProperties properties) {
         this.properties = properties;
     }
@@ -66,8 +90,7 @@ public class HostService {
     /**
      * Sets the host relation service via lazy injection.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param hostRelationService the hostRelationService parameter
      */
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -78,8 +101,7 @@ public class HostService {
     /**
      * Sets the business service service via lazy injection.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param businessServiceService the businessServiceService parameter
      */
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -90,8 +112,7 @@ public class HostService {
     /**
      * Sets the host group service via lazy injection.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param hostGroupService the hostGroupService parameter
      */
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -102,8 +123,7 @@ public class HostService {
     /**
      * Sets the cluster service via lazy injection.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param clusterService the clusterService parameter
      */
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -114,8 +134,7 @@ public class HostService {
     /**
      * Sets the cluster type service via lazy injection.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param clusterTypeService the clusterTypeService parameter
      */
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -126,8 +145,7 @@ public class HostService {
     /**
      * Sets the cluster relation service via lazy injection.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param clusterRelationService the clusterRelationService parameter
      */
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -137,9 +155,6 @@ public class HostService {
 
     /**
      * Initializes the hosts data directory and AES encryption key at startup.
-     *
-     * @author x00000000
-     * @since 2026-05-09
      */
     @PostConstruct
     public void init() {
@@ -172,7 +187,10 @@ public class HostService {
     private void validateHostRole(Map<String, Object> host) {
         Object roleObj = host.get("role");
         String role = roleObj != null ? roleObj.toString() : null;
-        if (role == null || role.isEmpty()) return; // null role is always valid
+        if (role == null || role.isEmpty()) {
+            // null role is always valid
+            return;
+        }
 
         Object clusterIdObj = host.get("clusterId");
         if (clusterIdObj == null || clusterIdObj.toString().isEmpty()) {
@@ -182,23 +200,30 @@ public class HostService {
         String clusterId = clusterIdObj.toString();
         String mode = resolveClusterMode(clusterId);
         if ("peer".equals(mode)) {
-            throw new IllegalArgumentException("Host role is not allowed in peer cluster mode. Cluster ID: " + clusterId);
+            throw new IllegalArgumentException(
+                "Host role is not allowed in peer cluster mode. Cluster ID: " + clusterId);
         }
         if ("primary-backup".equals(mode)) {
             if (!"primary".equals(role) && !"backup".equals(role)) {
-                throw new IllegalArgumentException("Invalid host role '" + role + "'. Must be 'primary' or 'backup' for primary-backup cluster.");
+                throw new IllegalArgumentException(
+                    "Invalid host role '" + role + "'. Must be 'primary' or " + "'backup' for primary-backup cluster.");
             }
         }
     }
 
     /**
      * Resolve the mode of a cluster by looking up its type -> ClusterType.
+     *
+     * @author x00000000
+     * @since 2026-05-09
      */
     private String resolveClusterMode(String clusterId) {
         try {
             Map<String, Object> cluster = clusterService.getCluster(clusterId);
             String typeName = cluster.get("type") != null ? cluster.get("type").toString() : null;
-            if (typeName == null || typeName.isEmpty() || clusterTypeService == null) return "peer";
+            if (typeName == null || typeName.isEmpty() || clusterTypeService == null) {
+                return "peer";
+            }
             for (Map<String, Object> ct : clusterTypeService.listClusterTypes()) {
                 String ctName = ct.get("name") != null ? ct.get("name").toString() : "";
                 if (typeName.equals(ctName)) {
@@ -206,7 +231,9 @@ public class HostService {
                     return modeObj != null ? modeObj.toString() : "peer";
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (IllegalArgumentException e) {
+            log.debug("Unable to resolve cluster mode for missing cluster {}", clusterId);
+        }
         return "peer";
     }
 
@@ -216,9 +243,13 @@ public class HostService {
      */
     @SuppressWarnings("unchecked")
     private void syncClusterTypeToTags(Map<String, Object> host) {
-        if (clusterService == null) return;
+        if (clusterService == null) {
+            return;
+        }
         Object clusterIdObj = host.get("clusterId");
-        if (clusterIdObj == null || clusterIdObj.toString().isEmpty()) return;
+        if (clusterIdObj == null || clusterIdObj.toString().isEmpty()) {
+            return;
+        }
 
         String clusterId = clusterIdObj.toString();
         String clusterTypeRaw = null;
@@ -227,7 +258,9 @@ public class HostService {
             if (cluster != null && cluster.get("type") != null) {
                 clusterTypeRaw = cluster.get("type").toString();
             }
-        } catch (Exception ignored) {}
+        } catch (IllegalArgumentException e) {
+            log.debug("Skipping missing cluster {} while syncing host tags", clusterId);
+        }
 
         final String clusterType = clusterTypeRaw;
 
@@ -257,8 +290,8 @@ public class HostService {
     /**
      * Lists hosts optionally filtered by tags.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param tags the tags parameter
+     * @return the result
      */
     public List<Map<String, Object>> listHosts(String[] tags) {
         List<Map<String, Object>> hosts = new ArrayList<>();
@@ -270,33 +303,29 @@ public class HostService {
                 if (!Files.isRegularFile(file)) {
                     continue;
                 }
-                try {
-                    Map<String, Object> host = readHostFile(file);
-                    if (host != null) {
-                        // Mask credential for listing
-                        host.put("credential", "***");
+                Map<String, Object> host = readHostFile(file);
+                if (host != null) {
+                    // Mask credential for listing
+                    host.put("credential", "***");
 
-                        // Filter by tags if provided
-                        if (tags != null && tags.length > 0) {
-                            Object hostTagsObj = host.get("tags");
-                            if (!(hostTagsObj instanceof List<?> hostTags)) {
-                                continue;
-                            }
-                            boolean matches = false;
-                            for (String tag : tags) {
-                                if (hostTags.stream().anyMatch(ht -> String.valueOf(ht).equalsIgnoreCase(tag))) {
-                                    matches = true;
-                                    break;
-                                }
-                            }
-                            if (!matches) {
-                                continue;
+                    // Filter by tags if provided
+                    if (tags != null && tags.length > 0) {
+                        Object hostTagsObj = host.get("tags");
+                        if (!(hostTagsObj instanceof List<?> hostTags)) {
+                            continue;
+                        }
+                        boolean matches = false;
+                        for (String tag : tags) {
+                            if (hostTags.stream().anyMatch(ht -> String.valueOf(ht).equalsIgnoreCase(tag))) {
+                                matches = true;
+                                break;
                             }
                         }
-                        hosts.add(host);
+                        if (!matches) {
+                            continue;
+                        }
                     }
-                } catch (Exception e) {
-                    log.warn("Failed to read host file: {}", file, e);
+                    hosts.add(host);
                 }
             }
         } catch (IOException e) {
@@ -308,8 +337,8 @@ public class HostService {
     /**
      * Gets a host by its ID with the credential masked.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @return the result
      */
     public Map<String, Object> getHost(String id) {
         Path file = hostsDir.resolve(id + ".json");
@@ -324,8 +353,8 @@ public class HostService {
     /**
      * Gets a host by its ID with the decrypted credential for internal use.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @return the result
      */
     public Map<String, Object> getHostWithCredential(String id) {
         Path file = hostsDir.resolve(id + ".json");
@@ -339,7 +368,7 @@ public class HostService {
         if (credentialObj instanceof String credentialValue && !credentialValue.isEmpty()) {
             try {
                 host.put("credential", decrypt(credentialValue));
-            } catch (Exception e) {
+            } catch (GeneralSecurityException | IllegalArgumentException e) {
                 log.warn("Failed to decrypt credential for host {}: {}", id, e.getMessage());
                 // Leave the encrypted value as-is
             }
@@ -350,8 +379,8 @@ public class HostService {
     /**
      * Creates a new host from the provided field map with encrypted credential.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param body the body parameter
+     * @return the result
      */
     public Map<String, Object> createHost(Map<String, Object> body) {
         String name = body.getOrDefault("name", "").toString();
@@ -390,7 +419,7 @@ public class HostService {
         String rawCredential = credentialObj != null ? credentialObj.toString() : "";
         try {
             host.put("credential", encrypt(rawCredential));
-        } catch (Exception e) {
+        } catch (GeneralSecurityException e) {
             log.error("Failed to encrypt credential for new host {}", id, e);
             throw new RuntimeException("Failed to encrypt credential", e);
         }
@@ -415,8 +444,9 @@ public class HostService {
     /**
      * Updates an existing host with the provided field map, re-encrypting the credential if changed.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @param body the body parameter
+     * @return the result
      */
     public Map<String, Object> updateHost(String id, Map<String, Object> body) {
         Path file = hostsDir.resolve(id + ".json");
@@ -491,7 +521,7 @@ public class HostService {
             if (!"***".equals(rawCredential)) {
                 try {
                     host.put("credential", encrypt(rawCredential));
-                } catch (Exception e) {
+                } catch (GeneralSecurityException e) {
                     log.error("Failed to encrypt credential for host {}", id, e);
                     throw new RuntimeException("Failed to encrypt credential", e);
                 }
@@ -519,8 +549,8 @@ public class HostService {
     /**
      * Deletes a host by ID with cascade deletion of related relations.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @return the result
      */
     public boolean deleteHost(String id) {
         // Cascade delete relations first
@@ -554,6 +584,9 @@ public class HostService {
 
     /**
      * List hosts filtered by clusterId.
+     *
+     * @param clusterId the clusterId parameter
+     * @return the result
      */
     public List<Map<String, Object>> listHostsByCluster(String clusterId) {
         List<Map<String, Object>> hosts = new ArrayList<>();
@@ -565,17 +598,13 @@ public class HostService {
                 if (!Files.isRegularFile(file)) {
                     continue;
                 }
-                try {
-                    Map<String, Object> host = readHostFile(file);
-                    if (host != null) {
-                        Object hostClusterId = host.get("clusterId");
-                        if (clusterId.equals(hostClusterId)) {
-                            host.put("credential", "***");
-                            hosts.add(host);
-                        }
+                Map<String, Object> host = readHostFile(file);
+                if (host != null) {
+                    Object hostClusterId = host.get("clusterId");
+                    if (clusterId.equals(hostClusterId)) {
+                        host.put("credential", "***");
+                        hosts.add(host);
                     }
-                } catch (Exception e) {
-                    log.warn("Failed to read host file: {}", file, e);
                 }
             }
         } catch (IOException e) {
@@ -587,6 +616,10 @@ public class HostService {
     /**
      * List hosts filtered by groupId (via cluster lookup).
      * Recursively resolves sub-groups so a top-level group finds all descendant hosts.
+     *
+     * @param groupId the groupId parameter
+     * @param clusterService the clusterService parameter
+     * @return the result
      */
     public List<Map<String, Object>> listHostsByGroup(String groupId, ClusterService clusterService) {
         List<Map<String, Object>> result = new ArrayList<>();
@@ -594,9 +627,12 @@ public class HostService {
         return result;
     }
 
-    private void collectHostsByGroup(String groupId, ClusterService clusterService,
-                                     Set<String> visited, List<Map<String, Object>> result) {
-        if (!visited.add(groupId)) return; // avoid cycles
+    private void collectHostsByGroup(String groupId, ClusterService clusterService, Set<String> visited,
+        List<Map<String, Object>> result) {
+        if (!visited.add(groupId)) {
+            // avoid cycles
+            return;
+        }
         // Direct clusters under this group
         List<Map<String, Object>> clusters = clusterService.listClusters(groupId, null);
         for (Map<String, Object> cluster : clusters) {
@@ -617,8 +653,7 @@ public class HostService {
     /**
      * Returns all unique tags across all hosts.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public List<String> getAllTags() {
         LinkedHashSet<String> allTags = new LinkedHashSet<>();
@@ -639,6 +674,9 @@ public class HostService {
     /**
      * Find a host by IP address, checking both the ip (SSH) and businessIp fields.
      * Returns the first matching host map (with masked credential) or null.
+     *
+     * @param ip the ip parameter
+     * @return the result
      */
     public Map<String, Object> findByIp(String ip) {
         List<Map<String, Object>> hosts = listHosts(new String[0]);
@@ -653,8 +691,8 @@ public class HostService {
     /**
      * Tests the SSH connection to a host by its ID and returns connection status and latency.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @return the result
      */
     public Map<String, Object> testConnection(String id) {
         Map<String, Object> host;
@@ -683,8 +721,7 @@ public class HostService {
             Session session = jsch.getSession(username, hostname, port);
 
             if ("key".equals(authType)) {
-                jsch.addIdentity("test-connection", credential.getBytes(StandardCharsets.UTF_8),
-                        null, null);
+                jsch.addIdentity("test-connection", credential.getBytes(StandardCharsets.UTF_8), null, null);
             } else {
                 session.setPassword(credential);
             }
@@ -699,12 +736,10 @@ public class HostService {
             result.put("message", "Connection successful");
             result.put("latency", latency + "ms");
             log.info("SSH connection test succeeded hostId={} ip={} port={} latencyMs={}", id, hostname, port, latency);
-        } catch (Exception e) {
+        } catch (JSchException | RuntimeException e) {
             long latency = System.currentTimeMillis() - start;
-            log.warn(
-                    "SSH connection test failed hostId={} ip={} port={} latencyMs={} error={}",
-                    id, hostname, port, latency, e.getMessage()
-            );
+            log.warn("SSH connection test failed hostId={} ip={} port={} latencyMs={} error={}", id, hostname, port,
+                latency, e.getMessage());
             result.put("success", false);
             result.put("message", "Connection failed: " + e.getMessage());
             result.put("latency", latency + "ms");
@@ -742,7 +777,7 @@ public class HostService {
 
     // ── AES-GCM Encryption ───────────────────────────────────────────
 
-    private String encrypt(String plaintext) throws Exception {
+    private String encrypt(String plaintext) throws GeneralSecurityException {
         byte[] iv = new byte[GCM_IV_LENGTH];
         new SecureRandom().nextBytes(iv);
 
@@ -760,7 +795,7 @@ public class HostService {
         return Base64.getEncoder().encodeToString(combined);
     }
 
-    private String decrypt(String encryptedBase64) throws Exception {
+    private String decrypt(String encryptedBase64) throws GeneralSecurityException {
         byte[] combined = Base64.getDecoder().decode(encryptedBase64);
 
         byte[] iv = new byte[GCM_IV_LENGTH];

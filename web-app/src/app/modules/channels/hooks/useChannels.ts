@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import { useUser } from '../../../platform/providers/UserContext'
 import type {
@@ -47,7 +47,7 @@ export function useChannels(): UseChannelsResult {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels`, {
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10_000),
             })
@@ -67,7 +67,7 @@ export function useChannels(): UseChannelsResult {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels/${channelId}`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels/${channelId}`, {
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10_000),
             })
@@ -87,7 +87,7 @@ export function useChannels(): UseChannelsResult {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify(request),
@@ -119,7 +119,7 @@ export function useChannels(): UseChannelsResult {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels/${channelId}`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels/${channelId}`, {
                 method: 'PUT',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify(request),
@@ -148,7 +148,7 @@ export function useChannels(): UseChannelsResult {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels/${channelId}`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels/${channelId}`, {
                 method: 'DELETE',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10_000),
@@ -173,7 +173,7 @@ export function useChannels(): UseChannelsResult {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels/${channelId}/${enabled ? 'enable' : 'disable'}`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels/${channelId}/${enabled ? 'enable' : 'disable'}`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10_000),
@@ -201,7 +201,7 @@ export function useChannels(): UseChannelsResult {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels/${channelId}/verify`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels/${channelId}/verify`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10_000),
@@ -230,7 +230,7 @@ export function useChannels(): UseChannelsResult {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels/${channelId}/login`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels/${channelId}/login`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10_000),
@@ -255,7 +255,7 @@ export function useChannels(): UseChannelsResult {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels/${channelId}/login-state`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels/${channelId}/login-state`, {
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10_000),
             })
@@ -279,7 +279,7 @@ export function useChannels(): UseChannelsResult {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels/${channelId}/logout`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels/${channelId}/logout`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10_000),
@@ -304,7 +304,7 @@ export function useChannels(): UseChannelsResult {
         setIsSaving(true)
         setError(null)
         try {
-            const response = await fetch(`${GATEWAY_URL}/channels/${channelId}/self-test`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/channels/${channelId}/self-test`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify({ text }),

@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, ReactNode 
 import { getPreviewKind, inferFileType, needsTextContent, PreviewKind } from '../../../utils/filePreview'
 import { parseCsvTable } from '../../../utils/officePreview'
 import { useUser } from './UserContext'
-import { GATEWAY_URL, GATEWAY_SECRET_KEY } from '../../../config/runtime'
+import { runtime } from '../../../config/runtime'
 
 interface OfficePreviewConfig {
     enabled: boolean
@@ -46,7 +46,7 @@ interface DirectPreviewRequest {
 type PreviewRequest = AgentPreviewRequest | DirectPreviewRequest
 
 function buildAgentFileUrl(agentId: string, path: string, rootId?: string, userId?: string | null): string {
-    let url = `${GATEWAY_URL}/agents/${agentId}/files/${encodeURIComponent(path)}?key=${GATEWAY_SECRET_KEY}`
+    let url = `${runtime.GATEWAY_URL}/agents/${agentId}/files/${encodeURIComponent(path)}?key=${runtime.GATEWAY_SECRET_KEY}`
     if (rootId) url += `&rootId=${encodeURIComponent(rootId)}`
     if (userId) url += `&uid=${encodeURIComponent(userId)}`
     return url
@@ -84,10 +84,10 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
 
     // Fetch gateway config on mount
     useEffect(() => {
-        fetch(`${GATEWAY_URL}/config`, {
+        fetch(`${runtime.GATEWAY_URL}/config`, {
             headers: {
                 'Content-Type': 'application/json',
-                'x-secret-key': GATEWAY_SECRET_KEY,
+                'x-secret-key': runtime.GATEWAY_SECRET_KEY,
             },
         })
             .then(res => res.ok ? res.json() : null)
@@ -152,7 +152,7 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
 
                 if (previewKind === 'spreadsheet') {
                     const url = buildAgentFileUrl(file.agentId, file.path, file.rootId, userId)
-                    const fetchHeaders: Record<string, string> = { 'x-secret-key': GATEWAY_SECRET_KEY }
+                    const fetchHeaders: Record<string, string> = { 'x-secret-key': runtime.GATEWAY_SECRET_KEY }
                     if (userId) fetchHeaders['x-user-id'] = userId
                     const res = await fetch(url, { headers: fetchHeaders })
                     if (!res.ok) throw new Error(`Failed to fetch spreadsheet: ${res.status}`)
@@ -168,7 +168,7 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
             }
 
             const url = buildAgentFileUrl(file.agentId, file.path, file.rootId, userId)
-            const fetchHeaders: Record<string, string> = { 'x-secret-key': GATEWAY_SECRET_KEY }
+            const fetchHeaders: Record<string, string> = { 'x-secret-key': runtime.GATEWAY_SECRET_KEY }
             if (userId) fetchHeaders['x-user-id'] = userId
             const res = await fetch(url, { headers: fetchHeaders })
 

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.service;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -14,6 +18,12 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
+/**
+ * Test coverage for Business Service Service.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class BusinessServiceServiceTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -22,6 +32,11 @@ public class BusinessServiceServiceTest {
     private GatewayProperties properties;
     private Path businessServicesDir;
 
+    /**
+     * Sets the up.
+     *
+     * @throws IOException if the operation fails
+     */
     @Before
     public void setUp() throws IOException {
         properties = new GatewayProperties();
@@ -38,6 +53,9 @@ public class BusinessServiceServiceTest {
 
     // ── createBusinessService ──────────────────────────────────────
 
+    /**
+     * Tests create business service.
+     */
     @Test
     public void testCreateBusinessService() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -65,6 +83,9 @@ public class BusinessServiceServiceTest {
         assertNotNull(result.get("updatedAt"));
     }
 
+    /**
+     * Tests create business service defaults.
+     */
     @Test
     public void testCreateBusinessService_defaults() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -85,6 +106,9 @@ public class BusinessServiceServiceTest {
 
     // ── getBusinessService ─────────────────────────────────────────
 
+    /**
+     * Tests get business service.
+     */
     @Test
     public void testGetBusinessService() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -99,6 +123,9 @@ public class BusinessServiceServiceTest {
         assertEquals("GT", result.get("code"));
     }
 
+    /**
+     * Tests get business service not found.
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testGetBusinessService_notFound() {
         businessServiceService.getBusinessService("nonexistent");
@@ -106,12 +133,18 @@ public class BusinessServiceServiceTest {
 
     // ── listBusinessServices ───────────────────────────────────────
 
+    /**
+     * Tests list business services empty.
+     */
     @Test
     public void testListBusinessServices_empty() {
         List<Map<String, Object>> services = businessServiceService.listBusinessServices(null, null);
         assertTrue(services.isEmpty());
     }
 
+    /**
+     * Tests list business services returns all.
+     */
     @Test
     public void testListBusinessServices_returnsAll() {
         createBs("bs-1", "Svc1", "S1", "group-1", List.of());
@@ -122,6 +155,9 @@ public class BusinessServiceServiceTest {
         assertEquals(3, services.size());
     }
 
+    /**
+     * Tests list business services filter by group id.
+     */
     @Test
     public void testListBusinessServices_filterByGroupId() {
         createBs("bs-1", "Svc1", "S1", "group-1", List.of());
@@ -132,6 +168,9 @@ public class BusinessServiceServiceTest {
         assertEquals("Svc1", services.get(0).get("name"));
     }
 
+    /**
+     * Tests list business services filter by host id.
+     */
     @Test
     public void testListBusinessServices_filterByHostId() {
         createBs("bs-1", "Svc1", "S1", "group-1", List.of("host-1", "host-2"));
@@ -144,6 +183,9 @@ public class BusinessServiceServiceTest {
 
     // ── updateBusinessService ──────────────────────────────────────
 
+    /**
+     * Tests update business service.
+     */
     @Test
     public void testUpdateBusinessService() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -165,6 +207,9 @@ public class BusinessServiceServiceTest {
         assertEquals(List.of("v2"), result.get("tags"));
     }
 
+    /**
+     * Tests update business service partial update.
+     */
     @Test
     public void testUpdateBusinessService_partialUpdate() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -184,6 +229,9 @@ public class BusinessServiceServiceTest {
         assertEquals("new desc", result.get("description"));
     }
 
+    /**
+     * Tests update business service not found.
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testUpdateBusinessService_notFound() {
         Map<String, Object> updates = new LinkedHashMap<>();
@@ -193,6 +241,9 @@ public class BusinessServiceServiceTest {
 
     // ── deleteBusinessService ──────────────────────────────────────
 
+    /**
+     * Tests delete business service.
+     */
     @Test
     public void testDeleteBusinessService() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -204,6 +255,9 @@ public class BusinessServiceServiceTest {
         assertFalse(Files.exists(businessServicesDir.resolve(id + ".json")));
     }
 
+    /**
+     * Tests delete business service not found.
+     */
     @Test
     public void testDeleteBusinessService_notFound() {
         assertFalse(businessServiceService.deleteBusinessService("nonexistent"));
@@ -211,6 +265,9 @@ public class BusinessServiceServiceTest {
 
     // ── searchByKeyword ────────────────────────────────────────────
 
+    /**
+     * Tests search by keyword.
+     */
     @Test
     public void testSearchByKeyword() {
         createBs("bs-1", "OrderService", "ORDER", null, List.of(), List.of("core"));
@@ -218,7 +275,8 @@ public class BusinessServiceServiceTest {
         createBs("bs-3", "ShippingService", "SHIP", null, List.of(), List.of("order"));
 
         List<Map<String, Object>> byName = businessServiceService.searchByKeyword("order");
-        assertEquals(2, byName.size()); // OrderService (name) + ShippingService (tag "order")
+        // OrderService (name) + ShippingService (tag "order")
+        assertEquals(2, byName.size());
 
         List<Map<String, Object>> byCode = businessServiceService.searchByKeyword("pay");
         assertEquals(1, byCode.size());
@@ -228,6 +286,9 @@ public class BusinessServiceServiceTest {
         assertEquals(1, byTag.size());
     }
 
+    /**
+     * Tests search by keyword empty keyword.
+     */
     @Test
     public void testSearchByKeyword_emptyKeyword() {
         createBs("bs-1", "Svc1", "S1", null, List.of());
@@ -245,7 +306,14 @@ public class BusinessServiceServiceTest {
         createBs(id, name, code, groupId, hostIds, List.of());
     }
 
-    private void createBs(String id, String name, String code, String groupId, List<String> hostIds, List<String> tags) {
+    private void createBs(
+            String id,
+            String name,
+            String code,
+            String groupId,
+            List<String> hostIds,
+            List<String> tags
+    ) {
         Map<String, Object> bs = new LinkedHashMap<>();
         bs.put("id", id);
         bs.put("name", name);

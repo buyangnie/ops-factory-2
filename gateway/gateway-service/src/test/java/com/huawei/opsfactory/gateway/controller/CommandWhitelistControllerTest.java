@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -21,6 +25,12 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Test coverage for Command Whitelist Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(CommandWhitelistController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -36,6 +46,9 @@ public class CommandWhitelistControllerTest {
 
     // ── getWhitelist ─────────────────────────────────────────────
 
+    /**
+     * Tests get whitelist.
+     */
     @Test
     public void testGetWhitelist() {
         Map<String, Object> whitelist = new LinkedHashMap<>();
@@ -57,6 +70,9 @@ public class CommandWhitelistControllerTest {
 
     // ── addCommand ───────────────────────────────────────────────
 
+    /**
+     * Tests add command success.
+     */
     @Test
     public void testAddCommand_success() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -75,6 +91,9 @@ public class CommandWhitelistControllerTest {
                 .jsonPath("$.success").isEqualTo(true);
     }
 
+    /**
+     * Tests add command error.
+     */
     @Test
     public void testAddCommand_error() {
         doThrow(new RuntimeException("Write failed"))
@@ -89,13 +108,17 @@ public class CommandWhitelistControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .exchange()
-                .expectStatus().isBadRequest()
+                .expectStatus().is5xxServerError()
                 .expectBody()
-                .jsonPath("$.success").isEqualTo(false);
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error").isEqualTo("Internal server error");
     }
 
     // ── updateCommand ────────────────────────────────────────────
 
+    /**
+     * Tests update command success.
+     */
     @Test
     public void testUpdateCommand_success() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -113,6 +136,9 @@ public class CommandWhitelistControllerTest {
                 .jsonPath("$.success").isEqualTo(true);
     }
 
+    /**
+     * Tests update command not found.
+     */
     @Test
     public void testUpdateCommand_notFound() {
         doThrow(new IllegalArgumentException("Command pattern not found: unknown"))
@@ -134,6 +160,9 @@ public class CommandWhitelistControllerTest {
 
     // ── deleteCommand ────────────────────────────────────────────
 
+    /**
+     * Tests delete command success.
+     */
     @Test
     public void testDeleteCommand_success() {
         webTestClient.delete().uri("/gateway/command-whitelist/ps")
@@ -145,6 +174,9 @@ public class CommandWhitelistControllerTest {
                 .jsonPath("$.success").isEqualTo(true);
     }
 
+    /**
+     * Tests delete command not found.
+     */
     @Test
     public void testDeleteCommand_notFound() {
         doThrow(new IllegalArgumentException("Command pattern not found: unknown"))
@@ -161,6 +193,9 @@ public class CommandWhitelistControllerTest {
 
     // ── Auth tests ───────────────────────────────────────────────
 
+    /**
+     * Tests get whitelist unauthorized no key.
+     */
     @Test
     public void testGetWhitelist_unauthorized_noKey() {
         webTestClient.get().uri("/gateway/command-whitelist/")
@@ -169,6 +204,9 @@ public class CommandWhitelistControllerTest {
                 .expectStatus().isUnauthorized();
     }
 
+    /**
+     * Tests get whitelist forbidden non admin.
+     */
     @Test
     public void testGetWhitelist_forbidden_nonAdmin() {
         webTestClient.get().uri("/gateway/command-whitelist/")
@@ -178,6 +216,9 @@ public class CommandWhitelistControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests add command forbidden non admin.
+     */
     @Test
     public void testAddCommand_forbidden_nonAdmin() {
         Map<String, Object> body = new LinkedHashMap<>();

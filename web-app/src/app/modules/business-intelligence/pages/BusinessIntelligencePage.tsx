@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { BUSINESS_INTELLIGENCE_SERVICE_URL } from '../../../../config/runtime'
+import { runtime } from '../../../../config/runtime'
 import { useToast } from '../../../platform/providers/ToastContext'
 import FilterInlineGroup from '../../../platform/ui/filters/FilterInlineGroup'
 import AnalyticsTableCard from '../../../platform/ui/primitives/AnalyticsTableCard'
@@ -1018,14 +1018,17 @@ function ReportingPeriodSelector({
                 startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
                 endDate = new Date(now.getFullYear(), now.getMonth(), 0)
                 break
-            case 'thisQuarter':
+            case 'thisQuarter': {
                 const qm = Math.floor(now.getMonth() / 3) * 3
                 startDate = new Date(now.getFullYear(), qm, 1)
                 endDate = new Date(now.getFullYear(), qm + 3, 0)
                 break
+            }
             case 'custom':
                 startDate = undefined
                 endDate = undefined
+                break
+            default:
                 break
         }
 
@@ -1601,9 +1604,11 @@ function IncidentBubbleChart({ chart, colors, t: _t }: { chart: ChartSection; co
     const maxX = Math.max(...points.map(p => p.totalIncidents), 1)
     const maxY = Math.max(...points.map(p => p.avgAging), 1)
     const maxOpen = Math.max(...points.map(p => p.openCount), 1)
-    const vbWidth = 900, vbHeight = 400
+    const vbWidth = 900
+    const vbHeight = 400
     const pad = { top: 20, right: 30, bottom: 60, left: 70 }
-    const iw = vbWidth - pad.left - pad.right, ih = vbHeight - pad.top - pad.bottom
+    const iw = vbWidth - pad.left - pad.right
+    const ih = vbHeight - pad.top - pad.bottom
     const getX = (v: number) => pad.left + (v / maxX) * iw
     const getY = (v: number) => pad.top + ih - (v / maxY) * ih
     const getR = (v: number) => Math.max(8, Math.min(40, 8 + (v / Math.max(maxOpen, 1)) * 32))
@@ -1627,10 +1632,13 @@ function IncidentBubbleChart({ chart, colors, t: _t }: { chart: ChartSection; co
                     style={{ transition: 'opacity 0.15s' }} />
                 {isH ? (() => {
                     const lines = [...ciParts, `${Math.round(p.openCount)} ${_t('businessIntelligence.incidents.units.openProblems')}`]
-                    const lineH = 12, padX = 8, padY = 4
+                    const lineH = 12
+                    const padX = 8
+                    const padY = 4
                     const boxW = Math.max(...lines.map(l => l.length)) * 5.5 + padX * 2
                     const boxH = lines.length * lineH + padY * 2
-                    const bx = cx - boxW / 2, by = cy - boxH / 2 - 4
+                    const bx = cx - boxW / 2
+                    const by = cy - boxH / 2 - 4
                     return (
                         <g>
                             <rect x={bx} y={by} width={boxW} height={boxH} rx="6"
@@ -1712,9 +1720,11 @@ function WorkforceBubbleChart({ chart, colors, t: _t }: { chart: ChartSection; c
         const parts = item.label.split('|')
         return { name: parts[0], slaRate: parseFloat(parts[1]) || 0, satisfaction: parseFloat(parts[2]) || 0, total: item.value }
     })
-    const vbWidth = 900, vbHeight = 420
+    const vbWidth = 900
+    const vbHeight = 420
     const pad = { top: 30, right: 40, bottom: 60, left: 60 }
-    const iw = vbWidth - pad.left - pad.right, ih = vbHeight - pad.top - pad.bottom
+    const iw = vbWidth - pad.left - pad.right
+    const ih = vbHeight - pad.top - pad.bottom
     const getX = (v: number) => pad.left + (v / 100) * iw
     const getY = (v: number) => pad.top + ih - (v / 5) * ih
     const getR = (v: number) => Math.max(8, Math.min(40, 8 + (v / Math.max(Math.max(...points.map(p => p.total)), 1)) * 32))
@@ -1738,10 +1748,13 @@ function WorkforceBubbleChart({ chart, colors, t: _t }: { chart: ChartSection; c
                     style={{ transition: 'opacity 0.15s' }} />
                 {isH ? (() => {
                     const lines = [p.name, _t('businessIntelligence.workforce.units.tickets', { count: Math.round(p.total) })]
-                    const lineH = 12, padX = 8, padY = 4
+                    const lineH = 12
+                    const padX = 8
+                    const padY = 4
                     const boxW = Math.max(...lines.map(l => l.length)) * 5.5 + padX * 2
                     const boxH = lines.length * lineH + padY * 2
-                    const bx = cx - boxW / 2, by = cy - boxH / 2 - 4
+                    const bx = cx - boxW / 2
+                    const by = cy - boxH / 2 - 4
                     return (
                         <g>
                             <rect x={bx} y={by} width={boxW} height={boxH} rx="6"
@@ -2300,7 +2313,10 @@ function GenericTabPanel({
                                                 fill={colors[seriesIdx]} fontSize="11"
                                                 textAnchor="middle" fontWeight="600"
                                             >
-                                                {isPercentage ? `${val.toFixed(1)}%` : (val % 1 === 0 ? val : val.toFixed(1))}
+                                                {(() => {
+                                                    if (isPercentage) return `${val.toFixed(1)}%`
+                                                    return val % 1 === 0 ? val : val.toFixed(1)
+                                                })()}
                                             </text>
                                         </g>
                                     )
@@ -2363,7 +2379,11 @@ function GenericTabPanel({
         const isScoreScale = maxLineValue <= 5 && maxLineValue > 0
         const isPercentageScale = !isScoreScale && (secondSeries.includes('率') || secondSeries.includes('%'))
         const isCountScale = !isScoreScale && !isPercentageScale
-        const maxRate = isScoreScale ? 5 : isCountScale ? Math.ceil(maxLineValue / 5) * 5 || 5 : 100
+        const maxRate = (() => {
+            if (isScoreScale) return 5
+            if (isCountScale) return Math.ceil(maxLineValue / 5) * 5 || 5
+            return 100
+        })()
 
         const vbWidth = 1000
         const vbHeight = 360
@@ -2390,11 +2410,11 @@ function GenericTabPanel({
         }))
 
         // Generate Y-axis labels for line (right) - score, count, or percentage
-        const lineYAxisLabels = isScoreScale
-            ? [0, 1, 2, 3, 4, 5].map(value => ({ value, y: getLineY(value) }))
-            : isPercentageScale
-            ? [0, 25, 50, 75, 100].map(value => ({ value, y: getLineY(value) }))
-            : [0, 0.25, 0.5, 0.75, 1].map(ratio => ({ value: Math.round(maxRate * ratio), y: getLineY(maxRate * ratio) }))
+        const lineYAxisLabels = (() => {
+            if (isScoreScale) return [0, 1, 2, 3, 4, 5].map(value => ({ value, y: getLineY(value) }))
+            if (isPercentageScale) return [0, 25, 50, 75, 100].map(value => ({ value, y: getLineY(value) }))
+            return [0, 0.25, 0.5, 0.75, 1].map(ratio => ({ value: Math.round(maxRate * ratio), y: getLineY(maxRate * ratio) }))
+        })()
 
         // Build line path
         const linePoints = dataPoints
@@ -2445,7 +2465,10 @@ function GenericTabPanel({
                             fontSize="12"
                             textAnchor="start"
                         >
-                            {isScoreScale ? label.value : isPercentageScale ? `${label.value}%` : label.value}
+                            {(() => {
+                                if (isPercentageScale) return `${label.value}%`
+                                return label.value
+                            })()}
                         </text>
                     ))}
 
@@ -3236,7 +3259,7 @@ export default function BusinessIntelligence() {
             if (startDate) params.append('startDate', startDate)
             if (endDate) params.append('endDate', endDate)
             const queryString = params.toString()
-            const baseUrl = forceRefresh ? `${BUSINESS_INTELLIGENCE_SERVICE_URL}/refresh` : `${BUSINESS_INTELLIGENCE_SERVICE_URL}/overview`
+            const baseUrl = forceRefresh ? `${runtime.BUSINESS_INTELLIGENCE_SERVICE_URL}/refresh` : `${runtime.BUSINESS_INTELLIGENCE_SERVICE_URL}/overview`
             const url = queryString ? `${baseUrl}?${queryString}` : baseUrl
 
             const response = await fetch(url, {
@@ -3341,12 +3364,13 @@ export default function BusinessIntelligence() {
                 </div>
             ) : null}
 
-            {loading ? (
+            {loading && (
                 <div className="empty-state">
                     <div className="empty-state-title">{t('common.loading')}</div>
                     <div className="empty-state-description">{t('businessIntelligence.loadingDescription')}</div>
                 </div>
-            ) : overview && activeTab ? (
+            )}
+            {!loading && overview && activeTab && (
                 <>
                     <div className="config-tabs" role="tablist" aria-label={t('businessIntelligence.tabsLabel')}>
                         {overview.tabs.map(tab => (
@@ -3369,7 +3393,8 @@ export default function BusinessIntelligence() {
                         <GenericTabPanel tab={activeTab} t={t} />
                     )}
                 </>
-            ) : (
+            )}
+            {!loading && !(overview && activeTab) && (
                 <div className="empty-state">
                     <h3 className="empty-state-title">{t('businessIntelligence.emptyTitle')}</h3>
                     <p className="empty-state-description">{t('businessIntelligence.emptyDescription')}</p>

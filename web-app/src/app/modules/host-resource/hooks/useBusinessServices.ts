@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { useUser } from '../../../platform/providers/UserContext'
 import type { BusinessService } from '../../../../types/host'
 
-function apiBase() { return `${GATEWAY_URL}/business-services` }
+function apiBase() { return `${runtime.GATEWAY_URL}/business-services` }
 
 export function useBusinessServices() {
     const { userId } = useUser()

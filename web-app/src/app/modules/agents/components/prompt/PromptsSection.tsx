@@ -133,9 +133,10 @@ export default function PromptsSection({ agentId }: PromptsSectionProps) {
                 <div className="prompts-alert prompts-alert-error">{error}</div>
             )}
 
-            {isLoading ? (
+            {isLoading && (
                 <div className="prompts-loading">{t('prompts.loading')}</div>
-            ) : templates.length > 0 ? (
+            )}
+            {!isLoading && templates.length > 0 && (
                 <div className="prompts-list">
                     {templates.map(template => {
                         const isExpanded = expandedName === template.name
@@ -227,7 +228,8 @@ export default function PromptsSection({ agentId }: PromptsSectionProps) {
                         )
                     })}
                 </div>
-            ) : (
+            )}
+            {!isLoading && templates.length === 0 && (
                 <div className="prompts-empty">
                     <p>{t('prompts.noPrompts')}</p>
                 </div>

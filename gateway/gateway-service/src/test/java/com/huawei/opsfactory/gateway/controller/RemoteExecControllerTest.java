@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -21,6 +25,12 @@ import java.util.Map;
 
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for Remote Exec Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(RemoteExecController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -39,6 +49,9 @@ public class RemoteExecControllerTest {
 
     // ── execute: validation ──────────────────────────────────────
 
+    /**
+     * Tests execute missing host id.
+     */
     @Test
     public void testExecute_missingHostId() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -56,6 +69,9 @@ public class RemoteExecControllerTest {
                 .jsonPath("$.error").isEqualTo("hostId is required");
     }
 
+    /**
+     * Tests execute blank host id.
+     */
     @Test
     public void testExecute_blankHostId() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -73,6 +89,9 @@ public class RemoteExecControllerTest {
                 .jsonPath("$.error").isEqualTo("hostId is required");
     }
 
+    /**
+     * Tests execute missing command.
+     */
     @Test
     public void testExecute_missingCommand() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -90,6 +109,9 @@ public class RemoteExecControllerTest {
                 .jsonPath("$.error").isEqualTo("command is required");
     }
 
+    /**
+     * Tests execute blank command.
+     */
     @Test
     public void testExecute_blankCommand() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -109,6 +131,9 @@ public class RemoteExecControllerTest {
 
     // ── execute: success ─────────────────────────────────────────
 
+    /**
+     * Tests execute success.
+     */
     @Test
     public void testExecute_success() {
         Map<String, Object> execResult = new LinkedHashMap<>();
@@ -138,6 +163,9 @@ public class RemoteExecControllerTest {
                 .jsonPath("$.duration").isEqualTo(1250);
     }
 
+    /**
+     * Tests execute custom timeout.
+     */
     @Test
     public void testExecute_customTimeout() {
         Map<String, Object> execResult = new LinkedHashMap<>();
@@ -167,6 +195,9 @@ public class RemoteExecControllerTest {
 
     // ── execute: whitelist rejection ─────────────────────────────
 
+    /**
+     * Tests execute whitelist rejected.
+     */
     @Test
     public void testExecute_whitelistRejected() {
         // The service returns rejectedCommands but does NOT set success=false
@@ -198,6 +229,9 @@ public class RemoteExecControllerTest {
                 .jsonPath("$.exitCode").isEqualTo(-1);
     }
 
+    /**
+     * Tests execute whitelist rejected with success false.
+     */
     @Test
     public void testExecute_whitelistRejected_withSuccessFalse() {
         // If the service explicitly sets success=false AND rejectedCommands,
@@ -233,6 +267,9 @@ public class RemoteExecControllerTest {
 
     // ── execute: host not found ──────────────────────────────────
 
+    /**
+     * Tests execute host not found.
+     */
     @Test
     public void testExecute_hostNotFound() {
         Map<String, Object> execResult = new LinkedHashMap<>();
@@ -259,8 +296,35 @@ public class RemoteExecControllerTest {
                 .jsonPath("$.exitCode").isEqualTo(-1);
     }
 
+    /**
+     * Tests execute unexpected failure is sanitized.
+     */
+    @Test
+    public void testExecute_unexpectedFailure_isSanitized() {
+        when(remoteExecutionService.execute("host-1", "ls", 30))
+                .thenThrow(new RuntimeException("SSH stack trace"));
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("hostId", "host-1");
+        body.put("command", "ls");
+
+        webTestClient.post().uri("/gateway/remote/execute")
+                .header("x-secret-key", "test")
+                .header("x-user-id", "admin")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().is5xxServerError()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error").isEqualTo("Internal server error");
+    }
+
     // ── Auth tests ───────────────────────────────────────────────
 
+    /**
+     * Tests execute unauthorized no key.
+     */
     @Test
     public void testExecute_unauthorized_noKey() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -275,6 +339,9 @@ public class RemoteExecControllerTest {
                 .expectStatus().isUnauthorized();
     }
 
+    /**
+     * Tests execute forbidden non admin.
+     */
     @Test
     public void testExecute_forbidden_nonAdmin() {
         Map<String, Object> body = new LinkedHashMap<>();

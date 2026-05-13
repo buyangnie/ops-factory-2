@@ -7,14 +7,16 @@ package com.huawei.opsfactory.gateway.controller;
 import com.huawei.opsfactory.gateway.common.model.UserRole;
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
+
+import reactor.core.publisher.Mono;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Lightweight controller exposing health-check, current-user identity, and public config.
@@ -27,6 +29,12 @@ import java.util.Locale;
 public class StatusController {
     private final GatewayProperties properties;
 
+    /**
+     * Creates the status controller.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public StatusController(GatewayProperties properties) {
         this.properties = properties;
     }
@@ -34,8 +42,7 @@ public class StatusController {
     /**
      * Returns health check status.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     @GetMapping("/status")
     public Mono<String> status() {
@@ -45,31 +52,26 @@ public class StatusController {
     /**
      * Returns the current user's identity and role.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping("/me")
     public Mono<Map<String, Object>> me(ServerWebExchange exchange) {
         String userId = exchange.getAttribute(UserContextFilter.USER_ID_ATTR);
         UserRole role = exchange.getAttribute(UserContextFilter.USER_ROLE_ATTR);
-        return Mono.just(Map.of(
-                "userId", userId != null ? userId : "unknown",
-                "role", role != null ? role.name().toLowerCase(Locale.ROOT) : "user"));
+        return Mono.just(Map.of("userId", userId != null ? userId : "unknown", "role",
+            role != null ? role.name().toLowerCase(Locale.ROOT) : "user"));
     }
 
     /**
      * Returns public configuration such as Office preview settings.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     @GetMapping("/config")
     public Mono<Map<String, Object>> config() {
         GatewayProperties.OfficePreview op = properties.getOfficePreview();
-        return Mono.just(Map.of(
-                "officePreview", Map.of(
-                        "enabled", op.isEnabled(),
-                        "onlyofficeUrl", op.getOnlyofficeUrl(),
-                        "fileBaseUrl", op.getFileBaseUrl())));
+        return Mono.just(Map.of("officePreview", Map.of("enabled", op.isEnabled(), "onlyofficeUrl",
+            op.getOnlyofficeUrl(), "fileBaseUrl", op.getFileBaseUrl())));
     }
 }

@@ -142,26 +142,29 @@ function resolveOperationIntelligenceServiceUrl(raw: string | undefined): string
 }
 
 const DEFAULT_SECRET_KEY = 'test'
-export let GATEWAY_URL = resolveGatewayUrl(undefined)
-export let GATEWAY_SECRET_KEY = DEFAULT_SECRET_KEY
-export let CONTROL_CENTER_URL = resolveControlCenterUrl(undefined)
-export let CONTROL_CENTER_SECRET_KEY = DEFAULT_SECRET_KEY
-export let KNOWLEDGE_SERVICE_URL = resolveKnowledgeServiceUrl(undefined)
-export let BUSINESS_INTELLIGENCE_SERVICE_URL = resolveBusinessIntelligenceServiceUrl(undefined)
-export let SKILL_MARKET_SERVICE_URL = resolveSkillMarketServiceUrl(undefined)
-export let OPERATION_INTELLIGENCE_SERVICE_URL = resolveOperationIntelligenceServiceUrl(undefined)
-export let OPERATION_INTELLIGENCE_SECRET_KEY = DEFAULT_SECRET_KEY
+
+export const runtime = {
+    GATEWAY_URL: resolveGatewayUrl(undefined),
+    GATEWAY_SECRET_KEY: DEFAULT_SECRET_KEY,
+    CONTROL_CENTER_URL: resolveControlCenterUrl(undefined),
+    CONTROL_CENTER_SECRET_KEY: DEFAULT_SECRET_KEY,
+    KNOWLEDGE_SERVICE_URL: resolveKnowledgeServiceUrl(undefined),
+    BUSINESS_INTELLIGENCE_SERVICE_URL: resolveBusinessIntelligenceServiceUrl(undefined),
+    SKILL_MARKET_SERVICE_URL: resolveSkillMarketServiceUrl(undefined),
+    OPERATION_INTELLIGENCE_SERVICE_URL: resolveOperationIntelligenceServiceUrl(undefined),
+    OPERATION_INTELLIGENCE_SECRET_KEY: DEFAULT_SECRET_KEY,
+}
 
 function setRuntimeConfig(config: RuntimeConfig): void {
-    GATEWAY_URL = resolveGatewayUrl(config.gatewayUrl)
-    GATEWAY_SECRET_KEY = config.gatewaySecretKey || DEFAULT_SECRET_KEY
-    CONTROL_CENTER_URL = resolveControlCenterUrl(config.controlCenterUrl)
-    CONTROL_CENTER_SECRET_KEY = config.controlCenterSecretKey || DEFAULT_SECRET_KEY
-    KNOWLEDGE_SERVICE_URL = resolveKnowledgeServiceUrl(config.knowledgeServiceUrl)
-    BUSINESS_INTELLIGENCE_SERVICE_URL = resolveBusinessIntelligenceServiceUrl(config.businessIntelligenceServiceUrl)
-    SKILL_MARKET_SERVICE_URL = resolveSkillMarketServiceUrl(config.skillMarketServiceUrl)
-    OPERATION_INTELLIGENCE_SERVICE_URL = resolveOperationIntelligenceServiceUrl(config.operationIntelligenceServiceUrl)
-    OPERATION_INTELLIGENCE_SECRET_KEY = config.operationIntelligenceSecretKey || DEFAULT_SECRET_KEY
+    runtime.GATEWAY_URL = resolveGatewayUrl(config.gatewayUrl)
+    runtime.GATEWAY_SECRET_KEY = config.gatewaySecretKey || DEFAULT_SECRET_KEY
+    runtime.CONTROL_CENTER_URL = resolveControlCenterUrl(config.controlCenterUrl)
+    runtime.CONTROL_CENTER_SECRET_KEY = config.controlCenterSecretKey || DEFAULT_SECRET_KEY
+    runtime.KNOWLEDGE_SERVICE_URL = resolveKnowledgeServiceUrl(config.knowledgeServiceUrl)
+    runtime.BUSINESS_INTELLIGENCE_SERVICE_URL = resolveBusinessIntelligenceServiceUrl(config.businessIntelligenceServiceUrl)
+    runtime.SKILL_MARKET_SERVICE_URL = resolveSkillMarketServiceUrl(config.skillMarketServiceUrl)
+    runtime.OPERATION_INTELLIGENCE_SERVICE_URL = resolveOperationIntelligenceServiceUrl(config.operationIntelligenceServiceUrl)
+    runtime.OPERATION_INTELLIGENCE_SECRET_KEY = config.operationIntelligenceSecretKey || DEFAULT_SECRET_KEY
     configureWebappLogging(config.logging)
 }
 
@@ -180,14 +183,6 @@ async function loadRuntimeConfig(): Promise<RuntimeConfig> {
 
 export async function initializeRuntimeConfig(): Promise<void> {
     const config = await loadRuntimeConfig()
-
-    if (!config.gatewayUrl) {
-        throw new Error('Missing required configuration: gatewayUrl')
-    }
-    if (!config.gatewaySecretKey) {
-        throw new Error('Missing required configuration: gatewaySecretKey')
-    }
-
     setRuntimeConfig(config)
 }
 
@@ -199,7 +194,7 @@ export function isAdminUser(_userId: string | null, role: UserRole | null): bool
 export function gatewayHeaders(userId?: string | null): Record<string, string> {
     const h: Record<string, string> = {
         'Content-Type': 'application/json',
-        'x-secret-key': GATEWAY_SECRET_KEY,
+        'x-secret-key': runtime.GATEWAY_SECRET_KEY,
     }
     if (userId) h['x-user-id'] = userId
     return h
@@ -208,7 +203,7 @@ export function gatewayHeaders(userId?: string | null): Record<string, string> {
 export function controlCenterHeaders(): Record<string, string> {
     return {
         'Content-Type': 'application/json',
-        'x-secret-key': CONTROL_CENTER_SECRET_KEY,
+        'x-secret-key': runtime.CONTROL_CENTER_SECRET_KEY,
     }
 }
 

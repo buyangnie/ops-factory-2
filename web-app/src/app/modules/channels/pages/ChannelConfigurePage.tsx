@@ -301,24 +301,20 @@ export default function ChannelConfigurePage() {
     const bindings = channel?.bindings ?? []
     const events = channel?.events ?? []
     const loginStatus = loginState?.status || form.config.loginStatus || 'disconnected'
-    const channelStatus = !form.enabled
-        ? 'DISABLED'
-        : loginStatus === 'connected'
-            ? 'ACTIVE'
-            : loginStatus === 'pending'
-                ? 'PENDING_LOGIN'
-                : loginStatus === 'error'
-                    ? 'ERROR'
-                    : 'LOGIN_REQUIRED'
-    const statusLabel = channelStatus === 'ACTIVE'
-        ? t('channels.statusActive')
-        : channelStatus === 'PENDING_LOGIN'
-            ? t('channels.statusPendingLogin')
-            : channelStatus === 'ERROR'
-                ? t('channels.statusError')
-                : channelStatus === 'DISABLED'
-                    ? t('channels.statusDisabled')
-                    : t('channels.statusLoginRequired')
+    const channelStatus = (() => {
+        if (!form.enabled) return 'DISABLED'
+        if (loginStatus === 'connected') return 'ACTIVE'
+        if (loginStatus === 'pending') return 'PENDING_LOGIN'
+        if (loginStatus === 'error') return 'ERROR'
+        return 'LOGIN_REQUIRED'
+    })()
+    const statusLabel = (() => {
+        if (channelStatus === 'ACTIVE') return t('channels.statusActive')
+        if (channelStatus === 'PENDING_LOGIN') return t('channels.statusPendingLogin')
+        if (channelStatus === 'ERROR') return t('channels.statusError')
+        if (channelStatus === 'DISABLED') return t('channels.statusDisabled')
+        return t('channels.statusLoginRequired')
+    })()
     const loginActionsDisabled = !form.enabled || isSaving
     const showQrLoading = isLoginModalOpen && loginState?.status === 'pending' && !loginState?.qrCodeDataUrl
     const showQrReady = isLoginModalOpen && !!loginState?.qrCodeDataUrl

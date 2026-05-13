@@ -4,14 +4,15 @@
 
 package com.huawei.opsfactory.gateway.service;
 
+import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import jakarta.annotation.PostConstruct;
+
 /**
  * Manages business type definitions persisted as JSON files under the gateway data directory.
  *
@@ -33,20 +36,25 @@ import java.util.UUID;
 @Service
 public class BusinessTypeService {
     private static final Logger log = LoggerFactory.getLogger(BusinessTypeService.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final GatewayProperties properties;
+
     private Path businessTypesDir;
 
+    /**
+     * Creates the business type service instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public BusinessTypeService(GatewayProperties properties) {
         this.properties = properties;
     }
 
     /**
      * Initializes the business types data directory at startup.
-     *
-     * @author x00000000
-     * @since 2026-05-09
      */
     @PostConstruct
     public void init() {
@@ -65,8 +73,7 @@ public class BusinessTypeService {
     /**
      * Lists all business types.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public List<Map<String, Object>> listBusinessTypes() {
         List<Map<String, Object>> types = new ArrayList<>();
@@ -78,13 +85,9 @@ public class BusinessTypeService {
                 if (!Files.isRegularFile(file)) {
                     continue;
                 }
-                try {
-                    Map<String, Object> bt = readFile(file);
-                    if (bt != null) {
-                        types.add(bt);
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to read business-type file: {}", file, e);
+                Map<String, Object> bt = readFile(file);
+                if (bt != null) {
+                    types.add(bt);
                 }
             }
         } catch (IOException e) {
@@ -96,8 +99,8 @@ public class BusinessTypeService {
     /**
      * Gets a business type by its ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @return the result
      */
     public Map<String, Object> getBusinessType(String id) {
         Path file = businessTypesDir.resolve(id + ".json");
@@ -111,8 +114,8 @@ public class BusinessTypeService {
     /**
      * Creates a new business type from the provided field map.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param body the body parameter
+     * @return the result
      */
     public Map<String, Object> createBusinessType(Map<String, Object> body) {
         String id = UUID.randomUUID().toString();
@@ -136,8 +139,9 @@ public class BusinessTypeService {
     /**
      * Updates an existing business type with the provided field map.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @param body the body parameter
+     * @return the result
      */
     public Map<String, Object> updateBusinessType(String id, Map<String, Object> body) {
         Path file = businessTypesDir.resolve(id + ".json");
@@ -171,8 +175,8 @@ public class BusinessTypeService {
     /**
      * Deletes a business type by its ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @return the result
      */
     public boolean deleteBusinessType(String id) {
         Path file = businessTypesDir.resolve(id + ".json");

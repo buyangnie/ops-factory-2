@@ -10,15 +10,6 @@ package com.huawei.opsfactory.gateway.service.channel.model;
  * @author x00000000
  * @since 2026-05-09
  */
-public record ChannelInstance(
-        String id,
-        String name,
-        String type,
-        boolean enabled,
-        String defaultAgentId,
-        String ownerUserId,
-        String createdAt,
-        String updatedAt,
-        ChannelConnectionConfig config
-) {
+public record ChannelInstance(String id, String name, String type, boolean enabled, String defaultAgentId,
+    String ownerUserId, String createdAt, String updatedAt, ChannelConnectionConfig config) {
 }

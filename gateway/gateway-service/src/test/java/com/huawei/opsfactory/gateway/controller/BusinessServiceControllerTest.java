@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -21,6 +25,12 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for Business Service Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(BusinessServiceController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -36,6 +46,9 @@ public class BusinessServiceControllerTest {
 
     // ── listBusinessServices ───────────────────────────────────────
 
+    /**
+     * Tests list business services.
+     */
     @Test
     public void testListBusinessServices() {
         when(businessServiceService.listBusinessServices(isNull(), isNull()))
@@ -51,6 +64,9 @@ public class BusinessServiceControllerTest {
                 .jsonPath("$.businessServices").isEmpty();
     }
 
+    /**
+     * Tests list business services with keyword.
+     */
     @Test
     public void testListBusinessServices_withKeyword() {
         Map<String, Object> bs = new LinkedHashMap<>();
@@ -69,6 +85,9 @@ public class BusinessServiceControllerTest {
 
     // ── getBusinessService ─────────────────────────────────────────
 
+    /**
+     * Tests get business service.
+     */
     @Test
     public void testGetBusinessService() {
         Map<String, Object> bs = new LinkedHashMap<>();
@@ -86,6 +105,9 @@ public class BusinessServiceControllerTest {
                 .jsonPath("$.businessService.id").isEqualTo("bs-1");
     }
 
+    /**
+     * Tests get business service not found.
+     */
     @Test
     public void testGetBusinessService_notFound() {
         when(businessServiceService.getBusinessService("nonexistent"))
@@ -102,6 +124,9 @@ public class BusinessServiceControllerTest {
 
     // ── getResolved ────────────────────────────────────────────────
 
+    /**
+     * Tests get business service resolved.
+     */
     @Test
     public void testGetBusinessServiceResolved() {
         Map<String, Object> resolved = new LinkedHashMap<>();
@@ -123,6 +148,9 @@ public class BusinessServiceControllerTest {
 
     // ── getHosts ───────────────────────────────────────────────────
 
+    /**
+     * Tests get business service hosts.
+     */
     @Test
     public void testGetBusinessServiceHosts() {
         Map<String, Object> host = new LinkedHashMap<>();
@@ -142,6 +170,9 @@ public class BusinessServiceControllerTest {
 
     // ── getTopology ────────────────────────────────────────────────
 
+    /**
+     * Tests get business service topology.
+     */
     @Test
     public void testGetBusinessServiceTopology() {
         Map<String, Object> topology = new LinkedHashMap<>();
@@ -161,6 +192,9 @@ public class BusinessServiceControllerTest {
 
     // ── createBusinessService ──────────────────────────────────────
 
+    /**
+     * Tests create business service.
+     */
     @Test
     public void testCreateBusinessService() {
         Map<String, Object> created = new LinkedHashMap<>();
@@ -183,6 +217,9 @@ public class BusinessServiceControllerTest {
                 .jsonPath("$.businessService.id").isEqualTo("new-id");
     }
 
+    /**
+     * Tests create business service error.
+     */
     @Test
     public void testCreateBusinessService_error() {
         when(businessServiceService.createBusinessService(any()))
@@ -197,13 +234,17 @@ public class BusinessServiceControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .exchange()
-                .expectStatus().isBadRequest()
+                .expectStatus().is5xxServerError()
                 .expectBody()
-                .jsonPath("$.success").isEqualTo(false);
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error").isEqualTo("Internal server error");
     }
 
     // ── updateBusinessService ──────────────────────────────────────
 
+    /**
+     * Tests update business service.
+     */
     @Test
     public void testUpdateBusinessService() {
         Map<String, Object> updated = new LinkedHashMap<>();
@@ -226,6 +267,9 @@ public class BusinessServiceControllerTest {
                 .jsonPath("$.businessService.name").isEqualTo("UpdatedService");
     }
 
+    /**
+     * Tests update business service not found.
+     */
     @Test
     public void testUpdateBusinessService_notFound() {
         when(businessServiceService.updateBusinessService(eq("nonexistent"), any()))
@@ -247,6 +291,9 @@ public class BusinessServiceControllerTest {
 
     // ── deleteBusinessService ──────────────────────────────────────
 
+    /**
+     * Tests delete business service.
+     */
     @Test
     public void testDeleteBusinessService() {
         when(businessServiceService.deleteBusinessService("bs-1")).thenReturn(true);
@@ -260,6 +307,9 @@ public class BusinessServiceControllerTest {
                 .jsonPath("$.success").isEqualTo(true);
     }
 
+    /**
+     * Tests delete business service not found.
+     */
     @Test
     public void testDeleteBusinessService_notFound() {
         when(businessServiceService.deleteBusinessService("nonexistent")).thenReturn(false);
@@ -275,6 +325,9 @@ public class BusinessServiceControllerTest {
 
     // ── migrate ────────────────────────────────────────────────────
 
+    /**
+     * Tests migrate.
+     */
     @Test
     public void testMigrate() {
         Map<String, Object> migrateResult = new LinkedHashMap<>();
@@ -293,6 +346,9 @@ public class BusinessServiceControllerTest {
 
     // ── Auth tests ─────────────────────────────────────────────────
 
+    /**
+     * Tests list business services unauthorized no key.
+     */
     @Test
     public void testListBusinessServices_unauthorized_noKey() {
         webTestClient.get().uri("/gateway/business-services")
@@ -301,6 +357,9 @@ public class BusinessServiceControllerTest {
                 .expectStatus().isUnauthorized();
     }
 
+    /**
+     * Tests list business services forbidden non admin.
+     */
     @Test
     public void testListBusinessServices_forbidden_nonAdmin() {
         webTestClient.get().uri("/gateway/business-services")
@@ -310,6 +369,9 @@ public class BusinessServiceControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests create business service forbidden non admin.
+     */
     @Test
     public void testCreateBusinessService_forbidden_nonAdmin() {
         Map<String, Object> body = new LinkedHashMap<>();

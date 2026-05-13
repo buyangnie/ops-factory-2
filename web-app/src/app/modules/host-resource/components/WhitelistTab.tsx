@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCommandWhitelist } from '../hooks/useCommandWhitelist'
 import { useToast } from '../../../platform/providers/ToastContext'
+import { useConfirmDialog } from '../../../platform/providers/ConfirmDialogContext'
 import ListSearchInput from '../../../platform/ui/list/ListSearchInput'
 import ListResultsMeta from '../../../platform/ui/list/ListResultsMeta'
 import type { WhitelistCommand } from '../../../../types/commandWhitelist'
@@ -213,6 +214,7 @@ export function WhitelistTab() {
         deleteCommand,
     } = useCommandWhitelist()
     const { showToast } = useToast()
+    const { requestConfirm } = useConfirmDialog()
 
     const PAGE_SIZE = 15
     const [currentPage, setCurrentPage] = useState(1)
@@ -259,10 +261,13 @@ export function WhitelistTab() {
     )
 
     const handleDelete = useCallback(
-        (cmd: WhitelistCommand) => {
-            const confirmed = window.confirm(
-                t('remoteDiagnosis.whitelist.deleteConfirm', { pattern: cmd.pattern }),
-            )
+        async (cmd: WhitelistCommand) => {
+            const confirmed = await requestConfirm({
+                title: t('common.confirmTitle'),
+                message: t('remoteDiagnosis.whitelist.deleteConfirm', { pattern: cmd.pattern }),
+                variant: 'danger',
+                confirmLabel: t('common.delete'),
+            })
             if (!confirmed) return
             deleteCommand(cmd.pattern)
                 .then(() => {
@@ -306,38 +311,43 @@ export function WhitelistTab() {
 
                 {error && <div className="conn-banner conn-banner-error">{error}</div>}
 
-                {isLoading ? (
-                    <div className="sop-workflow-empty-shell">
-                        <div className="empty-state">
-                            <h3 className="empty-state-title">{t('common.loading')}</h3>
-                        </div>
-                    </div>
-                ) : commands.length === 0 ? (
-                    <div className="sop-workflow-empty-shell">
-                        <div className="empty-state">
-                            <svg
-                                className="empty-state-icon"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.5"
-                            >
-                                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                            <h3 className="empty-state-title">
-                                {t('remoteDiagnosis.whitelist.noCommands')}
-                            </h3>
-                            <p className="empty-state-description">
-                                {t('remoteDiagnosis.whitelist.noCommandsHint')}
-                            </p>
-                        </div>
-                    </div>
-                ) : (
-                    (() => {
-                        const totalPages = Math.max(1, Math.ceil(filteredCommands.length / PAGE_SIZE))
-                        const safePage = Math.min(currentPage, totalPages)
-                        const paginatedCommands = filteredCommands.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
-                        return <>
+                {(() => {
+                    if (isLoading) {
+                        return (
+                            <div className="sop-workflow-empty-shell">
+                                <div className="empty-state">
+                                    <h3 className="empty-state-title">{t('common.loading')}</h3>
+                                </div>
+                            </div>
+                        )
+                    }
+                    if (commands.length === 0) {
+                        return (
+                            <div className="sop-workflow-empty-shell">
+                                <div className="empty-state">
+                                    <svg
+                                        className="empty-state-icon"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.5"
+                                    >
+                                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    <h3 className="empty-state-title">
+                                        {t('remoteDiagnosis.whitelist.noCommands')}
+                                    </h3>
+                                    <p className="empty-state-description">
+                                        {t('remoteDiagnosis.whitelist.noCommandsHint')}
+                                    </p>
+                                </div>
+                            </div>
+                        )
+                    }
+                    const totalPages = Math.max(1, Math.ceil(filteredCommands.length / PAGE_SIZE))
+                    const safePage = Math.min(currentPage, totalPages)
+                    const paginatedCommands = filteredCommands.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+                    return <>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-3)', marginBottom: 'var(--spacing-3)' }}>
                         <ListSearchInput
                             value={searchTerm}
@@ -435,8 +445,7 @@ export function WhitelistTab() {
                         </div>
                     )}
                 </>
-                    })()
-                )}
+                })()}
             </section>
 
             {(showAddModal || editingCommand) && (

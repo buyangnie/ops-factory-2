@@ -4,10 +4,11 @@
 
 package com.huawei.opsfactory.gateway.hook;
 
+import reactor.core.publisher.Mono;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -23,6 +24,12 @@ public class HookPipeline {
 
     private final List<RequestHook> hooks;
 
+    /**
+     * Creates the hook pipeline instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public HookPipeline(List<RequestHook> hooks) {
         this.hooks = hooks;
         log.info("Registered {} request hooks", hooks.size());
@@ -31,6 +38,9 @@ public class HookPipeline {
     /**
      * Run all request hooks in order. Returns the (possibly modified) body.
      * If any hook returns an error Mono, the pipeline short-circuits.
+     *
+     * @param ctx the ctx parameter
+     * @return the result
      */
     public Mono<String> executeRequest(HookContext ctx) {
         Mono<HookContext> chain = Mono.just(ctx);

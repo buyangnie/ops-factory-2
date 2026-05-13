@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { SkillMarketEntry, SkillMarketListResponse } from '../../../../types/skillMarket'
-import { GATEWAY_URL, SKILL_MARKET_SERVICE_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import { useUser } from '../../../platform/providers/UserContext'
 
@@ -23,7 +23,7 @@ export function useAgentSkillMarket(): UseAgentSkillMarketResult {
         setError(null)
 
         try {
-            const response = await fetch(`${SKILL_MARKET_SERVICE_URL}/skills`, {
+            const response = await fetch(`${runtime.SKILL_MARKET_SERVICE_URL}/skills`, {
                 signal: AbortSignal.timeout(10000),
             })
             if (!response.ok) throw new Error(await response.text())
@@ -38,7 +38,7 @@ export function useAgentSkillMarket(): UseAgentSkillMarketResult {
 
     const installSkill = useCallback(async (agentId: string, skillId: string) => {
         try {
-            const response = await fetch(`${GATEWAY_URL}/agents/${encodeURIComponent(agentId)}/skills/install`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/agents/${encodeURIComponent(agentId)}/skills/install`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify({ skillId }),

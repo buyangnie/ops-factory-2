@@ -378,9 +378,10 @@ export default function AddMcpModal({
               variant="primary"
               disabled={isSubmitting}
             >
-              {isSubmitting
-                ? (isEditMode ? t('agentConfigure.saving') : t('mcp.adding'))
-                : (isEditMode ? t('mcp.saveChanges') : t('mcp.addServer'))}
+              {(() => {
+                    if (isSubmitting) return isEditMode ? t('agentConfigure.saving') : t('mcp.adding')
+                    return isEditMode ? t('mcp.saveChanges') : t('mcp.addServer')
+                })()}
             </Button>
           </div>
         </form>

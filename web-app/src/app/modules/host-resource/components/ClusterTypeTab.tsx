@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import TypeCard from './TypeCard'
 import ListSearchInput from '../../../platform/ui/list/ListSearchInput'
 import ListResultsMeta from '../../../platform/ui/list/ListResultsMeta'
+import { useToast } from '../../../platform/providers/ToastContext'
+import { useConfirmDialog } from '../../../platform/providers/ConfirmDialogContext'
 import type { ClusterType, Cluster } from '../../../../types/host'
 
 type Props = {
@@ -34,6 +36,8 @@ const emptyForm: FormData = {
 
 export default function ClusterTypeTab({ clusterTypes, clusters, loading, onCreate, onUpdate, onDelete }: Props) {
     const { t } = useTranslation()
+    const { showToast } = useToast()
+    const { requestConfirm } = useConfirmDialog()
     const [showModal, setShowModal] = useState(false)
     const [editing, setEditing] = useState<ClusterType | null>(null)
     const [form, setForm] = useState<FormData>(emptyForm)
@@ -78,26 +82,32 @@ export default function ClusterTypeTab({ clusterTypes, clusters, loading, onCrea
             }
             setShowModal(false)
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed')
+            showToast('error', err instanceof Error ? err.message : 'Failed')
         } finally {
             setSaving(false)
         }
-    }, [editing, form, onCreate, onUpdate])
+    }, [editing, form, onCreate, onUpdate, showToast])
 
     const handleDelete = useCallback(async (item: ClusterType) => {
         const inUse = clusters.filter(c => c.type === item.name)
         if (inUse.length > 0) {
-            alert(t('hostResource.clusterTypeInUse', { name: item.name, clusters: inUse.map(c => c.name).join(', ') }))
+            showToast('warning', t('hostResource.clusterTypeInUse', { name: item.name, clusters: inUse.map(c => c.name).join(', ') }))
             return
         }
-        if (confirm(t('hostResource.confirmDeleteClusterType'))) {
+        const confirmed = await requestConfirm({
+            title: t('common.confirmTitle'),
+            message: t('hostResource.confirmDeleteClusterType'),
+            variant: 'danger',
+            confirmLabel: t('common.delete'),
+        })
+        if (confirmed) {
             try {
                 await onDelete(item.id)
             } catch (err) {
-                alert(err instanceof Error ? err.message : 'Failed')
+                showToast('error', err instanceof Error ? err.message : 'Failed')
             }
         }
-    }, [clusters, onDelete, t])
+    }, [clusters, onDelete, t, requestConfirm, showToast])
 
     const updateEnvVar = useCallback((index: number, field: 'key' | 'value', val: string) => {
         setForm(f => {
@@ -132,13 +142,15 @@ export default function ClusterTypeTab({ clusterTypes, clusters, loading, onCrea
                 </button>
             </div>
 
-            {loading ? (
+            {loading && (
                 <div className="hr-empty">{t('common.loading')}</div>
-            ) : clusterTypes.length === 0 ? (
+            )}
+            {!loading && clusterTypes.length === 0 && (
                 <div className="hr-type-tab-empty">
                     <div className="hr-type-tab-empty-text">{t('hostResource.noClusterTypes')}</div>
                 </div>
-            ) : (
+            )}
+            {!loading && clusterTypes.length > 0 && (
                 <>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-3)', marginBottom: 'var(--spacing-3)' }}>
                         <ListSearchInput

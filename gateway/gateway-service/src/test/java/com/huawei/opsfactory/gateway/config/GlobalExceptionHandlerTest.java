@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.config;
 
 import org.junit.Before;
@@ -13,14 +17,26 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+/**
+ * Test coverage for Global Exception Handler.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class GlobalExceptionHandlerTest {
     private GlobalExceptionHandler handler;
 
+    /**
+     * Sets the up.
+     */
     @Before
     public void setUp() {
         handler = new GlobalExceptionHandler();
     }
 
+    /**
+     * Tests handle input exception decoding error.
+     */
     @Test
     public void testHandleInputException_decodingError() {
         DecodingException cause = new DecodingException("bad json");
@@ -33,6 +49,9 @@ public class GlobalExceptionHandlerTest {
         assertEquals("Invalid JSON body", response.getBody().get("error"));
     }
 
+    /**
+     * Tests handle input exception other error.
+     */
     @Test
     public void testHandleInputException_otherError() {
         ServerWebInputException ex = new ServerWebInputException("Missing parameter 'name'");
@@ -44,6 +63,9 @@ public class GlobalExceptionHandlerTest {
         assertEquals("Missing parameter 'name'", response.getBody().get("error"));
     }
 
+    /**
+     * Tests handle response status exception with reason.
+     */
     @Test
     public void testHandleResponseStatusException_withReason() {
         ResponseStatusException ex = new ResponseStatusException(HttpStatus.NOT_FOUND, "session not found");
@@ -55,6 +77,9 @@ public class GlobalExceptionHandlerTest {
         assertEquals("session not found", response.getBody().get("error"));
     }
 
+    /**
+     * Tests handle response status exception forbidden.
+     */
     @Test
     public void testHandleResponseStatusException_forbidden() {
         ResponseStatusException ex = new ResponseStatusException(HttpStatus.FORBIDDEN, "admin access required");
@@ -66,6 +91,9 @@ public class GlobalExceptionHandlerTest {
         assertEquals("admin access required", response.getBody().get("error"));
     }
 
+    /**
+     * Tests handle response status exception no reason.
+     */
     @Test
     public void testHandleResponseStatusException_noReason() {
         ResponseStatusException ex = new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);

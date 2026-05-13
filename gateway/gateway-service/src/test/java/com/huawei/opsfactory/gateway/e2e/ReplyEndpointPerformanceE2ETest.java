@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.e2e;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
@@ -20,9 +24,20 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for Reply Endpoint Performance E2 E.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class ReplyEndpointPerformanceE2ETest extends BaseE2ETest {
     private ManagedInstance mockInstance;
 
+    /**
+     * Sets the up.
+     *
+     * @throws Exception if the operation fails
+     */
     @Before
     public void setUp() throws Exception {
         mockInstance = new ManagedInstance("test-agent", "alice", 9999, 12345L, null, "test-secret");
@@ -38,6 +53,9 @@ public class ReplyEndpointPerformanceE2ETest extends BaseE2ETest {
                 .thenReturn(Mono.just("{\"ok\":true}"));
     }
 
+    /**
+     * Executes the session reply response latency includes hook and spawn delay operation.
+     */
     @Test
     public void sessionReply_responseLatencyIncludesHookAndSpawnDelay() {
         when(hookPipeline.executeRequest(any(HookContext.class)))
@@ -57,6 +75,9 @@ public class ReplyEndpointPerformanceE2ETest extends BaseE2ETest {
                 elapsedMs < 5000);
     }
 
+    /**
+     * Executes the session reply response latency includes resume delay operation.
+     */
     @Test
     public void sessionReply_responseLatencyIncludesResumeDelay() {
         String body = replyBody("00000000-0000-4000-8000-000000000002");
@@ -82,6 +103,9 @@ public class ReplyEndpointPerformanceE2ETest extends BaseE2ETest {
                 elapsedMs < 5000);
     }
 
+    /**
+     * Executes the session reply response latency includes upstream completion delay operation.
+     */
     @Test
     public void sessionReply_responseLatencyIncludesUpstreamCompletionDelay() {
         when(hookPipeline.executeRequest(any(HookContext.class)))

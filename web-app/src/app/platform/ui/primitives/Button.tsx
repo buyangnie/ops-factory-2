@@ -15,7 +15,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     iconOnly?: boolean
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     variant = 'secondary',
     tone = 'default',
     size = 'md',
@@ -27,7 +27,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
     children,
     type = 'button',
     ...props
-}: ButtonProps, ref) {
+}: ButtonProps, ref) => {
     const classes = [
         'ui-button',
         `ui-button-${variant}`,

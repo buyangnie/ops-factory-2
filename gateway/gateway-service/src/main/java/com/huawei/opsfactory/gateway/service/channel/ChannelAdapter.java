@@ -4,11 +4,13 @@
 
 package com.huawei.opsfactory.gateway.service.channel;
 
-import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import org.springframework.web.server.ServerWebExchange;
+
 /**
- * Contract for channel-type adapters that handle webhook verification, inbound message processing, and connectivity checks.
+ * Contract for channel-type adapters that handle webhook verification, inbound message processing, and connectivity
+ * checks.
  *
  * @author x00000000
  * @since 2026-05-09
@@ -45,6 +47,6 @@ public interface ChannelAdapter {
      * @author x00000000
      * @since 2026-05-09
      */
-    Mono<com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectivityResult> testConnectivity(String channelId,
-                                                                                                          String ownerUserId);
+    Mono<com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectivityResult>
+        testConnectivity(String channelId, String ownerUserId);
 }

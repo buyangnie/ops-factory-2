@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
  * @since 2026-05-09
  */
 public interface RequestHook {
+
     /**
      * Process a request through this hook.
      * May modify the context body or reject the request by returning Mono.error().

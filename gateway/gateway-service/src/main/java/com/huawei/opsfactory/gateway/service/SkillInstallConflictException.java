@@ -11,6 +11,13 @@ package com.huawei.opsfactory.gateway.service;
  * @since 2026-05-09
  */
 public class SkillInstallConflictException extends RuntimeException {
+
+    /**
+     * Creates the skill install conflict exception instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public SkillInstallConflictException(String message) {
         super(message);
     }

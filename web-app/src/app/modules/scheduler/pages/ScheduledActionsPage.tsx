@@ -5,6 +5,7 @@ import type { ScheduledJob, ScheduleSessionInfo } from '@goosed/sdk'
 import { buildChatSessionState } from '../../../platform/chat/chatRouteState'
 import { useGoosed } from '../../../platform/providers/GoosedContext'
 import { useToast } from '../../../platform/providers/ToastContext'
+import { useConfirmDialog } from '../../../platform/providers/ConfirmDialogContext'
 import { useInbox } from '../../../platform/providers/InboxContext'
 import { useUser } from '../../../platform/providers/UserContext'
 import CardGrid from '../../../platform/ui/cards/CardGrid'
@@ -95,6 +96,7 @@ export default function ScheduledActions() {
     const { userId } = useUser()
     const { agents, getClient, isConnected, error } = useGoosed()
     const { showToast } = useToast()
+    const { requestConfirm } = useConfirmDialog()
     const { markSessionRead } = useInbox()
 
     const draftsKey = getScheduleDraftsKey(userId || 'anonymous')
@@ -269,7 +271,10 @@ export default function ScheduledActions() {
         try {
             const existingIds = new Set(jobs.filter(job => job.agentId === targetAgentId).map(job => job.id))
             const scheduleId = editingJob
-                ? (cleanedName === editingJob.id ? cleanedName : ensureUniqueId(cleanedName, existingIds))
+                ? (() => {
+                    if (cleanedName === editingJob.id) return cleanedName
+                    return ensureUniqueId(cleanedName, existingIds)
+                })()
                 : ensureUniqueId(cleanedName, existingIds)
 
             const recipe = {
@@ -375,7 +380,12 @@ export default function ScheduledActions() {
     }
 
     const handleDelete = async (job: ScheduledJobRecord) => {
-        const confirmed = window.confirm(`Delete scheduled action "${job.id}"?`)
+        const confirmed = await requestConfirm({
+            title: t('common.confirmTitle'),
+            message: `Delete scheduled action "${job.id}"?`,
+            variant: 'danger',
+            confirmLabel: t('common.delete'),
+        })
         if (!confirmed) return
         try {
             await getClientForJob(job).deleteSchedule(job.id)
@@ -432,21 +442,24 @@ export default function ScheduledActions() {
             {error && <div className="conn-banner conn-banner-error">{t('common.connectionError', { error })}</div>}
             {!isConnected && !error && <div className="conn-banner conn-banner-warning">{t('common.connectingGateway')}</div>}
 
-            {loading ? (
+            {loading && (
                 <div className="empty-state">
                     <h3 className="empty-state-title">{t('scheduler.loadingSchedules')}</h3>
                 </div>
-            ) : jobs.length === 0 ? (
+            )}
+            {!loading && jobs.length === 0 && (
                 <div className="empty-state">
                     <h3 className="empty-state-title">{t('scheduler.noSchedules')}</h3>
                     <p className="empty-state-description">{t('scheduler.noSchedulesHint')}</p>
                 </div>
-            ) : searchTerm && filteredJobs.length === 0 ? (
+            )}
+            {!loading && jobs.length > 0 && searchTerm && filteredJobs.length === 0 && (
                 <div className="empty-state">
                     <h3 className="empty-state-title">{t('common.noResults')}</h3>
                     <p className="empty-state-description">{t('scheduler.noMatchSchedules', { term: searchTerm })}</p>
                 </div>
-            ) : (
+            )}
+            {!loading && filteredJobs.length > 0 && (
                 <CardWorkbench>
                     <CardGrid className="scheduled-grid">
                         {filteredJobs.map(job => (
@@ -505,8 +518,15 @@ export default function ScheduledActions() {
                     footer={(
                         <div className="scheduled-modal-footer">
                             <div className="scheduled-modal-footer-group scheduled-modal-footer-group-right">
-                                {editingJob && (
-                                    !editingJob.currently_running ? (
+                                {editingJob && (() => {
+                                    if (editingJob.currently_running) {
+                                        return (
+                                            <button type="button" className="btn btn-secondary" onClick={() => void handleKill(editingJob)}>
+                                                {t('scheduler.kill')}
+                                            </button>
+                                        )
+                                    }
+                                    return (
                                         <>
                                             {editingJob.paused ? (
                                                 <button type="button" className="btn btn-secondary" onClick={() => void handleUnpause(editingJob)}>
@@ -521,17 +541,16 @@ export default function ScheduledActions() {
                                                 {t('scheduler.runNow')}
                                             </button>
                                         </>
-                                    ) : (
-                                        <button type="button" className="btn btn-secondary" onClick={() => void handleKill(editingJob)}>
-                                            {t('scheduler.kill')}
-                                        </button>
                                     )
-                                )}
+                                })()}
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={submitting}>
                                     {t('common.cancel')}
                                 </button>
                                 <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={submitting || (!editingJob && !createAgentId)}>
-                                    {submitting ? t('scheduler.saving') : (editingJob ? t('common.save') : t('scheduler.create'))}
+                                    {(() => {
+                                        if (submitting) return t('scheduler.saving')
+                                        return editingJob ? t('common.save') : t('scheduler.create')
+                                    })()}
                                 </button>
                             </div>
                         </div>
@@ -624,16 +643,18 @@ export default function ScheduledActions() {
                                     <p className="scheduled-modal-section-description">{t('scheduler.runsSubtitle')}</p>
                                 </div>
                             </div>
-                            {runsLoading ? (
+                            {runsLoading && (
                                 <div className="empty-state">
                                     <h3 className="empty-state-title">{t('scheduler.loadingRuns')}</h3>
                                 </div>
-                            ) : runs.length === 0 ? (
+                            )}
+                            {!runsLoading && runs.length === 0 && (
                                 <div className="empty-state">
                                     <h3 className="empty-state-title">{t('scheduler.noRuns')}</h3>
                                     <p className="empty-state-description">{t('scheduler.noRunsHint')}</p>
                                 </div>
-                            ) : (
+                            )}
+                            {!runsLoading && runs.length > 0 && (
                                 <div className="scheduled-runs-list">
                                     {runs.map(run => (
                                         <div key={run.id} className="scheduled-run-item">

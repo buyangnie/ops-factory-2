@@ -1,25 +1,8 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.service.channel;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.huawei.opsfactory.gateway.common.model.AgentRegistryEntry;
-import com.huawei.opsfactory.gateway.config.GatewayProperties;
-import com.huawei.opsfactory.gateway.service.AgentConfigService;
-import com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectionConfig;
-import com.huawei.opsfactory.gateway.service.channel.model.ChannelDetail;
-import com.huawei.opsfactory.gateway.service.channel.model.ChannelReplyResult;
-import com.huawei.opsfactory.gateway.service.channel.model.ChannelUpsertRequest;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import reactor.core.publisher.Mono;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,6 +13,36 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.huawei.opsfactory.gateway.common.model.AgentRegistryEntry;
+import com.huawei.opsfactory.gateway.config.GatewayProperties;
+import com.huawei.opsfactory.gateway.service.AgentConfigService;
+import com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectionConfig;
+import com.huawei.opsfactory.gateway.service.channel.model.ChannelDetail;
+import com.huawei.opsfactory.gateway.service.channel.model.ChannelReplyResult;
+import com.huawei.opsfactory.gateway.service.channel.model.ChannelUpsertRequest;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import reactor.core.publisher.Mono;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Test coverage for Channel Config Service.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class ChannelConfigServiceTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -39,6 +52,9 @@ public class ChannelConfigServiceTest {
     private Path gatewayRoot;
     private ChannelConfigService service;
 
+    /**
+     * Sets the up.
+     */
     @Before
     public void setUp() {
         gatewayRoot = tempFolder.getRoot().toPath().resolve("gateway");
@@ -46,13 +62,19 @@ public class ChannelConfigServiceTest {
         when(properties.getGatewayRootPath()).thenReturn(gatewayRoot);
 
         AgentConfigService agentConfigService = mock(AgentConfigService.class);
-        when(agentConfigService.findAgent("fo-copilot")).thenReturn(new AgentRegistryEntry("fo-copilot", "FO Copilot"));
+        when(agentConfigService.findAgent("fo-copilot")).thenReturn(new AgentRegistryEntry("fo-copilot",
+                "FO Copilot"));
 
         ChannelRuntimeStorageService runtimeStorageService = new ChannelRuntimeStorageService(properties);
         service = new ChannelConfigService(properties, agentConfigService, runtimeStorageService);
         service.init();
     }
 
+    /**
+     * Executes the create channel separates config and runtime state operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void createChannelSeparatesConfigAndRuntimeState() throws Exception {
         service.createChannel(upsertRequest("whatsapp-main", "whatsapp"), "admin");
@@ -88,11 +110,17 @@ public class ChannelConfigServiceTest {
         assertFalse(channelConfig.containsKey("selfPhone"));
     }
 
+    /**
+     * Executes the runtime state is read from user directory only operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void runtimeStateIsReadFromUserDirectoryOnly() throws Exception {
         service.createChannel(upsertRequest("whatsapp-main", "whatsapp"), "admin");
 
-        Path oldState = gatewayRoot.resolve("channels").resolve("whatsapp").resolve("whatsapp-main").resolve("login-state.json");
+        Path oldState = gatewayRoot.resolve("channels").resolve("whatsapp").resolve(
+                "whatsapp-main").resolve("login-state.json");
         Files.writeString(oldState, MAPPER.writeValueAsString(Map.of(
                 "status", "connected",
                 "selfPhone", "+10000000000"
@@ -116,6 +144,11 @@ public class ChannelConfigServiceTest {
         assertEquals("2026-05-06T00:00:00Z", after.config().lastConnectedAt());
     }
 
+    /**
+     * Executes the shared config uses independent runtime per user operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void sharedConfigUsesIndependentRuntimePerUser() throws Exception {
         service.createChannel(upsertRequest("whatsapp-main", "whatsapp"), "admin");
@@ -148,6 +181,11 @@ public class ChannelConfigServiceTest {
         assertEquals("alice@example.com", service.listChannels("alice@example.com").get(0).ownerUserId());
     }
 
+    /**
+     * Executes the delete channel removes config and user runtime directories operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void deleteChannelRemovesConfigAndUserRuntimeDirectories() throws Exception {
         service.createChannel(upsertRequest("wechat-main", "wechat"), "admin");
@@ -169,6 +207,9 @@ public class ChannelConfigServiceTest {
         assertFalse(Files.exists(aliceRuntimeDir));
     }
 
+    /**
+     * Executes the update channel rejects type changes operation.
+     */
     @Test
     public void updateChannelRejectsTypeChanges() {
         service.createChannel(upsertRequest("whatsapp-main", "whatsapp"), "admin");
@@ -181,6 +222,9 @@ public class ChannelConfigServiceTest {
         assertFalse(Files.exists(gatewayRoot.resolve("channels").resolve("wechat").resolve("whatsapp-main")));
     }
 
+    /**
+     * Executes the auth state dir cannot escape user runtime directory operation.
+     */
     @Test
     public void authStateDirCannotEscapeUserRuntimeDirectory() {
         service.createChannel(upsertRequest("whatsapp-main", "whatsapp"), "admin");
@@ -191,7 +235,16 @@ public class ChannelConfigServiceTest {
                 "whatsapp",
                 true,
                 "fo-copilot",
-                new ChannelConnectionConfig("", "../../../../channels/whatsapp/whatsapp-main/auth", "", "", "", "", "", "")
+                new ChannelConnectionConfig(
+                        "",
+                        "../../../../channels/whatsapp/whatsapp-main/auth",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        ""
+                )
         );
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> service.updateChannel("whatsapp-main", request));
@@ -199,6 +252,9 @@ public class ChannelConfigServiceTest {
         assertTrue(error.getMessage().contains("authStateDir"));
     }
 
+    /**
+     * Executes the owner user id allows existing user id characters but rejects path traversal operation.
+     */
     @Test
     public void ownerUserIdAllowsExistingUserIdCharactersButRejectsPathTraversal() {
         service.createChannel(upsertRequest("email-owner", "whatsapp"), "alice@example.com");
@@ -213,6 +269,11 @@ public class ChannelConfigServiceTest {
         assertFalse(Files.exists(gatewayRoot.resolve("channels").resolve("whatsapp").resolve("bad-owner")));
     }
 
+    /**
+     * Executes the invalid config channel id is ignored operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void invalidConfigChannelIdIsIgnored() throws Exception {
         Path invalidConfigDir = gatewayRoot.resolve("channels").resolve("whatsapp").resolve("bad-channel");
@@ -234,6 +295,11 @@ public class ChannelConfigServiceTest {
                 .resolve("whatsapp").resolve("bad-channel")));
     }
 
+    /**
+     * Executes the binding and dedup write only to user runtime directory operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void bindingAndDedupWriteOnlyToUserRuntimeDirectory() throws Exception {
         service.createChannel(upsertRequest("whatsapp-main", "whatsapp"), "admin");
@@ -243,7 +309,8 @@ public class ChannelConfigServiceTest {
 
         ChannelBindingService bindingService = new ChannelBindingService(service, runtimeStorageService);
         bindingService.ensureConversationBinding(
-                "whatsapp-main", "default", "+8613800000000", "+8613800000000", null, "direct");
+                "whatsapp-main", "default", "+8613800000000", "+8613800000000",
+                null, "direct");
 
         ChannelDedupService dedupService = new ChannelDedupService(service, runtimeStorageService);
         assertTrue(dedupService.markIfNew("whatsapp-main", "message-1"));
@@ -258,6 +325,11 @@ public class ChannelConfigServiceTest {
         assertTrue(Files.readString(runtimeDir.resolve("inbound-dedup.json")).contains("message-1"));
     }
 
+    /**
+     * Executes the whatsapp login initializes user runtime directory only operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void whatsappLoginInitializesUserRuntimeDirectoryOnly() throws Exception {
         service.createChannel(upsertRequest("whatsapp-main", "whatsapp"), "admin");
@@ -285,6 +357,11 @@ public class ChannelConfigServiceTest {
         assertTrue(Files.readString(runtimeDir.resolve("login-state.json")).contains("pending"));
     }
 
+    /**
+     * Executes the whatsapp message pump uses user runtime directories only operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void whatsappMessagePumpUsesUserRuntimeDirectoriesOnly() throws Exception {
         service.createChannel(upsertRequest("whatsapp-main", "whatsapp"), "admin");
@@ -348,12 +425,18 @@ public class ChannelConfigServiceTest {
         assertTrue(Files.readString(runtimeDir.resolve("inbound-dedup.json")).contains("message-1"));
         assertTrue(Files.exists(runtimeDir.resolve("processed").resolve("message-1-processed.json")));
         try (var stream = Files.list(runtimeDir.resolve("outbox").resolve("pending"))) {
-            Optional<Path> outboxFile = stream.filter(path -> path.getFileName().toString().endsWith(".json")).findFirst();
+            Optional<Path> outboxFile = stream.filter(path -> path.getFileName().toString().endsWith(
+                    ".json")).findFirst();
             assertTrue(outboxFile.isPresent());
             assertTrue(Files.readString(outboxFile.get()).contains("reply from agent"));
         }
     }
 
+    /**
+     * Executes the wechat login initializes user runtime directory only operation.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void wechatLoginInitializesUserRuntimeDirectoryOnly() throws Exception {
         service.createChannel(upsertRequest("wechat-main", "wechat"), "admin");
@@ -388,7 +471,8 @@ public class ChannelConfigServiceTest {
                 type,
                 true,
                 "fo-copilot",
-                new ChannelConnectionConfig("connected", "auth", "old", "old", "old", "+1", "wxid", "Tester")
+                new ChannelConnectionConfig("connected", "auth", "old",
+                        "old", "old", "+1", "wxid", "Tester")
         );
     }
 }

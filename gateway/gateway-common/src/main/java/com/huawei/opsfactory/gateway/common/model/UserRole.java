@@ -21,8 +21,8 @@ public enum UserRole {
     /**
      * Resolves the user role from the given user identifier.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param userId the userId parameter
+     * @return the result
      */
     public static UserRole fromUserId(String userId) {
         return GatewayConstants.SYSTEM_USER.equals(userId) ? ADMIN : USER;
@@ -31,8 +31,9 @@ public enum UserRole {
     /**
      * Resolves the user role from the given user identifier and admin user set.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param userId the userId parameter
+     * @param adminUsers the adminUsers parameter
+     * @return the result
      */
     public static UserRole fromUserId(String userId, Set<String> adminUsers) {
         return adminUsers.contains(userId) ? ADMIN : USER;
@@ -41,8 +42,7 @@ public enum UserRole {
     /**
      * Checks whether this role represents an administrator.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public boolean isAdmin() {
         return this == ADMIN;

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useUser } from '../../../platform/providers/UserContext'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import type { Sop, SopCreateRequest } from '../../../../types/sop'
 
@@ -14,7 +14,7 @@ export function useSops() {
         setIsLoading(true)
         setError(null)
         try {
-            const res = await fetch(`${GATEWAY_URL}/sops`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/sops`, {
                 headers: gatewayHeaders(userId),
                 cache: 'no-store',
                 signal: AbortSignal.timeout(10000),
@@ -31,7 +31,7 @@ export function useSops() {
 
     const getSop = useCallback(async (id: string): Promise<Sop | null> => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/sops/${id}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/sops/${id}`, {
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),
             })
@@ -46,7 +46,7 @@ export function useSops() {
 
     const createSop = useCallback(async (req: SopCreateRequest): Promise<Sop | null> => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/sops`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/sops`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify(req),
@@ -69,7 +69,7 @@ export function useSops() {
 
     const updateSop = useCallback(async (id: string, req: Partial<Sop>): Promise<boolean> => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/sops/${id}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/sops/${id}`, {
                 method: 'PUT',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify(req),
@@ -91,7 +91,7 @@ export function useSops() {
 
     const deleteSop = useCallback(async (id: string): Promise<boolean> => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/sops/${id}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/sops/${id}`, {
                 method: 'DELETE',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),

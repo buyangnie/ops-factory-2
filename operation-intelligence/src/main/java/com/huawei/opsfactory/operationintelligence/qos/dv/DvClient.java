@@ -1,44 +1,71 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.operationintelligence.qos.dv;
+
+import com.huawei.opsfactory.operationintelligence.qos.model.AlarmInfo;
+import com.huawei.opsfactory.operationintelligence.qos.model.PerformanceDataResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.huawei.opsfactory.operationintelligence.qos.model.AlarmInfo;
-import com.huawei.opsfactory.operationintelligence.qos.model.PerformanceDataResult;
+
 import io.netty.handler.ssl.SslContext;
+
+import jakarta.annotation.PreDestroy;
+
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-import jakarta.annotation.PreDestroy;
-import reactor.netty.http.client.HttpClient;
-import reactor.netty.resources.ConnectionProvider;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+/**
+ * Dv Client.
+ *
+ * @author x00000000
+ * @since 2026-05-11
+ */
 @Component
 public class DvClient {
 
     private static final Logger log = LoggerFactory.getLogger(DvClient.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private static final int MAX_RETRIES = 3;
+
     private static final int ALARM_BATCH_SIZE = 500;
 
     private final DvAuthService authService;
+
     private final DvSslContextFactory sslFactory;
+
     private final ConcurrentHashMap<String, WebClient> clientCache = new ConcurrentHashMap<>();
+
     private final ConcurrentHashMap<String, ConnectionProvider> providerCache = new ConcurrentHashMap<>();
 
+/**
+ * Dv Client.
+ *
+ * @param authService the authService
+ * @param sslFactory the sslFactory
+ */
     public DvClient(DvAuthService authService, DvSslContextFactory sslFactory) {
         this.authService = authService;
         this.sslFactory = sslFactory;
@@ -46,10 +73,22 @@ public class DvClient {
 
     // --- MO 查询（性能数据前置接口） ---
 
-    public List<String> fetchMos(DvEnvironmentInfo env, List<String> dns) {
-        return executeWithRetry(() -> doFetchMos(env, dns),
-                "fetchMos[" + env.getEnvCode() + "]");
+    private static String textVal(JsonNode node, String field) {
+        return node.has(field) && !node.get(field).isNull() ? node.get(field).asText() : null;
     }
+
+/**
+ * fetch Mos.
+ *
+ * @param env the env
+ * @param dns the dns
+ * @return the result
+ */
+    public List<String> fetchMos(DvEnvironmentInfo env, List<String> dns) {
+        return executeWithRetry(() -> doFetchMos(env, dns), "fetchMos[" + env.getEnvCode() + "]");
+    }
+
+    // --- 11.3.1 性能指标查询 ---
 
     private List<String> doFetchMos(DvEnvironmentInfo env, List<String> dns) {
         try {
@@ -60,13 +99,13 @@ public class DvClient {
             String jsonBody = MAPPER.writeValueAsString(dns);
 
             String response = webClient.post()
-                    .uri(url)
-                    .headers(h -> headers.forEach(h::add))
-                    .body(Mono.just(jsonBody), String.class)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .block(Duration.ofSeconds(60));
+                .uri(url)
+                .headers(h -> headers.forEach(h::add))
+                .body(Mono.just(jsonBody), String.class)
+                .retrieve()
+                .bodyToMono(String.class)
+                .subscribeOn(Schedulers.boundedElastic())
+                .block(Duration.ofSeconds(60));
 
             if (response == null || response.isBlank()) {
                 return Collections.emptyList();
@@ -74,27 +113,36 @@ public class DvClient {
 
             return parseChildren(response);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch MOs from " + env.getServerUrl()
-                    + ": " + e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch MOs from " + env.getServerUrl() + ": " + e.getMessage(), e);
         }
     }
 
-    // --- 11.3.1 性能指标查询 ---
-
-    public List<PerformanceDataResult> fetchPerformanceData(DvEnvironmentInfo env, String moType,
-            String measUnitKey, List<String> dns, long startTime, long endTime) {
+/**
+ * fetch Performance Data.
+ *
+ * @param env the env
+ * @param moType the moType
+ * @param measUnitKey the measUnitKey
+ * @param dns the dns
+ * @param startTime the startTime
+ * @param endTime the endTime
+ * @return the result
+ */
+    public List<PerformanceDataResult> fetchPerformanceData(DvEnvironmentInfo env, String moType, String measUnitKey,
+        List<String> dns, long startTime, long endTime) {
         return executeWithRetry(() -> doFetchPerformanceData(env, moType, measUnitKey, dns, startTime, endTime),
-                "fetchPerformanceData[" + env.getEnvCode() + "]");
+            "fetchPerformanceData[" + env.getEnvCode() + "]");
     }
 
-    private List<PerformanceDataResult> doFetchPerformanceData(DvEnvironmentInfo env, String moType,
-            String measUnitKey, List<String> dns, long startTime, long endTime) {
+    // --- 11.3.2 当前告警查询（scroll） ---
+
+    private List<PerformanceDataResult> doFetchPerformanceData(DvEnvironmentInfo env, String moType, String measUnitKey,
+        List<String> dns, long startTime, long endTime) {
         try {
             WebClient webClient = getOrCreateWebClient(env);
             Map<String, String> headers = authService.buildAuthHeaders(env);
 
-            String url = env.getServerUrl()
-                    + "/rest/dvpmservice/v1/openapi/monitor/history/data";
+            String url = env.getServerUrl() + "/rest/dvpmservice/v1/openapi/monitor/history/data";
 
             Map<String, Object> timeRanges = new LinkedHashMap<>();
             timeRanges.put(String.valueOf(startTime), endTime);
@@ -113,13 +161,13 @@ public class DvClient {
             String jsonBody = MAPPER.writeValueAsString(body);
 
             String response = webClient.post()
-                    .uri(url)
-                    .headers(h -> headers.forEach(h::add))
-                    .body(Mono.just(jsonBody), String.class)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .block(Duration.ofSeconds(60));
+                .uri(url)
+                .headers(h -> headers.forEach(h::add))
+                .body(Mono.just(jsonBody), String.class)
+                .retrieve()
+                .bodyToMono(String.class)
+                .subscribeOn(Schedulers.boundedElastic())
+                .block(Duration.ofSeconds(60));
 
             if (response == null || response.isBlank()) {
                 return Collections.emptyList();
@@ -127,21 +175,29 @@ public class DvClient {
 
             return parsePerformanceResult(response);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch performance data from " + env.getServerUrl()
-                    + " moType=" + moType + ": " + e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch performance data from " + env.getServerUrl() + " moType="
+                + moType + ": " + e.getMessage(), e);
         }
     }
 
-    // --- 11.3.2 当前告警查询（scroll） ---
-
+/**
+ * fetch Current Alarms.
+ *
+ * @param env the env
+ * @param startTime the startTime
+ * @param endTime the endTime
+ * @param severities the severities
+ * @param dns the dns
+ * @return the result
+ */
     public List<AlarmInfo> fetchCurrentAlarms(DvEnvironmentInfo env, long startTime, long endTime,
-            List<String> severities, List<String> dns) {
+        List<String> severities, List<String> dns) {
         return executeWithRetry(() -> doFetchCurrentAlarms(env, startTime, endTime, severities, dns),
-                "fetchCurrentAlarms[" + env.getEnvCode() + "]");
+            "fetchCurrentAlarms[" + env.getEnvCode() + "]");
     }
 
     private List<AlarmInfo> doFetchCurrentAlarms(DvEnvironmentInfo env, long startTime, long endTime,
-            List<String> severities, List<String> dns) {
+        List<String> severities, List<String> dns) {
         try {
             WebClient webClient = getOrCreateWebClient(env);
             Map<String, String> headers = authService.buildAuthHeaders(env);
@@ -150,13 +206,13 @@ public class DvClient {
             String jsonBody = MAPPER.writeValueAsString(buildAlarmQuery(startTime, endTime, severities, dns));
 
             String response = webClient.post()
-                    .uri(url)
-                    .headers(h -> headers.forEach(h::add))
-                    .body(Mono.just(jsonBody), String.class)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .block(Duration.ofSeconds(60));
+                .uri(url)
+                .headers(h -> headers.forEach(h::add))
+                .body(Mono.just(jsonBody), String.class)
+                .retrieve()
+                .bodyToMono(String.class)
+                .subscribeOn(Schedulers.boundedElastic())
+                .block(Duration.ofSeconds(60));
 
             if (response == null || response.isBlank()) {
                 return Collections.emptyList();
@@ -164,16 +220,17 @@ public class DvClient {
 
             return parseAlarms(response);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch alarms from " + env.getServerUrl()
-                    + ": " + e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch alarms from " + env.getServerUrl() + ": " + e.getMessage(), e);
         }
     }
+
+    // --- 11.8 通用重试机制 ---
 
     void sleepBeforeRetry(long delayMs) throws InterruptedException {
         Thread.sleep(delayMs);
     }
 
-    // --- 11.8 通用重试机制 ---
+    // --- 内部工具方法 ---
 
     <T> T executeWithRetry(Supplier<T> action, String operationName) {
         int retryCount = 0;
@@ -188,7 +245,8 @@ public class DvClient {
                     break;
                 }
                 long delayMs = (long) Math.pow(2, retryCount) * 1000;
-                log.warn("{} failed, retry {}/{} in {}ms: {}", operationName, retryCount, MAX_RETRIES, delayMs, e.getMessage());
+                log.warn("{} failed, retry {}/{} in {}ms: {}", operationName, retryCount, MAX_RETRIES, delayMs,
+                    e.getMessage());
                 try {
                     sleepBeforeRetry(delayMs);
                 } catch (InterruptedException ie) {
@@ -201,24 +259,22 @@ public class DvClient {
         throw new RuntimeException(operationName + " failed after " + MAX_RETRIES + " retries", lastException);
     }
 
-    // --- 内部工具方法 ---
-
     private WebClient getOrCreateWebClient(DvEnvironmentInfo env) {
         return clientCache.computeIfAbsent(env.getServerUrl(), url -> {
-            SslContext sslContext = sslFactory.createSslContext(env.getCrtContent(), env.getCrtFileName(), env.isStrictSsl());
-            ConnectionProvider provider = ConnectionProvider.builder("dv-" + url.hashCode())
-                    .maxConnections(10).build();
+            SslContext sslContext =
+                sslFactory.createSslContext(env.getCrtContent(), env.getCrtFileName(), env.isStrictSsl());
+            ConnectionProvider provider = ConnectionProvider.builder("dv-" + url.hashCode()).maxConnections(10).build();
             providerCache.put(url, provider);
             HttpClient httpClient = HttpClient.create(provider)
-                    .secure(t -> t.sslContext(sslContext)
-                            .handshakeTimeout(Duration.ofSeconds(10)))
-                    .responseTimeout(Duration.ofSeconds(60));
-            return WebClient.builder()
-                    .clientConnector(new ReactorClientHttpConnector(httpClient))
-                    .build();
+                .secure(t -> t.sslContext(sslContext).handshakeTimeout(Duration.ofSeconds(10)))
+                .responseTimeout(Duration.ofSeconds(60));
+            return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient)).build();
         });
     }
 
+/**
+ * shutdown.
+ */
     @PreDestroy
     public void shutdown() {
         clientCache.clear();
@@ -226,8 +282,8 @@ public class DvClient {
         providerCache.clear();
     }
 
-    private Map<String, Object> buildAlarmQuery(long startTime, long endTime,
-            List<String> severities, List<String> dns) {
+    private Map<String, Object> buildAlarmQuery(long startTime, long endTime, List<String> severities,
+        List<String> dns) {
         List<Map<String, Object>> filters = new ArrayList<>();
 
         Map<String, Object> timeFilter = new LinkedHashMap<>();
@@ -262,14 +318,16 @@ public class DvClient {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("query", query);
         body.put("sort", List.of(Collections.singletonMap("field", "CSN")));
-        body.put("fields", List.of("alarmId", "alarmName", "severity", "nativeMeDn", "meName", "occurUtc", "count", "moi", "additionalInformation"));
+        body.put("fields", List.of("alarmId", "alarmName", "severity", "nativeMeDn", "meName", "occurUtc", "count",
+            "moi", "additionalInformation"));
         body.put("size", ALARM_BATCH_SIZE);
         return body;
     }
 
     List<PerformanceDataResult> parsePerformanceResult(String response) {
         List<PerformanceDataResult> results = new ArrayList<>();
-        if (response == null) return results;
+        if (response == null)
+            return results;
         try {
             JsonNode root = MAPPER.readTree(response);
             JsonNode resultNode = root.has("result") ? root.get("result") : root;
@@ -301,11 +359,13 @@ public class DvClient {
 
     List<AlarmInfo> parseAlarms(String response) {
         List<AlarmInfo> alarms = new ArrayList<>();
-        if (response == null) return alarms;
+        if (response == null)
+            return alarms;
         try {
             JsonNode root = MAPPER.readTree(response);
             JsonNode hits = root.get("hits");
-            if (hits == null || !hits.isArray()) return alarms;
+            if (hits == null || !hits.isArray())
+                return alarms;
             for (JsonNode hit : hits) {
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.setAlarmId(textVal(hit, "alarmId"));
@@ -325,13 +385,10 @@ public class DvClient {
         return alarms;
     }
 
-    private static String textVal(JsonNode node, String field) {
-        return node.has(field) && !node.get(field).isNull() ? node.get(field).asText() : null;
-    }
-
     List<String> parseChildren(String response) {
         List<String> children = new ArrayList<>();
-        if (response == null) return children;
+        if (response == null)
+            return children;
         try {
             JsonNode root = MAPPER.readTree(response);
             JsonNode resultNode = root.has("result") ? root.get("result") : root;

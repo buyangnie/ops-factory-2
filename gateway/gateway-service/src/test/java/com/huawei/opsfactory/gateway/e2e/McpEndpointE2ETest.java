@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.e2e;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
@@ -26,6 +30,9 @@ import static org.mockito.Mockito.when;
 public class McpEndpointE2ETest extends BaseE2ETest {
     private ManagedInstance sysInstance;
 
+    /**
+     * Sets the up.
+     */
     @Before
     public void setUp() {
         sysInstance = new ManagedInstance("test-agent", "admin", 9999, 12345L, null, "test-secret");
@@ -39,8 +46,9 @@ public class McpEndpointE2ETest extends BaseE2ETest {
                 "http://127.0.0.1:" + inv.getArgument(0));
     }
 
-    // ====================== GET /agents/{agentId}/mcp ======================
-
+    /**
+     * Returns the mcp extensions admin proxies to sys instance.
+     */
     @Test
     public void getMcpExtensions_admin_proxiesToSysInstance() {
         when(goosedProxy.proxy(any(), any(), eq(9999), eq("/config/extensions"), any()))
@@ -56,6 +64,9 @@ public class McpEndpointE2ETest extends BaseE2ETest {
         verify(goosedProxy).proxy(any(), any(), eq(9999), eq("/config/extensions"), any());
     }
 
+    /**
+     * Returns the mcp extensions non admin returns403.
+     */
     @Test
     public void getMcpExtensions_nonAdmin_returns403() {
         webClient.get().uri("/gateway/agents/test-agent/mcp")
@@ -65,6 +76,9 @@ public class McpEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Returns the mcp extensions unauthenticated returns401.
+     */
     @Test
     public void getMcpExtensions_unauthenticated_returns401() {
         webClient.get().uri("/gateway/agents/test-agent/mcp")
@@ -72,8 +86,9 @@ public class McpEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().isUnauthorized();
     }
 
-    // ====================== POST /agents/{agentId}/mcp ======================
-
+    /**
+     * Executes the create mcp extension admin forwards to sys instance operation.
+     */
     @Test
     public void createMcpExtension_admin_forwardsToSysInstance() {
         // Mock WebClient for McpController's direct WebClient usage
@@ -92,6 +107,9 @@ public class McpEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().is5xxServerError();
     }
 
+    /**
+     * Executes the create mcp extension non admin returns403 operation.
+     */
     @Test
     public void createMcpExtension_nonAdmin_returns403() {
         webClient.post().uri("/gateway/agents/test-agent/mcp")
@@ -103,8 +121,9 @@ public class McpEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().isForbidden();
     }
 
-    // ====================== DELETE /agents/{agentId}/mcp/{name} ======================
-
+    /**
+     * Executes the delete mcp extension non admin returns403 operation.
+     */
     @Test
     public void deleteMcpExtension_nonAdmin_returns403() {
         webClient.delete().uri("/gateway/agents/test-agent/mcp/my-extension")
@@ -114,6 +133,9 @@ public class McpEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Executes the delete mcp extension unauthenticated returns401 operation.
+     */
     @Test
     public void deleteMcpExtension_unauthenticated_returns401() {
         webClient.delete().uri("/gateway/agents/test-agent/mcp/my-extension")
@@ -121,6 +143,9 @@ public class McpEndpointE2ETest extends BaseE2ETest {
                 .expectStatus().isUnauthorized();
     }
 
+    /**
+     * Executes the delete mcp extension admin attempts proxy to sys operation.
+     */
     @Test
     public void deleteMcpExtension_admin_attemptsProxyToSys() {
         WebClient mockWebClient = WebClient.builder().build();

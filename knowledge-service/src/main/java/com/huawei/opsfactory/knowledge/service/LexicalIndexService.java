@@ -140,6 +140,7 @@ public class LexicalIndexService {
 
     private void rebuildSourceIndex(String sourceId, List<SearchService.SearchableChunk> chunks) {
         ResolvedIndexSettings settings = resolveIndexSettings(sourceId);
+        recreateSourceIndexDirectory(sourceId);
         try (Directory directory = openDirectory(sourceId);
              Analyzer analyzer = buildAnalyzer(settings.indexAnalyzer())) {
             IndexWriterConfig config = new IndexWriterConfig(analyzer);
@@ -153,6 +154,16 @@ public class LexicalIndexService {
             }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to rebuild lexical index for source " + sourceId, e);
+        }
+    }
+
+    private void recreateSourceIndexDirectory(String sourceId) {
+        Path indexDir = storageManager.indexDir(INDEX_NAME).resolve(sourceId);
+        storageManager.deleteRecursively(indexDir);
+        try {
+            Files.createDirectories(indexDir);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to recreate lexical index directory for source " + sourceId, e);
         }
     }
 

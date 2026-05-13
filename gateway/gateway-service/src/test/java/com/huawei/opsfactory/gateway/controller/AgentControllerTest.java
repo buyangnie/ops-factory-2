@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.common.model.AgentRegistryEntry;
@@ -18,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +31,12 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for Agent Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(AgentController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -42,6 +53,9 @@ public class AgentControllerTest {
     @MockBean
     private InstanceManager instanceManager;
 
+    /**
+     * Tests list agents.
+     */
     @Test
     public void testListAgents() {
         when(agentConfigService.getRegistry()).thenReturn(List.of(
@@ -72,6 +86,9 @@ public class AgentControllerTest {
                 .jsonPath("$.agents[1].id").isEqualTo("agent2");
     }
 
+    /**
+     * Tests list agents empty.
+     */
     @Test
     public void testListAgents_empty() {
         when(agentConfigService.getRegistry()).thenReturn(List.of());
@@ -85,6 +102,11 @@ public class AgentControllerTest {
                 .jsonPath("$.agents.length()").isEqualTo(0);
     }
 
+    /**
+     * Tests create agent as admin.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testCreateAgent_asAdmin() throws Exception {
         Map<String, Object> agent = new HashMap<>();
@@ -106,6 +128,9 @@ public class AgentControllerTest {
                 .jsonPath("$.agent.id").isEqualTo("new-agent");
     }
 
+    /**
+     * Tests create agent non admin forbidden.
+     */
     @Test
     public void testCreateAgent_nonAdminForbidden() {
         webTestClient.post().uri("/gateway/agents")
@@ -117,6 +142,9 @@ public class AgentControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests create agent missing id.
+     */
     @Test
     public void testCreateAgent_missingId() {
         webTestClient.post().uri("/gateway/agents")
@@ -128,6 +156,11 @@ public class AgentControllerTest {
                 .expectStatus().isBadRequest();
     }
 
+    /**
+     * Tests delete agent as admin.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testDeleteAgent_asAdmin() throws Exception {
         Mockito.doNothing().when(instanceManager).stopAllForAgent("agent1");
@@ -142,6 +175,9 @@ public class AgentControllerTest {
                 .jsonPath("$.success").isEqualTo(true);
     }
 
+    /**
+     * Tests delete agent non admin forbidden.
+     */
     @Test
     public void testDeleteAgent_nonAdminForbidden() {
         webTestClient.delete().uri("/gateway/agents/agent1")
@@ -151,6 +187,9 @@ public class AgentControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests get skills as admin.
+     */
     @Test
     public void testGetSkills_asAdmin() {
         when(agentConfigService.listSkills("agent1")).thenReturn(List.of(
@@ -169,6 +208,9 @@ public class AgentControllerTest {
                 .jsonPath("$.skills[1].description").isEqualTo("Analyze data");
     }
 
+    /**
+     * Tests get config as admin.
+     */
     @Test
     public void testGetConfig_asAdmin() {
         when(agentConfigService.findAgent("agent1"))
@@ -191,6 +233,11 @@ public class AgentControllerTest {
                 .jsonPath("$.model").isEqualTo("claude-3");
     }
 
+    /**
+     * Tests update config as admin.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testUpdateConfig_asAdmin() throws Exception {
         when(agentConfigService.findAgent("agent1"))
@@ -208,6 +255,9 @@ public class AgentControllerTest {
                 .jsonPath("$.success").isEqualTo(true);
     }
 
+    /**
+     * Tests update config non admin forbidden.
+     */
     @Test
     public void testUpdateConfig_nonAdminForbidden() {
         webTestClient.put().uri("/gateway/agents/agent1/config")
@@ -219,6 +269,9 @@ public class AgentControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests create agent missing name.
+     */
     @Test
     public void testCreateAgent_missingName() {
         webTestClient.post().uri("/gateway/agents")
@@ -230,6 +283,9 @@ public class AgentControllerTest {
                 .expectStatus().isBadRequest();
     }
 
+    /**
+     * Tests create agent blank id.
+     */
     @Test
     public void testCreateAgent_blankId() {
         webTestClient.post().uri("/gateway/agents")
@@ -241,6 +297,11 @@ public class AgentControllerTest {
                 .expectStatus().isBadRequest();
     }
 
+    /**
+     * Tests create agent duplicate returns400.
+     *
+     * @throws Exception if the operation fails
+     */
     @Test
     public void testCreateAgent_duplicateReturns400() throws Exception {
         when(agentConfigService.createAgent(eq("dup-agent"), eq("Dup Agent")))
@@ -255,6 +316,31 @@ public class AgentControllerTest {
                 .expectStatus().isBadRequest();
     }
 
+    /**
+     * Tests create agent io failure returns500.
+     *
+     * @throws Exception if the operation fails
+     */
+    @Test
+    public void testCreateAgent_ioFailureReturns500() throws Exception {
+        when(agentConfigService.createAgent(eq("io-agent"), eq("IO Agent")))
+                .thenThrow(new IOException("disk full"));
+
+        webTestClient.post().uri("/gateway/agents")
+                .header("x-secret-key", "test")
+                .header("x-user-id", "admin")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"id\": \"io-agent\", \"name\": \"IO Agent\"}")
+                .exchange()
+                .expectStatus().is5xxServerError()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error").isEqualTo("Failed to create agent");
+    }
+
+    /**
+     * Tests get skills non admin forbidden.
+     */
     @Test
     public void testGetSkills_nonAdminForbidden() {
         webTestClient.get().uri("/gateway/agents/agent1/skills")
@@ -264,6 +350,9 @@ public class AgentControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests get config non admin forbidden.
+     */
     @Test
     public void testGetConfig_nonAdminForbidden() {
         webTestClient.get().uri("/gateway/agents/agent1/config")
@@ -273,6 +362,9 @@ public class AgentControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests list agents no auth required.
+     */
     @Test
     public void testListAgents_noAuthRequired() {
         // listAgents does not require admin, just auth

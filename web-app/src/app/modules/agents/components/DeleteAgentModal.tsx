@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '../../../platform/providers/UserContext'
 import Button from '../../../platform/ui/primitives/Button'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 
 export function DeleteAgentModal({
     agentId,
@@ -24,7 +24,7 @@ export function DeleteAgentModal({
         setError(null)
         setDeleting(true)
         try {
-            const response = await fetch(`${GATEWAY_URL}/agents/${agentId}`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}`, {
                 method: 'DELETE',
                 headers: gatewayHeaders(userId),
             })

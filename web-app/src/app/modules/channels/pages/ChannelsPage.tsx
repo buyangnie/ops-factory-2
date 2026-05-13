@@ -14,6 +14,7 @@ import ResourceCard, {
 } from '../../../platform/ui/primitives/ResourceCard'
 import { useChannels } from '../hooks/useChannels'
 import { useToast } from '../../../platform/providers/ToastContext'
+import { useConfirmDialog } from '../../../platform/providers/ConfirmDialogContext'
 import CreateChannelModal from '../components/CreateChannelModal'
 import '../styles/channels.css'
 
@@ -76,6 +77,7 @@ export default function ChannelsPage() {
     const { t } = useTranslation()
     const navigate = useNavigate()
     const { showToast } = useToast()
+    const { requestConfirm } = useConfirmDialog()
     const { channels, isLoading, error, fetchChannels, deleteChannel } = useChannels()
     const [searchTerm, setSearchTerm] = useState('')
     const [showCreateModal, setShowCreateModal] = useState(false)
@@ -99,7 +101,12 @@ export default function ChannelsPage() {
     }, [channels, searchTerm, t])
 
     const handleDelete = async (channelId: string, name: string) => {
-        const confirmed = window.confirm(t('channels.confirmDelete', { name }))
+        const confirmed = await requestConfirm({
+            title: t('common.confirmTitle'),
+            message: t('channels.confirmDelete', { name }),
+            variant: 'danger',
+            confirmLabel: t('common.delete'),
+        })
         if (!confirmed) return
 
         const result = await deleteChannel(channelId)
@@ -137,16 +144,18 @@ export default function ChannelsPage() {
                     />
                 )}
             >
-                {isLoading ? (
+                {isLoading && (
                     <div className="empty-state">
                         <div className="empty-state-title">{t('common.loading')}</div>
                     </div>
-                ) : filteredChannels.length === 0 ? (
+                )}
+                {!isLoading && filteredChannels.length === 0 && (
                     <div className="empty-state">
                         <div className="empty-state-title">{t('channels.emptyTitle')}</div>
                         <div className="empty-state-description">{t('channels.emptyDescription')}</div>
                     </div>
-                ) : (
+                )}
+                {!isLoading && filteredChannels.length > 0 && (
                     <CardGrid>
                         {filteredChannels.map(channel => (
                             <ResourceCard

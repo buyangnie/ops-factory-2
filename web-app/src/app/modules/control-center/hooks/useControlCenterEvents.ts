@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CONTROL_CENTER_URL, controlCenterHeaders } from '../../../../config/runtime'
+import { runtime, controlCenterHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 
 export interface ControlCenterEvent {
@@ -22,7 +22,7 @@ export function useControlCenterEvents(autoRefreshMs = 15_000) {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await fetch(`${CONTROL_CENTER_URL}/events`, {
+            const response = await fetch(`${runtime.CONTROL_CENTER_URL}/events`, {
                 headers: controlCenterHeaders(),
                 signal: signal || AbortSignal.timeout(10_000),
             })

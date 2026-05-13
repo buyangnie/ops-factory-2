@@ -4,16 +4,17 @@
 
 package com.huawei.opsfactory.gateway.service;
 
+import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -21,11 +22,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import jakarta.annotation.PostConstruct;
 
 /**
  * Provides CRUD operations for cluster entities persisted as JSON files, with cascade delete support.
@@ -36,12 +39,21 @@ import java.util.UUID;
 @Service
 public class ClusterService {
     private static final Logger log = LoggerFactory.getLogger(ClusterService.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final GatewayProperties properties;
+
     private Path clustersDir;
+
     private ClusterRelationService clusterRelationService;
 
+    /**
+     * Creates the cluster service instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public ClusterService(GatewayProperties properties) {
         this.properties = properties;
     }
@@ -49,8 +61,7 @@ public class ClusterService {
     /**
      * Sets the cluster relation service via lazy injection.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param clusterRelationService the clusterRelationService parameter
      */
     @Lazy
     @Autowired
@@ -60,9 +71,6 @@ public class ClusterService {
 
     /**
      * Initializes the clusters data directory at startup.
-     *
-     * @author x00000000
-     * @since 2026-05-09
      */
     @PostConstruct
     public void init() {
@@ -80,8 +88,10 @@ public class ClusterService {
 
     /**
      * List clusters with optional filters.
+     *
      * @param groupId filter by group ID (null = no filter)
      * @param type filter by cluster type (null = no filter)
+     * @return the result
      */
     public List<Map<String, Object>> listClusters(String groupId, String type) {
         List<Map<String, Object>> clusters = new ArrayList<>();
@@ -93,29 +103,25 @@ public class ClusterService {
                 if (!Files.isRegularFile(file)) {
                     continue;
                 }
-                try {
-                    Map<String, Object> cluster = readFile(file);
-                    if (cluster == null) {
+                Map<String, Object> cluster = readFile(file);
+                if (cluster == null) {
+                    continue;
+                }
+                // Filter by groupId
+                if (groupId != null && !groupId.isEmpty()) {
+                    Object cg = cluster.get("groupId");
+                    if (!groupId.equals(cg)) {
                         continue;
                     }
-                    // Filter by groupId
-                    if (groupId != null && !groupId.isEmpty()) {
-                        Object cg = cluster.get("groupId");
-                        if (!groupId.equals(cg)) {
-                            continue;
-                        }
-                    }
-                    // Filter by type
-                    if (type != null && !type.isEmpty()) {
-                        Object ct = cluster.get("type");
-                        if (!type.equalsIgnoreCase(ct != null ? ct.toString() : "")) {
-                            continue;
-                        }
-                    }
-                    clusters.add(cluster);
-                } catch (Exception e) {
-                    log.warn("Failed to read cluster file: {}", file, e);
                 }
+                // Filter by type
+                if (type != null && !type.isEmpty()) {
+                    Object ct = cluster.get("type");
+                    if (!type.equalsIgnoreCase(ct != null ? ct.toString() : "")) {
+                        continue;
+                    }
+                }
+                clusters.add(cluster);
             }
         } catch (IOException e) {
             log.error("Failed to list clusters from {}", clustersDir, e);
@@ -126,8 +132,8 @@ public class ClusterService {
     /**
      * Gets a cluster by its ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @return the result
      */
     public Map<String, Object> getCluster(String id) {
         Path file = clustersDir.resolve(id + ".json");
@@ -141,8 +147,7 @@ public class ClusterService {
     /**
      * Returns the distinct cluster types across all clusters.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public List<String> getClusterTypes() {
         LinkedHashSet<String> types = new LinkedHashSet<>();
@@ -159,8 +164,8 @@ public class ClusterService {
     /**
      * Creates a new cluster from the provided field map.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param body the body parameter
+     * @return the result
      */
     public Map<String, Object> createCluster(Map<String, Object> body) {
         String id = UUID.randomUUID().toString();
@@ -185,8 +190,9 @@ public class ClusterService {
     /**
      * Updates an existing cluster with the provided field map.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @param body the body parameter
+     * @return the result
      */
     public Map<String, Object> updateCluster(String id, Map<String, Object> body) {
         Path file = clustersDir.resolve(id + ".json");
@@ -222,6 +228,8 @@ public class ClusterService {
 
     /**
      * Delete a cluster. Rejects if the cluster has hosts.
+     *
+     * @param id the id parameter
      * @param hostService used to check for hosts in this cluster
      * @return true if deleted
      */
@@ -254,6 +262,8 @@ public class ClusterService {
     /**
      * Force-delete a cluster: deletes all hosts in the cluster first, then the cluster itself.
      * Host deletion cascades to their relations automatically.
+     *
+     * @param id the id parameter
      * @param hostService used to delete hosts in this cluster
      * @return true if deleted
      */

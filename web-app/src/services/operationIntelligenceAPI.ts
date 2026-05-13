@@ -3,7 +3,7 @@
  * Aligned with operation-intelligence QoS REST endpoints (/operation-intelligence/qos/*)
  */
 
-import { OPERATION_INTELLIGENCE_SERVICE_URL, OPERATION_INTELLIGENCE_SECRET_KEY } from '../config/runtime'
+import { runtime } from '../config/runtime'
 
 import type { HealthIndicatorResponse, IndicatorDetailResponse } from '../types/operationIntelligence';
 
@@ -17,14 +17,14 @@ export interface EnvironmentInfo {
 function operationIntelligenceHeaders(userId?: string | null): Record<string, string> {
   const h: Record<string, string> = {
     'Content-Type': 'application/json',
-    'x-secret-key': OPERATION_INTELLIGENCE_SECRET_KEY,
+    'x-secret-key': runtime.OPERATION_INTELLIGENCE_SECRET_KEY,
   }
   if (userId) h['x-user-id'] = userId
   return h
 }
 
 async function request<T>(endpoint: string, body?: unknown, method = 'POST', userId?: string | null): Promise<T> {
-  const url = `${OPERATION_INTELLIGENCE_SERVICE_URL}${endpoint}`;
+  const url = `${runtime.OPERATION_INTELLIGENCE_SERVICE_URL}${endpoint}`;
   const response = await fetch(url, {
     method,
     headers: operationIntelligenceHeaders(userId),

@@ -10,16 +10,7 @@ package com.huawei.opsfactory.gateway.service.channel.model;
  * @author x00000000
  * @since 2026-05-09
  */
-public record ChannelReplyResult(
-        String channelId,
-        String accountId,
-        String peerId,
-        String conversationId,
-        String threadId,
-        String conversationType,
-        String syntheticUserId,
-        String agentId,
-        String sessionId,
-        String replyText
-) {
+public record ChannelReplyResult(String channelId, String accountId, String peerId, String conversationId,
+    String threadId, String conversationType, String syntheticUserId, String agentId, String sessionId,
+    String replyText) {
 }

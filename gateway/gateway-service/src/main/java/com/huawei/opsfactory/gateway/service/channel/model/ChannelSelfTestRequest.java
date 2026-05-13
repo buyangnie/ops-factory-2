@@ -10,7 +10,5 @@ package com.huawei.opsfactory.gateway.service.channel.model;
  * @author x00000000
  * @since 2026-05-09
  */
-public record ChannelSelfTestRequest(
-        String text
-) {
+public record ChannelSelfTestRequest(String text) {
 }

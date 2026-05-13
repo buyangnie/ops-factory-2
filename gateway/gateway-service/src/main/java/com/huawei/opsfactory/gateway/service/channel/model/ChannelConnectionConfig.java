@@ -13,14 +13,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * @since 2026-05-09
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record ChannelConnectionConfig(
-        String loginStatus,
-        String authStateDir,
-        String lastConnectedAt,
-        String lastDisconnectedAt,
-        String lastError,
-        String selfPhone,
-        String wechatId,
-        String displayName
-) {
+public record ChannelConnectionConfig(String loginStatus, String authStateDir, String lastConnectedAt,
+    String lastDisconnectedAt, String lastError, String selfPhone, String wechatId, String displayName) {
 }

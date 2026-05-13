@@ -21,7 +21,9 @@ import java.util.function.Supplier;
 @Service
 public class SessionCacheService {
     private static final Logger log = LoggerFactory.getLogger(SessionCacheService.class);
+
     private static final long DEFAULT_TTL_MS = 30_000;
+
     private static final int MAX_ENTRIES = 500;
 
     private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
@@ -29,8 +31,8 @@ public class SessionCacheService {
     /**
      * Returns cached sessions for the given user ID if still within the TTL.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param userId the userId parameter
+     * @return the result
      */
     public List<Map<String, Object>> get(String userId) {
         CacheEntry entry = cache.get(userId);
@@ -43,6 +45,10 @@ public class SessionCacheService {
     /**
      * Atomically cache the supplied data or return already-cached data from a concurrent request.
      * Prevents concurrent cache misses from duplicating the expensive fetch.
+     *
+     * @param userId the userId parameter
+     * @param loader the loader parameter
+     * @return the result
      */
     public List<Map<String, Object>> getOrFetch(String userId, Supplier<List<Map<String, Object>>> loader) {
         CacheEntry existing = cache.get(userId);
@@ -67,8 +73,7 @@ public class SessionCacheService {
     /**
      * Invalidates the cached sessions for the given user ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param userId the userId parameter
      */
     public void invalidate(String userId) {
         cache.remove(userId);
@@ -77,9 +82,6 @@ public class SessionCacheService {
 
     /**
      * Periodically removes expired cache entries.
-     *
-     * @author x00000000
-     * @since 2026-05-09
      */
     @Scheduled(fixedRate = 60_000)
     public void cleanupExpired() {
@@ -87,5 +89,6 @@ public class SessionCacheService {
         cache.entrySet().removeIf(e -> now - e.getValue().timestamp > DEFAULT_TTL_MS);
     }
 
-    private record CacheEntry(List<Map<String, Object>> sessions, long timestamp) {}
+    private record CacheEntry(List<Map<String, Object>> sessions, long timestamp) {
+    }
 }

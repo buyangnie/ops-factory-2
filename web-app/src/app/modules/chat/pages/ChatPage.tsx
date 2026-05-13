@@ -866,7 +866,11 @@ export default function Chat() {
                         isGenerating={isLoading}
                         canQuickContinue={messages.length > 0}
                         onStopGeneration={handleStopMessage}
-                        placeholder={isCreatingSession ? t('chat.switchingAgent') : isLoading ? t('chat.waitingForResponse') : t('chat.typePlaceholder')}
+                        placeholder={(() => {
+                            if (isCreatingSession) return t('chat.switchingAgent')
+                            if (isLoading) return t('chat.waitingForResponse')
+                            return t('chat.typePlaceholder')
+                        })()}
                         autoFocus
                         selectedAgent={activeAgentId}
                         onAgentChange={handleAgentChange}

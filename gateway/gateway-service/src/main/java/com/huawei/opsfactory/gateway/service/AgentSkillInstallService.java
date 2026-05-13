@@ -6,6 +6,12 @@ package com.huawei.opsfactory.gateway.service;
 
 import com.huawei.opsfactory.gateway.common.model.AgentRegistryEntry;
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.yaml.snakeyaml.Yaml;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,10 +32,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.yaml.snakeyaml.Yaml;
 
 /**
  * Handles downloading, validating, extracting, and uninstalling skills from the skill market for agents.
@@ -40,17 +42,25 @@ import org.yaml.snakeyaml.Yaml;
 @Service
 public class AgentSkillInstallService {
     private static final Logger log = LoggerFactory.getLogger(AgentSkillInstallService.class);
+
     private static final Pattern SKILL_ID_PATTERN = Pattern.compile("^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$");
 
     private final AgentConfigService agentConfigService;
+
     private final SkillMarketClient skillMarketClient;
+
     private final GatewayProperties properties;
+
     private final Yaml yaml = new Yaml();
 
-    public AgentSkillInstallService(
-            AgentConfigService agentConfigService,
-            SkillMarketClient skillMarketClient,
-            GatewayProperties properties) {
+    /**
+     * Creates the agent skill install service instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
+    public AgentSkillInstallService(AgentConfigService agentConfigService, SkillMarketClient skillMarketClient,
+        GatewayProperties properties) {
         this.agentConfigService = agentConfigService;
         this.skillMarketClient = skillMarketClient;
         this.properties = properties;
@@ -59,8 +69,10 @@ public class AgentSkillInstallService {
     /**
      * Downloads, validates, and installs a skill from the skill market for the specified agent.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param requestedSkillId the requestedSkillId parameter
+     * @return the result
+     * @throws IOException if the operation fails
      */
     public Map<String, Object> install(String agentId, String requestedSkillId) throws IOException {
         AgentRegistryEntry agent = agentConfigService.findAgent(agentId);
@@ -85,7 +97,8 @@ public class AgentSkillInstallService {
         Path skillsDir = agentConfigService.getAgentConfigDir(agentId).resolve("skills");
         Path destination = skillsDir.resolve(skillId);
         if (Files.exists(destination)) {
-            throw new SkillInstallConflictException("Skill '" + skillId + "' is already installed for agent '" + agentId + "'");
+            throw new SkillInstallConflictException(
+                "Skill '" + skillId + "' is already installed for agent '" + agentId + "'");
         }
 
         Files.createDirectories(skillsDir);
@@ -114,17 +127,16 @@ public class AgentSkillInstallService {
         skill.put("checksum", actualChecksum);
 
         log.info("Installed skill id={} agentId={} checksum={}", skillId, agentId, actualChecksum);
-        return Map.of(
-                "success", true,
-                "skill", skill,
-                "restartRequired", true);
+        return Map.of("success", true, "skill", skill, "restartRequired", true);
     }
 
     /**
      * Uninstalls a previously installed skill from the specified agent.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param requestedSkillId the requestedSkillId parameter
+     * @return the result
+     * @throws IOException if the operation fails
      */
     public Map<String, Object> uninstall(String agentId, String requestedSkillId) throws IOException {
         AgentRegistryEntry agent = agentConfigService.findAgent(agentId);
@@ -146,10 +158,7 @@ public class AgentSkillInstallService {
         agentConfigService.invalidateCache(agentId);
 
         log.info("Uninstalled skill id={} agentId={}", skillId, agentId);
-        return Map.of(
-                "success", true,
-                "skillId", skillId,
-                "restartRequired", true);
+        return Map.of("success", true, "skillId", skillId, "restartRequired", true);
     }
 
     private void extractPackage(byte[] packageBytes, Path targetDir) throws IOException {
@@ -160,7 +169,8 @@ public class AgentSkillInstallService {
                     continue;
                 }
                 String safeName = safeZipName(entry.getName());
-                if (safeName.startsWith("__MACOSX/") || safeName.endsWith("/.DS_Store") || ".DS_Store".equals(safeName)) {
+                if (safeName.startsWith("__MACOSX/") || safeName.endsWith("/.DS_Store")
+                    || ".DS_Store".equals(safeName)) {
                     continue;
                 }
                 Path destination = targetDir.resolve(safeName).normalize();
@@ -243,12 +253,29 @@ public class AgentSkillInstallService {
             return;
         }
         Files.walkFileTree(path, new SimpleFileVisitor<>() {
+
+            /**
+             * Executes the visit file operation.
+             *
+             * @param file the file parameter
+             * @param attrs the attrs parameter
+             * @return the result
+             * @throws IOException if the operation fails
+             */
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Files.deleteIfExists(file);
                 return FileVisitResult.CONTINUE;
             }
 
+            /**
+             * Executes the post visit directory operation.
+             *
+             * @param dir the dir parameter
+             * @param exc the exc parameter
+             * @return the result
+             * @throws IOException if the operation fails
+             */
             @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                 Files.deleteIfExists(dir);

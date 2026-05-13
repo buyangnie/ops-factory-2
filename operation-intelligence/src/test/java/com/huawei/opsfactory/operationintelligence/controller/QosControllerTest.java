@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.operationintelligence.controller;
 
 import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
@@ -38,11 +42,21 @@ class QosControllerTest {
 
     @TestConfiguration
     static class TestConfig {
+/**
+ * qos Service.
+ *
+ * @return the result
+ */
         @Bean
         public QosService qosService() {
             return mock(QosService.class);
         }
 
+/**
+ * properties.
+ *
+ * @return the result
+ */
         @Bean
         public OperationIntelligenceProperties properties() {
             OperationIntelligenceProperties props = new OperationIntelligenceProperties();

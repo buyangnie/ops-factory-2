@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../../platform/providers/ToastContext'
 import { usePreview } from '../../../platform/providers/PreviewContext'
-import { KNOWLEDGE_SERVICE_URL } from '../../../../config/runtime'
+import { runtime } from '../../../../config/runtime'
 import { useKnowledgeSourceDetail } from '../hooks/useKnowledgeSourceDetail'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import KnowledgeChunksTab from '../components/KnowledgeChunksTab'
@@ -716,7 +716,11 @@ function MaintenanceTab({
                         onClick={onRebuild}
                         disabled={sourceUnavailable || isRebuildingSource}
                     >
-                        {isMaintenanceMode || isRebuildingSource ? t('knowledge.rebuilding') : isRuntimeError ? t('knowledge.rebuildRetryAction') : t('knowledge.rebuildAction')}
+                        {(() => {
+                            if (isMaintenanceMode || isRebuildingSource) return t('knowledge.rebuilding')
+                            if (isRuntimeError) return t('knowledge.rebuildRetryAction')
+                            return t('knowledge.rebuildAction')
+                        })()}
                     </button>
                 </div>
 
@@ -740,7 +744,7 @@ function formatFileSize(bytes: number): string {
 }
 
 function getDocumentDownloadUrl(documentId: string): string {
-    return `${KNOWLEDGE_SERVICE_URL}/documents/${documentId}/original`
+    return `${runtime.KNOWLEDGE_SERVICE_URL}/documents/${documentId}/original`
 }
 
 function getFilenameFromDisposition(disposition: string | null, fallback: string): string {
@@ -1555,7 +1559,7 @@ function UploadDocumentsModal({
         }
 
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/documents:ingest`, {
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources/${sourceId}/documents:ingest`, {
                 method: 'POST',
                 body: formData,
             })
@@ -1664,7 +1668,12 @@ function UploadDocumentsModal({
                                         <div className="knowledge-upload-file-name">{item.file.name}</div>
                                         <div className="knowledge-upload-file-meta">
                                             <span>{formatFileSize(item.file.size)}</span>
-                                            <span>{item.status === 'pending' ? t('knowledge.uploadItemPending') : item.status === 'uploading' ? t('knowledge.uploadItemUploading') : item.status === 'completed' ? t('knowledge.uploadItemCompleted') : t('knowledge.uploadItemFailed')}</span>
+                                            <span>{(() => {
+                                                if (item.status === 'pending') return t('knowledge.uploadItemPending')
+                                                if (item.status === 'uploading') return t('knowledge.uploadItemUploading')
+                                                if (item.status === 'completed') return t('knowledge.uploadItemCompleted')
+                                                return t('knowledge.uploadItemFailed')
+                                            })()}</span>
                                         </div>
                                         {item.error && (
                                             <div className="knowledge-upload-file-error">{t(item.error)}</div>
@@ -2161,7 +2170,7 @@ export default function KnowledgeConfigure() {
         setDocumentsError(null)
 
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/documents?sourceId=${sourceId}&page=1&pageSize=100`)
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/documents?sourceId=${sourceId}&page=1&pageSize=100`)
             const data = await response.json() as PagedResponse<KnowledgeDocumentSummary> | { message?: string }
 
             if (!response.ok) {
@@ -2173,7 +2182,7 @@ export default function KnowledgeConfigure() {
 
             const artifactEntries = await Promise.all(items.map(async document => {
                 try {
-                    const artifactsResponse = await fetch(`${KNOWLEDGE_SERVICE_URL}/documents/${document.id}/artifacts`)
+                    const artifactsResponse = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/documents/${document.id}/artifacts`)
                     const artifactsData = await artifactsResponse.json() as KnowledgeDocumentArtifacts
                     if (!artifactsResponse.ok) {
                         throw new Error(artifactsResponse.statusText)
@@ -2202,7 +2211,7 @@ export default function KnowledgeConfigure() {
         setDeleteDocumentError(null)
         setDeletingDocumentId(deleteDocumentTarget.id)
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/documents/${deleteDocumentTarget.id}`, {
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/documents/${deleteDocumentTarget.id}`, {
                 method: 'DELETE',
             })
             const data = await response.json().catch(() => null) as { message?: string } | null
@@ -2227,7 +2236,7 @@ export default function KnowledgeConfigure() {
         setRenamingDocumentId(renameDocumentTarget.id)
         const nextTitle = title.trim()
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/documents/${renameDocumentTarget.id}`, {
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/documents/${renameDocumentTarget.id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2293,7 +2302,7 @@ export default function KnowledgeConfigure() {
 
     const handlePreviewDocument = useCallback(async (knowledgeDocument: KnowledgeDocumentSummary) => {
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/documents/${knowledgeDocument.id}/preview`)
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/documents/${knowledgeDocument.id}/preview`)
             const data = await response.json().catch(() => null) as KnowledgeDocumentPreview | { message?: string } | null
 
             if (!response.ok) {
@@ -2325,7 +2334,7 @@ export default function KnowledgeConfigure() {
         setIsRebuildingSource(true)
 
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/sources/${source.id}:rebuild`, {
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources/${source.id}:rebuild`, {
                 method: 'POST',
             })
             const data = await response.json().catch(() => null) as KnowledgeJobResponse | { message?: string } | null
@@ -2777,13 +2786,15 @@ export default function KnowledgeConfigure() {
                                         </select>
                                     </div>
 
-                                    {documentsLoading ? (
+                                    {documentsLoading && (
                                         <div className="knowledge-doc-empty">{t('common.loading')}</div>
-                                    ) : filteredDocuments.length === 0 ? (
+                                    )}
+                                    {!documentsLoading && filteredDocuments.length === 0 && (
                                         <div className="knowledge-doc-empty">
                                             {documents.length === 0 ? t('knowledge.docEmptyState') : t('knowledge.docNoMatch')}
                                         </div>
-                                    ) : (
+                                    )}
+                                    {!documentsLoading && filteredDocuments.length > 0 && (
                                         <div className="knowledge-doc-table">
                                             <div className="knowledge-doc-table-head">
                                                 <span>{t('knowledge.docColumnName')}</span>

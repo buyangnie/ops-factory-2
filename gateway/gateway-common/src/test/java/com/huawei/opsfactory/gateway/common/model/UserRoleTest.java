@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.common.model;
 
 import org.junit.Test;
@@ -8,12 +12,25 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Test coverage for User Role.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class UserRoleTest {
+
+    /**
+     * Tests from user id sys.
+     */
     @Test
     public void testFromUserId_sys() {
         assertEquals(UserRole.ADMIN, UserRole.fromUserId("admin"));
     }
 
+    /**
+     * Tests from user id regular user.
+     */
     @Test
     public void testFromUserId_regularUser() {
         assertEquals(UserRole.USER, UserRole.fromUserId("user123"));
@@ -21,6 +38,9 @@ public class UserRoleTest {
         assertEquals(UserRole.USER, UserRole.fromUserId(""));
     }
 
+    /**
+     * Tests from user id with admin set configured admin.
+     */
     @Test
     public void testFromUserId_withAdminSet_configuredAdmin() {
         Set<String> admins = Set.of("admin", "aiops");
@@ -28,6 +48,9 @@ public class UserRoleTest {
         assertEquals(UserRole.ADMIN, UserRole.fromUserId("aiops", admins));
     }
 
+    /**
+     * Tests from user id with admin set non admin.
+     */
     @Test
     public void testFromUserId_withAdminSet_nonAdmin() {
         Set<String> admins = Set.of("admin", "aiops");
@@ -35,6 +58,9 @@ public class UserRoleTest {
         assertEquals(UserRole.USER, UserRole.fromUserId("user123", admins));
     }
 
+    /**
+     * Tests is admin.
+     */
     @Test
     public void testIsAdmin() {
         assertTrue(UserRole.ADMIN.isAdmin());

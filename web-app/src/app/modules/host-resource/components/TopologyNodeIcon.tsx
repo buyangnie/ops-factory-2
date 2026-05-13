@@ -106,24 +106,28 @@ function withAlpha(hexColor: string, alpha = '1A'): string {
 
 function buildIconSvg(kind: TopologyNodeKind, options: Required<TopologyNodeSymbolOptions>): string {
     const accentSoft = withAlpha(options.accentColor)
-    const inner = kind === 'cluster'
-        ? `
+    const inner = (() => {
+        if (kind === 'cluster') {
+            return `
 <path d="M12 7.1 16 9.4v5.2L12 16.9 8 14.6V9.4z" fill="${accentSoft}"/>
 <path d="M12 7.1 16 9.4v5.2L12 16.9 8 14.6V9.4z" stroke="${options.accentColor}" stroke-width="1.4" stroke-linejoin="round"/>
 <path d="M12 7.1v4.9m4-2.6-4 2.6-4-2.6m4 2.6v4.9" stroke="${options.accentColor}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="12" cy="12" r="1" fill="${options.accentColor}"/>`
-        : kind === 'business'
-        ? `
+        }
+        if (kind === 'business') {
+            return `
 <rect x="6.6" y="7.1" width="10.8" height="8.4" rx="2.1" fill="${accentSoft}"/>
 <rect x="6.6" y="7.1" width="10.8" height="8.4" rx="2.1" stroke="${options.accentColor}" stroke-width="1.4"/>
 <path d="M6.6 10h10.8M9.2 12.6h2.6m0 0 1.5-1.4m-1.5 1.4 1.5 1.4m-4.1 0h5.1" stroke="${options.accentColor}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="9" cy="8.6" r=".7" fill="${options.accentColor}"/>
 <circle cx="11" cy="8.6" r=".7" fill="${options.accentColor}"/>`
-        : `
+        }
+        return `
 <rect x="7.1" y="7.6" width="9.8" height="6.3" rx="1.9" fill="${accentSoft}"/>
 <rect x="7.1" y="7.6" width="9.8" height="6.3" rx="1.9" stroke="${options.accentColor}" stroke-width="1.4"/>
 <path d="M9.3 16.5h5.4m-3.7-2.6v2.6m-1.8-5.9h.01m2.1 0h.01" stroke="${options.accentColor}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M12 13.9v1.2" stroke="${options.inkColor}" stroke-width="1.4" stroke-linecap="round"/>`
+    })()
 
     return `<svg width="${options.size}" height="${options.size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="${options.surfaceColor}"/>

@@ -93,6 +93,8 @@ export default function SearchableSelect({
                     handleSelect(filtered[highlightIndex].value)
                 }
                 break
+            default:
+                break
         }
     }, [open, filtered, highlightIndex, handleSelect])
 

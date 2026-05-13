@@ -4,10 +4,14 @@
 
 package com.huawei.opsfactory.gateway.service;
 
+import static java.util.Map.entry;
+
+import com.huawei.opsfactory.gateway.common.util.PathSanitizer;
+import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.huawei.opsfactory.gateway.config.GatewayProperties;
-import com.huawei.opsfactory.gateway.common.util.PathSanitizer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
@@ -20,17 +24,15 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-
-import static java.util.Map.entry;
 
 /**
  * Provides file browsing, upload validation, MIME-type resolution, and file-capsule persistence for the gateway.
@@ -42,75 +44,54 @@ import static java.util.Map.entry;
 public class FileService {
     private final GatewayProperties gatewayProperties;
 
+    /**
+     * Creates the file service instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public FileService(GatewayProperties gatewayProperties) {
         this.gatewayProperties = gatewayProperties;
     }
 
-    private static final Map<String, String> MIME_TYPES = Map.ofEntries(
-            entry("json", "application/json"),
-            entry("pdf", "application/pdf"),
-            entry("xml", "application/xml"),
-            entry("zip", "application/zip"),
-            entry("csv", "text/csv"),
-            entry("txt", "text/plain"),
-            entry("md", "text/markdown"),
-            entry("html", "text/html"),
-            entry("css", "text/css"),
-            entry("js", "text/javascript"),
-            entry("ts", "text/typescript"),
-            entry("java", "text/x-java-source"),
-            entry("py", "text/x-python"),
-            entry("yaml", "text/yaml"),
-            entry("yml", "text/yaml"),
-            entry("png", "image/png"),
-            entry("jpg", "image/jpeg"),
-            entry("jpeg", "image/jpeg"),
-            entry("gif", "image/gif"),
-            entry("svg", "image/svg+xml"),
-            entry("webp", "image/webp"),
-            entry("bmp", "image/bmp"),
-            entry("doc", "application/msword"),
+    private static final Map<String,
+        String> MIME_TYPES = Map.ofEntries(entry("json", "application/json"), entry("pdf", "application/pdf"),
+            entry("xml", "application/xml"), entry("zip", "application/zip"), entry("csv", "text/csv"),
+            entry("txt", "text/plain"), entry("md", "text/markdown"), entry("html", "text/html"),
+            entry("css", "text/css"), entry("js", "text/javascript"), entry("ts", "text/typescript"),
+            entry("java", "text/x-java-source"), entry("py", "text/x-python"), entry("yaml", "text/yaml"),
+            entry("yml", "text/yaml"), entry("png", "image/png"), entry("jpg", "image/jpeg"),
+            entry("jpeg", "image/jpeg"), entry("gif", "image/gif"), entry("svg", "image/svg+xml"),
+            entry("webp", "image/webp"), entry("bmp", "image/bmp"), entry("doc", "application/msword"),
             entry("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
             entry("xls", "application/vnd.ms-excel"),
             entry("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
             entry("ppt", "application/vnd.ms-powerpoint"),
             entry("pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"));
 
-    private static final Set<String> SKIP_DIRS = Set.of(
-            "data", "state", "config", "node_modules", ".goose");
+    private static final Set<String> SKIP_DIRS = Set.of("data", "state", "config", "node_modules", ".goose");
 
-    private static final Set<String> SKIP_FILES = Set.of(
-            ".DS_Store", "AGENTS.md", ".gitkeep");
+    private static final Set<String> SKIP_FILES = Set.of(".DS_Store", "AGENTS.md", ".gitkeep");
 
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-            "txt", "md", "json", "csv", "xml", "yaml", "yml",
-            "html", "css", "js", "ts", "java", "py", "go", "rs", "rb", "sh",
-            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
-            "png", "jpg", "jpeg", "gif", "svg", "webp", "bmp",
-            "zip", "gz", "tar", "log");
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("txt", "md", "json", "csv", "xml", "yaml", "yml",
+        "html", "css", "js", "ts", "java", "py", "go", "rs", "rb", "sh", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
+        "pptx", "png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "zip", "gz", "tar", "log");
 
-    private static final Set<String> BLOCKED_EXTENSIONS = Set.of(
-            "exe", "bat", "cmd", "com", "msi", "dll", "sys", "scr",
-            "vbs", "vbe", "wsf", "wsh", "ps1");
+    private static final Set<String> BLOCKED_EXTENSIONS =
+        Set.of("exe", "bat", "cmd", "com", "msi", "dll", "sys", "scr", "vbs", "vbe", "wsf", "wsh", "ps1");
 
-    private static final Set<String> EDITABLE_TEXT_EXTENSIONS = Set.of(
-            "txt", "log", "ini", "conf",
-            "js", "ts", "jsx", "tsx", "mjs", "cjs",
-            "py", "sh", "bash", "zsh",
-            "yaml", "yml", "json", "toml",
-            "css", "scss", "less",
-            "xml", "sql", "graphql",
-            "go", "rs", "java", "c", "cpp", "h", "hpp",
-            "rb", "php", "swift", "kt", "scala",
-            "csv", "tsv",
-            "env", "gitignore", "dockerignore", "editorconfig", "prettierrc",
-            "eslintrc", "babelrc",
-            "dockerfile", "makefile",
-            "vue", "svelte",
-            "md", "markdown", "html", "htm");
+    private static final Set<String> EDITABLE_TEXT_EXTENSIONS = Set.of("txt", "log", "ini", "conf", "js", "ts", "jsx",
+        "tsx", "mjs", "cjs", "py", "sh", "bash", "zsh", "yaml", "yml", "json", "toml", "css", "scss", "less", "xml",
+        "sql", "graphql", "go", "rs", "java", "c", "cpp", "h", "hpp", "rb", "php", "swift", "kt", "scala", "csv", "tsv",
+        "env", "gitignore", "dockerignore", "editorconfig", "prettierrc", "eslintrc", "babelrc", "dockerfile",
+        "makefile", "vue", "svelte", "md", "markdown", "html", "htm");
 
     /**
      * List files for the Files module from configured scan roots.
+     *
+     * @param userAgentDir the userAgentDir parameter
+     * @return the result
+     * @throws IOException if the operation fails
      */
     public List<Map<String, Object>> listFiles(Path userAgentDir) throws IOException {
         List<Map<String, Object>> files = new ArrayList<>();
@@ -128,15 +109,20 @@ public class FileService {
 
     /**
      * List only top-level files under a directory, excluding subdirectories.
+     *
+     * @param dir the dir parameter
+     * @return the result
+     * @throws IOException if the operation fails
      */
     public List<Map<String, Object>> listTopLevelFiles(Path dir) throws IOException {
         List<Map<String, Object>> files = new ArrayList<>();
-        listRootFiles(new FileScanRoot("workingDir", dir, false, new HashSet<>(SKIP_DIRS), 6, 1000, 2000),
-                files, fileCapsuleAllowedExtensions());
+        listRootFiles(new FileScanRoot("workingDir", dir, false, new HashSet<>(SKIP_DIRS), 6, 1000, 2000), files,
+            fileCapsuleAllowedExtensions());
         return files;
     }
 
-    private void listRootFiles(FileScanRoot root, List<Map<String, Object>> files, Set<String> allowedExtensions) throws IOException {
+    private void listRootFiles(FileScanRoot root, List<Map<String, Object>> files, Set<String> allowedExtensions)
+        throws IOException {
         Path dir = root.path();
         if (!Files.isDirectory(dir)) {
             return;
@@ -153,14 +139,17 @@ public class FileService {
     /**
      * List "user-facing" output files for chat file capsules:
      * - Same scan roots as the Files module
+     *
+     * @param dir the dir parameter
+     * @return the result
+     * @throws IOException if the operation fails
      */
     public List<Map<String, Object>> listCapsuleRelevantFiles(Path dir) throws IOException {
         return listFiles(dir);
     }
 
     private void listFilesRecursive(FileScanRoot root, Path current, List<Map<String, Object>> files,
-                                    Set<String> allowedExtensions, int depth, long deadlineNanos,
-                                    int rootStartCount) throws IOException {
+        Set<String> allowedExtensions, int depth, long deadlineNanos, int rootStartCount) throws IOException {
         if (!Files.isDirectory(current)) {
             return;
         }
@@ -175,7 +164,8 @@ public class FileService {
                 String name = entry.getFileName().toString();
                 if (Files.isDirectory(entry)) {
                     if (depth < root.maxDepth() && !root.excludeDirs().contains(name) && !name.startsWith(".")) {
-                        listFilesRecursive(root, entry, files, allowedExtensions, depth + 1, deadlineNanos, rootStartCount);
+                        listFilesRecursive(root, entry, files, allowedExtensions, depth + 1, deadlineNanos,
+                            rootStartCount);
                     }
                 } else {
                     if (!SKIP_FILES.contains(name)) {
@@ -186,11 +176,10 @@ public class FileService {
         }
     }
 
-    private boolean isScanLimitReached(FileScanRoot root, List<Map<String, Object>> files, int depth, long deadlineNanos,
-                                       int rootStartCount) {
-        return depth > root.maxDepth()
-                || (root.maxFiles() > 0 && files.size() - rootStartCount >= root.maxFiles())
-                || (deadlineNanos > 0 && System.nanoTime() > deadlineNanos);
+    private boolean isScanLimitReached(FileScanRoot root, List<Map<String, Object>> files, int depth,
+        long deadlineNanos, int rootStartCount) {
+        return depth > root.maxDepth() || (root.maxFiles() > 0 && files.size() - rootStartCount >= root.maxFiles())
+            || (deadlineNanos > 0 && System.nanoTime() > deadlineNanos);
     }
 
     private long scanDeadlineNanos(long timeoutMs) {
@@ -200,7 +189,8 @@ public class FileService {
         return System.nanoTime() + timeoutMs * 1_000_000L;
     }
 
-    private void addFileEntry(FileScanRoot root, Path entry, List<Map<String, Object>> files, Set<String> allowedExtensions) throws IOException {
+    private void addFileEntry(FileScanRoot root, Path entry, List<Map<String, Object>> files,
+        Set<String> allowedExtensions) throws IOException {
         String name = entry.getFileName().toString();
         int dot = name.lastIndexOf('.');
         String ext = dot >= 0 ? name.substring(dot + 1).toLowerCase(Locale.ROOT) : "";
@@ -222,13 +212,14 @@ public class FileService {
     private Set<String> fileCapsuleAllowedExtensions() {
         Set<String> allowed = new HashSet<>();
         List<String> configured = gatewayProperties.getFileCapsules() != null
-                ? gatewayProperties.getFileCapsules().getAllowedExtensions()
-                : null;
+            ? gatewayProperties.getFileCapsules().getAllowedExtensions() : null;
         if (configured == null) {
             return allowed;
         }
         for (String ext : configured) {
-            if (ext == null) continue;
+            if (ext == null) {
+                continue;
+            }
             String normalized = ext.trim().toLowerCase(Locale.ROOT);
             if (!normalized.isEmpty()) {
                 allowed.add(normalized);
@@ -240,21 +231,21 @@ public class FileService {
     /**
      * Resolves a file scan root path by its identifier for the given user agent directory.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param userAgentDir the userAgentDir parameter
+     * @param rootId the rootId parameter
+     * @return the result
      */
     public Optional<Path> resolveFileScanRoot(Path userAgentDir, String rootId) {
         String normalizedRootId = normalizeRootId(rootId, 0);
         return fileScanRoots(userAgentDir).stream()
-                .filter(root -> root.id().equals(normalizedRootId))
-                .map(FileScanRoot::path)
-                .findFirst();
+            .filter(root -> root.id().equals(normalizedRootId))
+            .map(FileScanRoot::path)
+            .findFirst();
     }
 
     private List<FileScanRoot> fileScanRoots(Path userAgentDir) {
-        List<GatewayProperties.FileScanRoot> configured = gatewayProperties.getFiles() != null
-                ? gatewayProperties.getFiles().getScanRoots()
-                : null;
+        List<GatewayProperties.FileScanRoot> configured =
+            gatewayProperties.getFiles() != null ? gatewayProperties.getFiles().getScanRoots() : null;
         if (configured == null || configured.isEmpty()) {
             configured = new GatewayProperties.FileBrowser().getScanRoots();
         }
@@ -270,14 +261,11 @@ public class FileService {
             if (!ids.add(id)) {
                 continue;
             }
-            roots.add(new FileScanRoot(
-                    id,
-                    resolveScanRootPath(userAgentDir, configuredRoot.getPath()),
-                    configuredRoot.isRecursive(),
-                    excludeDirs(configuredRoot.getExcludeDirs()),
-                    positiveOrDefault(configuredRoot.getMaxDepth(), 6),
-                    positiveOrDefault(configuredRoot.getMaxFiles(), 1000),
-                    positiveOrDefault(configuredRoot.getScanTimeoutMs(), 2000)));
+            roots.add(new FileScanRoot(id, resolveScanRootPath(userAgentDir, configuredRoot.getPath()),
+                configuredRoot.isRecursive(), excludeDirs(configuredRoot.getExcludeDirs()),
+                positiveOrDefault(configuredRoot.getMaxDepth(), 6),
+                positiveOrDefault(configuredRoot.getMaxFiles(), 1000),
+                positiveOrDefault(configuredRoot.getScanTimeoutMs(), 2000)));
         }
         return roots;
     }
@@ -286,7 +274,9 @@ public class FileService {
         Set<String> excludeDirs = new HashSet<>(SKIP_DIRS);
         if (configuredExcludeDirs != null) {
             for (String dir : configuredExcludeDirs) {
-                if (dir == null) continue;
+                if (dir == null) {
+                    continue;
+                }
                 String normalized = dir.trim();
                 if (!normalized.isEmpty()) {
                     excludeDirs.add(normalized);
@@ -309,7 +299,8 @@ public class FileService {
     }
 
     private Path resolveScanRootPath(Path userAgentDir, String configuredPath) {
-        String expanded = configuredPath.replace("${userAgentDir}", userAgentDir.toAbsolutePath().normalize().toString());
+        String expanded =
+            configuredPath.replace("${userAgentDir}", userAgentDir.toAbsolutePath().normalize().toString());
         Path path = Path.of(expanded);
         return path.isAbsolute() ? path.normalize() : userAgentDir.resolve(path).normalize();
     }
@@ -325,8 +316,8 @@ public class FileService {
         return path.toString().replace('\\', '/');
     }
 
-    private record FileScanRoot(String id, Path path, boolean recursive, Set<String> excludeDirs,
-                                int maxDepth, int maxFiles, long scanTimeoutMs) {
+    private record FileScanRoot(String id, Path path, boolean recursive, Set<String> excludeDirs, int maxDepth,
+        int maxFiles, long scanTimeoutMs) {
         private FileScanRoot {
             Objects.requireNonNull(id);
             Objects.requireNonNull(path);
@@ -336,6 +327,10 @@ public class FileService {
 
     /**
      * Resolve and validate a file path within a base directory.
+     *
+     * @param baseDir the baseDir parameter
+     * @param relativePath the relativePath parameter
+     * @return the result
      */
     public Resource resolveFile(Path baseDir, String relativePath) {
         if (!PathSanitizer.isSafe(baseDir, relativePath)) {
@@ -351,8 +346,10 @@ public class FileService {
     /**
      * Deletes a file within the base directory at the given relative path.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param baseDir the baseDir parameter
+     * @param relativePath the relativePath parameter
+     * @return the result
+     * @throws IOException if the operation fails
      */
     public boolean deleteFile(Path baseDir, String relativePath) throws IOException {
         if (!PathSanitizer.isSafe(baseDir, relativePath)) {
@@ -369,8 +366,11 @@ public class FileService {
     /**
      * Updates a text file within the base directory at the given relative path with new content.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param baseDir the baseDir parameter
+     * @param relativePath the relativePath parameter
+     * @param content the content parameter
+     * @return the result
+     * @throws IOException if the operation fails
      */
     public boolean updateTextFile(Path baseDir, String relativePath, String content) throws IOException {
         if (!PathSanitizer.isSafe(baseDir, relativePath) || !isEditableTextFile(relativePath)) {
@@ -387,8 +387,8 @@ public class FileService {
     /**
      * Checks whether the given filename has an editable text extension.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param filename the filename parameter
+     * @return the result
      */
     public boolean isEditableTextFile(String filename) {
         return EDITABLE_TEXT_EXTENSIONS.contains(getPolicyType(filename));
@@ -396,6 +396,9 @@ public class FileService {
 
     /**
      * Check if a file extension is allowed for upload.
+     *
+     * @param filename the filename parameter
+     * @return the result
      */
     public boolean isAllowedExtension(String filename) {
         String ext = getExtension(filename);
@@ -418,16 +421,20 @@ public class FileService {
         int slash = normalized.lastIndexOf('/');
         String baseName = slash >= 0 ? normalized.substring(slash + 1) : normalized;
         String lowerBaseName = baseName.toLowerCase(Locale.ROOT);
-        if ("dockerfile".equals(lowerBaseName)) return "dockerfile";
-        if ("makefile".equals(lowerBaseName)) return "makefile";
+        if ("dockerfile".equals(lowerBaseName)) {
+            return "dockerfile";
+        }
+        if ("makefile".equals(lowerBaseName)) {
+            return "makefile";
+        }
         return getExtension(baseName);
     }
 
     /**
      * Resolves the MIME type for the given filename based on its extension.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param filename the filename parameter
+     * @return the result
      */
     public String getMimeType(String filename) {
         int dot = filename.lastIndexOf('.');
@@ -440,33 +447,40 @@ public class FileService {
 
     /**
      * Whether this MIME type should be displayed inline (vs download).
+     *
+     * @param mimeType the mimeType parameter
+     * @return the result
      */
     public boolean isInline(String mimeType) {
-        return mimeType.startsWith("text/")
-                || mimeType.startsWith("image/")
-                || "application/json".equals(mimeType)
-                || "application/pdf".equals(mimeType);
+        return mimeType.startsWith("text/") || mimeType.startsWith("image/") || "application/json".equals(mimeType)
+            || "application/pdf".equals(mimeType);
     }
 
     // ── File capsule persistence ────────────────────────────────────────
 
     private static final Logger log = LoggerFactory.getLogger(FileService.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private static final String CAPSULE_FILE = "file-capsules.json";
 
     /**
      * Compute the diff between two file snapshots.
      * Returns files that are new or have been modified (size or modifiedAt changed).
+     *
+     * @param before the before parameter
+     * @param after the after parameter
+     * @return the result
      */
-    public List<Map<String, String>> diffFiles(List<Map<String, Object>> before,
-                                                List<Map<String, Object>> after) {
+    public List<Map<String, String>> diffFiles(List<Map<String, Object>> before, List<Map<String, Object>> after) {
         Set<String> allowedExtensions = new HashSet<>();
         List<String> configuredAllowed = gatewayProperties.getFileCapsules() != null
-                ? gatewayProperties.getFileCapsules().getAllowedExtensions()
-                : null;
+            ? gatewayProperties.getFileCapsules().getAllowedExtensions() : null;
         if (configuredAllowed != null) {
             for (String ext : configuredAllowed) {
-                if (ext == null) continue;
+                if (ext == null) {
+                    continue;
+                }
                 String normalized = ext.trim().toLowerCase(Locale.ROOT);
                 if (!normalized.isEmpty()) {
                     allowedExtensions.add(normalized);
@@ -495,9 +509,8 @@ public class FileService {
             }
             Map<String, Object> prev = beforeMap.get(fileIdentity(f));
             boolean isNew = prev == null;
-            boolean isUpdated = prev != null && (
-                    !prev.get("modifiedAt").equals(f.get("modifiedAt"))
-                            || !prev.get("size").equals(f.get("size")));
+            boolean isUpdated = prev != null
+                && (!prev.get("modifiedAt").equals(f.get("modifiedAt")) || !prev.get("size").equals(f.get("size")));
             if (isNew || isUpdated) {
                 String name = (String) f.get("name");
                 Map<String, String> entry = new LinkedHashMap<>();
@@ -524,9 +537,14 @@ public class FileService {
      * Persist file capsule entries for a session.
      * Merges new entries into existing data (read-modify-write).
      * Path: {workingDir}/data/{sessionId}/file-capsules.json
+     *
+     * @param workingDir the workingDir parameter
+     * @param sessionId the sessionId parameter
+     * @param messageId the messageId parameter
+     * @param files the files parameter
      */
     public void persistOutputFiles(Path workingDir, String sessionId, String messageId,
-                                    List<Map<String, String>> files) {
+        List<Map<String, String>> files) {
         Path dir = workingDir.resolve("data").resolve(sessionId);
         Path file = dir.resolve(CAPSULE_FILE);
         try {
@@ -535,9 +553,8 @@ public class FileService {
             // Read existing entries (if any)
             Map<String, List<Map<String, String>>> entries = new LinkedHashMap<>();
             if (Files.exists(file)) {
-                Map<String, Object> existing = MAPPER.readValue(
-                        Files.readString(file, StandardCharsets.UTF_8),
-                        new TypeReference<>() {});
+                Map<String, Object> existing =
+                    MAPPER.readValue(Files.readString(file, StandardCharsets.UTF_8), new TypeReference<>() {});
                 Object raw = existing.get("entries");
                 if (raw instanceof Map<?, ?> rawMap) {
                     for (Map.Entry<?, ?> e : rawMap.entrySet()) {
@@ -563,10 +580,10 @@ public class FileService {
             Map<String, Object> wrapper = new LinkedHashMap<>();
             wrapper.put("entries", entries);
             Files.writeString(file, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(wrapper),
-                    StandardCharsets.UTF_8);
+                StandardCharsets.UTF_8);
 
             log.debug("Persisted {} file capsules for session {} message {}", files.size(), sessionId, messageId);
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.warn("Failed to persist file capsules for session {}: {}", sessionId, e.getMessage());
         }
     }
@@ -574,6 +591,10 @@ public class FileService {
     /**
      * Load persisted file capsule entries for a session.
      * Returns messageId → files mapping, or empty map on any error.
+     *
+     * @param workingDir the workingDir parameter
+     * @param sessionId the sessionId parameter
+     * @return the result
      */
     public Map<String, List<Map<String, String>>> loadOutputFiles(Path workingDir, String sessionId) {
         Path file = workingDir.resolve("data").resolve(sessionId).resolve(CAPSULE_FILE);
@@ -581,9 +602,8 @@ public class FileService {
             return Map.of();
         }
         try {
-            Map<String, Object> data = MAPPER.readValue(
-                    Files.readString(file, StandardCharsets.UTF_8),
-                    new TypeReference<>() {});
+            Map<String, Object> data =
+                MAPPER.readValue(Files.readString(file, StandardCharsets.UTF_8), new TypeReference<>() {});
             Object raw = data.get("entries");
             if (!(raw instanceof Map<?, ?> rawMap)) {
                 return Map.of();
@@ -603,7 +623,7 @@ public class FileService {
                 }
             }
             return result;
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.warn("Failed to read file capsules for session {}: {}", sessionId, e.getMessage());
             return Map.of();
         }

@@ -66,6 +66,8 @@ function emit(level: FrontendLogLevel, payload: FrontendLogPayload) {
     case 'error':
         console.error(prefix, details)
         break
+    default:
+        break
     }
 
     return event

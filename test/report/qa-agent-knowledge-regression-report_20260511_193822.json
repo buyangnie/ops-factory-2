@@ -1,0 +1,151 @@
+{
+  "startedAt": "2026-05-11 19:38:22 +08:00",
+  "finishedAt": "2026-05-11 19:41:04 +08:00",
+  "status": "passed",
+  "roundsPlanned": 8,
+  "roundsCompleted": 8,
+  "roundLimit": 8,
+  "toolSuccessRate": 1,
+  "searchSuccessRate": 1,
+  "fetchSuccessRate": 1,
+  "citationRate": 1,
+  "reports": [
+    {
+      "id": "R01",
+      "prompt": "请基于产品文档回答：中国移动视频彩铃实时决策节点技术要求的版本号是多少？\n\n请先调用 search 检索知识库，不要只依赖记忆。 命中后请 fetch 1 个最相关 chunk 的完整内容。 完成必要的工具调用后直接用一句话回答，不要反复搜索，并保留 citation 标记。",
+      "generated": true,
+      "timedOut": false,
+      "searchCalls": 1,
+      "searchSuccesses": 1,
+      "fetchCalls": 1,
+      "fetchSuccesses": 1,
+      "citationCount": 1,
+      "topHits": [
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx L2层共计建设8套实时决策节点，由统一宣发平台和集中管理平台统一管理。一套实时决策节点对应一个大区呼叫节点，单套实时决策节点仅承载单大区下辖呼叫节点信令面发起的铃音选取、话单上报功能。\n    静态设置数据，由集中管理平台统一下发给各实时决策节点：\n    1）用户开销户数据及能力开关数据\n    2）用户设置数据\n    3）铃音数据\n    动态策略数据 chk_45f56b3832f0",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 3\n\tdata\n\t是\n\tResult[]\n\t\t\t查询结果集\n\nResult 类\n\t序号\n\t参数名\n\t可空否\n\t类型\n\t说明\n\n1\n\tlabelId\n\t否\n\tString\n\t用户模型ID\n\n2\n\trecommendId\n\t是\n\tString(1-20)\n\t推荐模型ID，只能为数字组成，用于同步推荐模型。\n\n3\n\tuserCount\n\t是\n\tInteger\n\t查 chk_3c23dd2b55d4",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 6.3 实时决策节点网元软件要求\n6.3.1 软件接口要求\n1） 虚拟化网元IP化接口（对外业务逻辑接口）需支持IPv4、IPv6。\n2） 虚拟化网元内部各虚拟机之间通信的IP均需支持IPv4。\n3） 虚拟化网元对外通信接口应成对设置，可按需配置为主备方式或负荷分担方式提供备份，并且能够根据需要进行扩充。\n4） L1彩铃集中平台与L2实时决策节点之间支持消息 chk_6a57e4182508"
+      ],
+      "answerPreview": "中国移动视频彩铃实时决策节点技术要求的版本号是 V2.0。"
+    },
+    {
+      "id": "R02",
+      "prompt": "请基于产品文档回答：中国移动视频彩铃实时决策节点技术要求的用户范围章节叫什么？\n\n请先调用 search 检索知识库，不要只依赖记忆。 命中后请 fetch 1 个最相关 chunk 的完整内容。 完成必要的工具调用后直接用一句话回答，不要反复搜索，并保留 citation 标记。",
+      "generated": true,
+      "timedOut": false,
+      "searchCalls": 2,
+      "searchSuccesses": 2,
+      "fetchCalls": 1,
+      "fetchSuccesses": 1,
+      "citationCount": 1,
+      "topHits": [
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 8.10.5 基于组合类的宣发任务\n       组合类策略是给订购了相同业务或者具备相同特征的用户，结合地理位置或时间等条件，配置相应特征的内容的宣发任务。\n    L1向L2输入投放策略规则（业务投放场景、投放目标角色、阈值、优先级、概率、宣发设置、内容属性决策因子）、用户服务目录（用户号码、号段、地区或用户标签）、内容服务目录（内容标签或内容ID、内容 chk_62f01fb32037",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx L2层共计建设8套实时决策节点，由统一宣发平台和集中管理平台统一管理。一套实时决策节点对应一个大区呼叫节点，单套实时决策节点仅承载单大区下辖呼叫节点信令面发起的铃音选取、话单上报功能。\n    静态设置数据，由集中管理平台统一下发给各实时决策节点：\n    1）用户开销户数据及能力开关数据\n    2）用户设置数据\n    3）铃音数据\n    动态策略数据 chk_45f56b3832f0",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 3\n\tdata\n\t是\n\tResult[]\n\t\t\t查询结果集\n\nResult 类\n\t序号\n\t参数名\n\t可空否\n\t类型\n\t说明\n\n1\n\tlabelId\n\t否\n\tString\n\t用户模型ID\n\n2\n\trecommendId\n\t是\n\tString(1-20)\n\t推荐模型ID，只能为数字组成，用于同步推荐模型。\n\n3\n\tuserCount\n\t是\n\tInteger\n\t查 chk_3c23dd2b55d4"
+      ],
+      "answerPreview": "在中国移动视频彩铃实时决策节点技术要求中，用户范围章节叫“4.2 用户范围”。"
+    },
+    {
+      "id": "R03",
+      "prompt": "请基于产品文档回答：中国移动视频彩铃实时决策节点技术要求中“集中播控功能架构”对应的架构名称是什么？\n\n请先调用 search 检索知识库，不要只依赖记忆。 命中后请 fetch 1 个最相关 chunk 的完整内容。 完成必要的工具调用后直接用一句话回答，不要反复搜索，并保留 citation 标记。",
+      "generated": true,
+      "timedOut": false,
+      "searchCalls": 1,
+      "searchSuccesses": 1,
+      "fetchCalls": 1,
+      "fetchSuccesses": 1,
+      "citationCount": 1,
+      "topHits": [
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx image23.emf\nL2  二期实时决策流程图.zip\n\nimage24.png\n\nimage25.png\n\nimage26.png\n\n集中平台\n（统一宣发）\n实时决策节点\n大区彩铃呼叫节点\n1、实时上报话单\n5a、返回上报结果\n3、返回上报结果\n3a、将话单内容封装成\nMQ上报\n2、分析话单，统计策略投放结果。并保存\n4a、保存话单\n\nimage27. chk_514048df972f",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx L2层共计建设8套实时决策节点，由统一宣发平台和集中管理平台统一管理。一套实时决策节点对应一个大区呼叫节点，单套实时决策节点仅承载单大区下辖呼叫节点信令面发起的铃音选取、话单上报功能。\n    静态设置数据，由集中管理平台统一下发给各实时决策节点：\n    1）用户开销户数据及能力开关数据\n    2）用户设置数据\n    3）铃音数据\n    动态策略数据 chk_45f56b3832f0",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 3\n\tdata\n\t是\n\tResult[]\n\t\t\t查询结果集\n\nResult 类\n\t序号\n\t参数名\n\t可空否\n\t类型\n\t说明\n\n1\n\tlabelId\n\t否\n\tString\n\t用户模型ID\n\n2\n\trecommendId\n\t是\n\tString(1-20)\n\t推荐模型ID，只能为数字组成，用于同步推荐模型。\n\n3\n\tuserCount\n\t是\n\tInteger\n\t查 chk_3c23dd2b55d4"
+      ],
+      "answerPreview": "根据产品文档，中国移动视频彩铃实时决策节点技术要求中“集中播控功能架构”对应的架构名称是**L2 二期实时决策架构**（或简称**L2 实时决策架构**）。"
+    },
+    {
+      "id": "R04",
+      "prompt": "请基于产品文档回答：中国移动视频彩铃实时决策节点技术要求中维护要求包含哪类日志要求？\n\n请先调用 search 检索知识库，不要只依赖记忆。 命中后请 fetch 1 个最相关 chunk 的完整内容。 完成必要的工具调用后直接用一句话回答，不要反复搜索，并保留 citation 标记。",
+      "generated": true,
+      "timedOut": false,
+      "searchCalls": 2,
+      "searchSuccesses": 2,
+      "fetchCalls": 1,
+      "fetchSuccesses": 1,
+      "citationCount": 1,
+      "topHits": [
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 6.3 实时决策节点网元软件要求\n6.3.1 软件接口要求\n1） 虚拟化网元IP化接口（对外业务逻辑接口）需支持IPv4、IPv6。\n2） 虚拟化网元内部各虚拟机之间通信的IP均需支持IPv4。\n3） 虚拟化网元对外通信接口应成对设置，可按需配置为主备方式或负荷分担方式提供备份，并且能够根据需要进行扩充。\n4） L1彩铃集中平台与L2实时决策节点之间支持消息 chk_6a57e4182508",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 8.10.5 基于组合类的宣发任务\n       组合类策略是给订购了相同业务或者具备相同特征的用户，结合地理位置或时间等条件，配置相应特征的内容的宣发任务。\n    L1向L2输入投放策略规则（业务投放场景、投放目标角色、阈值、优先级、概率、宣发设置、内容属性决策因子）、用户服务目录（用户号码、号段、地区或用户标签）、内容服务目录（内容标签或内容ID、内容 chk_62f01fb32037",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx L2层共计建设8套实时决策节点，由统一宣发平台和集中管理平台统一管理。一套实时决策节点对应一个大区呼叫节点，单套实时决策节点仅承载单大区下辖呼叫节点信令面发起的铃音选取、话单上报功能。\n    静态设置数据，由集中管理平台统一下发给各实时决策节点：\n    1）用户开销户数据及能力开关数据\n    2）用户设置数据\n    3）铃音数据\n    动态策略数据 chk_45f56b3832f0"
+      ],
+      "answerPreview": "根据检索到的产品文档，中国移动视频彩铃实时决策节点技术要求中维护要求包含的日志要求为：**定时任务运行日志**和**业务运行日志**，其中定时任务运行日志用以记录定时处理流程中的关键信息和异常信息，业务运行日志用以记录系统实时业务请求处理流程中的关键信息和包括错误堆栈在内的异常信息，用于系统问题的具体分析和定位 。"
+    },
+    {
+      "id": "R05",
+      "prompt": "请基于产品文档回答：中国移动视频彩铃实时决策节点技术要求中业务流程的 7.7 章节是什么？\n\n请先调用 search 检索知识库，不要只依赖记忆。 命中后请 fetch 1 个最相关 chunk 的完整内容。 完成必要的工具调用后直接用一句话回答，不要反复搜索，并保留 citation 标记。",
+      "generated": true,
+      "timedOut": false,
+      "searchCalls": 3,
+      "searchSuccesses": 3,
+      "fetchCalls": 1,
+      "fetchSuccesses": 1,
+      "citationCount": 1,
+      "topHits": [
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 中国移动视频彩铃实时决策节点\n技术要求V2.0.0\n \nTechnical Specification of Playback Control Strategy Real-time Decisioning Nodes for China Mobile Customized\n Vedio Ringback Tone Service\n \n \n版本号：2.0.0\n chk_72b714b6b72a",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 流程说明：\n1、 L1统一宣发平台生成策略规则。\n2、 L1统一宣发平台将策略规则消息生产到Kafka消息队列。\n3、 L2实时决策节点到L1统一宣发平台的消息队列中消费策略规则数据。\n4、 L2实时决策节点将策略数据入库。\n5、 L2实时决策节点回调L1统一宣发平台反馈处理结果。\n\n7.1.2 用户服务目录管理\n\n流程说明：\n1. L1统一宣发平台根据具有 chk_604787241ac6",
+        "中国移动视频彩铃实时决策节点V2.0-2026年1月12日.docx 8.10.5 基于组合类的宣发任务\n       组合类策略是给订购了相同业务或者具备相同特征的用户，结合地理位置或时间等条件，配置相应特征的内容的宣发任务。\n    L1向L2输入投放策略规则（业务投放场景、投放目标角色、阈值、优先级、概率、宣发设置、内容属性决策因子）、用户服务目录（用户号码、号段、地区或用户标签）、内容服务目录（内容标签或内容ID、内容 chk_62f01fb32037"
+      ],
+      "answerPreview": "根据检索到的文档内容，7.7 章节为“跨策略用户规则管理”，其业务流程为：L1 统一宣发平台生成跨策略用户规则管理消息，将其生产到 Kafka 消息队列，L2 实时决策节点消费该消息并入库，最后回调 L1 统一宣发平台反馈处理结果 。"
+    },
+    {
+      "id": "R06",
+      "prompt": "请基于 RBT GW 数据库系统设计说明书回答：文档发布日期是什么？\n\n请先调用 search 检索知识库，不要只依赖记忆。 命中后请 fetch 1 个最相关 chunk 的完整内容。 完成必要的工具调用后直接用一句话回答，不要反复搜索，并保留 citation 标记。",
+      "generated": true,
+      "timedOut": false,
+      "searchCalls": 1,
+      "searchSuccesses": 1,
+      "fetchCalls": 1,
+      "fetchSuccesses": 1,
+      "citationCount": 1,
+      "topHits": [
+        "RBT GW V600R003C88LG0029 数据库系统设计说明书 01.docx RBT GW\n数据库系统设计说明书\n\t目  录 (Contents)\n\nRBT GW\n数据库系统设计说明书\n\t目  录\n\n01\n\t版权所有 © 华为技术有限公司\n\ti\n\n01\n\t版权所有 © 华为技术有限公司\n\ti\n\n文档版本01 (2023-06-02)\n\t版权所有 © 华为技术有限公司\n\ti\n\n文档版本01 (2023-06-02)\n\t版权所有 © 华为 chk_f24519cbc758",
+        "RBT GW V600R003C88LG0029 数据库系统设计说明书 01.docx Number\n\tY\n\n单位分钟，分钟粒度的话单配置为1，小时粒度60，天粒度1440\n\n数据时间\n\tdatatime\n\nDate\n\tY\n\n记录上次导出的话单中的数据结束时间点，初始预置：\n分钟：trunc(sysdate,‘mi’) – 3/1440\n小时：trunc(sysdate,‘hh’) – 1/24\n天：trunc(sysdate) - 1\n\n延迟 chk_167e9520fbb6",
+        "(For Engineer) VRBT RCPA V100R022C01LY0002 产品文档 01.chm 索引表空间名称\n\n该参数固定为ringidx，不可修改。\n\n每个数据文件的大小\n\n索引表空间的每个数据文件的大小，单位：MB。\n\n保持默认值，配置为“5000”。\n\n数据文件名\n\n索引表空间的每个数据文件名。\n\n请根据实际情况配置。\n\n公有配置项集合：音频数据库用户信息\n\n说明： 仅需要安装音频数据库的局点涉及，其中“彩铃业务音频数据库SID”仅音频数据库为 chk_3a84dd58a84d"
+      ],
+      "answerPreview": "RBT GW 数据库系统设计说明书的发布日期是 2023-06-02。"
+    },
+    {
+      "id": "R07",
+      "prompt": "请基于 RBT GW 数据库系统设计说明书回答：读者对象包含哪类人员？\n\n请先调用 search 检索知识库，不要只依赖记忆。 命中后请 fetch 1 个最相关 chunk 的完整内容。 完成必要的工具调用后直接用一句话回答，不要反复搜索，并保留 citation 标记。",
+      "generated": true,
+      "timedOut": false,
+      "searchCalls": 3,
+      "searchSuccesses": 3,
+      "fetchCalls": 3,
+      "fetchSuccesses": 3,
+      "citationCount": 1,
+      "topHits": [
+        "RBT GW V600R003C88LG0029 数据库系统设计说明书 01.docx Number\n\tY\n\n单位分钟，分钟粒度的话单配置为1，小时粒度60，天粒度1440\n\n数据时间\n\tdatatime\n\nDate\n\tY\n\n记录上次导出的话单中的数据结束时间点，初始预置：\n分钟：trunc(sysdate,‘mi’) – 3/1440\n小时：trunc(sysdate,‘hh’) – 1/24\n天：trunc(sysdate) - 1\n\n延迟 chk_167e9520fbb6",
+        "(For Engineer) VRBT RCPA V100R022C01LY0002 产品文档 01.chm 索引表空间名称\n\n该参数固定为ringidx，不可修改。\n\n每个数据文件的大小\n\n索引表空间的每个数据文件的大小，单位：MB。\n\n保持默认值，配置为“5000”。\n\n数据文件名\n\n索引表空间的每个数据文件名。\n\n请根据实际情况配置。\n\n公有配置项集合：音频数据库用户信息\n\n说明： 仅需要安装音频数据库的局点涉及，其中“彩铃业务音频数据库SID”仅音频数据库为 chk_3a84dd58a84d",
+        "(For Engineer) Ring Show-SW V200R024C20LG0167 产品文档 01.chm 请根据提示填写RBT GW数据库的IP、RBT GW数据库用户名、RBT GW数据库用户密码。\n\n按回车键，执行脚本。\n\n验证\n\n连接RBT GW的Gauss数据库，具体操作请参见预置条件。\n\n查看vrbt_phoneseg表中是否导入新号段。\n\n查看vrbt_phoneseg_temp_load表中result字段内容为“success”，表示导入号段成功 chk_719a2629c9e0"
+      ],
+      "answerPreview": "根据《RBT GW V600R003C88LG0029 数据库系统设计说明书》，读者对象主要适用于**维护和研发的人员**。"
+    },
+    {
+      "id": "R08",
+      "prompt": "请基于 RBT GW 数据库系统设计说明书回答：RBT GW 版本信息表的表名是什么？\n\n请先调用 search 检索知识库，不要只依赖记忆。 命中后请 fetch 1 个最相关 chunk 的完整内容。 完成必要的工具调用后直接用一句话回答，不要反复搜索，并保留 citation 标记。",
+      "generated": true,
+      "timedOut": false,
+      "searchCalls": 2,
+      "searchSuccesses": 2,
+      "fetchCalls": 1,
+      "fetchSuccesses": 1,
+      "citationCount": 1,
+      "topHits": [
+        "(For Engineer) Ring Show-SW V200R024C20LG0167 产品文档 01.chm 用于集中平台统一宣发模块将策略关联的地理位置围栏内基站信息的集合同步给实时决策节点。\n\n如targetLocation不为空，且指向的省份不属于当前节点下辖省份范围，则不同步此策略。如果targetLocation 为空等同于00：全国。\n\n消费模型定义\n\n回执消息\n\n父主题： 消费TOPIC\n\n版权所有 © 华为技术有限公司\n\n消费模型定义\n\n表1 模型定 chk_65997eb2529b",
+        "(For Engineer) Ring Show-SW V200R024C20LG0167 产品文档 01.chm 介绍RBT GW安全维护的过程、维护标准和异常处理。\n\n密码修改指南\n\n介绍RBT GW涉及用户的密码修改方法。\n\n故障处理\n\n告警参考\n\n介绍RBT GW向网管系统上报的告警信息说明。\n\n参考\n\n命令参考\n\n介绍RBT GW的快捷命令。\n\n日志参考\n\n介绍RBT GW的日志格式、日志内容及日志级别配置。\n\n定时任务参考\n\n介绍RBT GW的定时任务及实现说 chk_e131c3b52141",
+        "(For Engineer) Ring Show-SW V200R024C20LG0167 产品文档 01.chm 操作步骤\n\n以sys用户登录DigitalView控制台。\n\nDigitalView控制台登录地址：https://ip:31943/。\n\n其中，ip为DigitalView对外提供服务的IP地址。\n\n卸载前请先停止网管系统。\n\n选择“包管理 > 进程启停”。\n\n在“操作”列中单击。该图标变成不可操作状态后表示停止成功。\n\n卸载网元适配包。\n\n选择“包管理  chk_ca96fb95243f"
+      ],
+      "answerPreview": "根据 RBT GW 数据库系统设计说明书，RBT GW 版本信息表的表名是 `gw$version` 。"
+    }
+  ],
+  "passRate": 1
+}

@@ -5,6 +5,7 @@ import {
     Eye,
     Presentation,
     Trash2,
+    type LucideIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useGoosed } from '../../../platform/providers/GoosedContext'
@@ -19,7 +20,7 @@ import ListFooter from '../../../platform/ui/list/ListFooter'
 import ListSearchInput from '../../../platform/ui/list/ListSearchInput'
 import ListToolbar from '../../../platform/ui/list/ListToolbar'
 import ListWorkbench from '../../../platform/ui/list/ListWorkbench'
-import { GATEWAY_URL, GATEWAY_SECRET_KEY, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import '../styles/files.css'
 
 interface FileInfo {
@@ -83,7 +84,7 @@ type FileIconProps = SVGProps<SVGSVGElement> & {
     strokeWidth?: number
 }
 
-type FileIconComponent = (props: FileIconProps) => ReactNode
+type FileIconComponent = ((props: FileIconProps) => ReactNode) | LucideIcon
 
 function FileIconFrame({ children, strokeWidth = 1.85, ...props }: FileIconProps & { children: ReactNode }) {
     return (
@@ -217,7 +218,7 @@ function getFileVisual(type: string | undefined): { icon: FileIconComponent; ton
 }
 
 function getDownloadUrl(file: AgentFile, userId?: string | null): string {
-    let url = `${GATEWAY_URL}/agents/${file.agentId}/files/${encodeURIComponent(file.path)}?key=${GATEWAY_SECRET_KEY}`
+    let url = `${runtime.GATEWAY_URL}/agents/${file.agentId}/files/${encodeURIComponent(file.path)}?key=${runtime.GATEWAY_SECRET_KEY}`
     if (file.rootId) url += `&rootId=${encodeURIComponent(file.rootId)}`
     if (userId) url += `&uid=${encodeURIComponent(userId)}`
     return url
@@ -256,7 +257,7 @@ export default function FilesPage() {
             const allFiles: AgentFile[] = []
             const results = await Promise.allSettled(
                 agents.map(async (agent) => {
-                    const response = await fetch(`${GATEWAY_URL}/agents/${agent.id}/files`, {
+                    const response = await fetch(`${runtime.GATEWAY_URL}/agents/${agent.id}/files`, {
                         headers: gatewayHeaders(userId),
                     })
                     if (!response.ok) return []
@@ -354,7 +355,7 @@ export default function FilesPage() {
         setDeletingKey(fileKey)
         try {
             const rootQuery = file.rootId ? `?rootId=${encodeURIComponent(file.rootId)}` : ''
-            const response = await fetch(`${GATEWAY_URL}/agents/${file.agentId}/files/${encodeURIComponent(file.path)}${rootQuery}`, {
+            const response = await fetch(`${runtime.GATEWAY_URL}/agents/${file.agentId}/files/${encodeURIComponent(file.path)}${rootQuery}`, {
                 method: 'DELETE',
                 headers: gatewayHeaders(userId),
             })
@@ -432,17 +433,19 @@ export default function FilesPage() {
                     </ListFooter>
                 ) : undefined}
             >
-                {isLoading ? (
+                {isLoading && (
                     <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--spacing-10)' }}>
                         <div className="loading-spinner" />
                     </div>
-                ) : files.length === 0 ? (
+                )}
+                {!isLoading && files.length === 0 && (
                     <div className="empty-state">
                         <DefaultFileIcon className="empty-state-icon" strokeWidth={1.6} />
                         <h3 className="empty-state-title">{t('files.noFiles')}</h3>
                         <p className="empty-state-description">{t('files.noFilesHint')}</p>
                     </div>
-                ) : searchTerm && filteredFiles.length === 0 ? (
+                )}
+                {!isLoading && files.length > 0 && searchTerm && filteredFiles.length === 0 && (
                     <div className="empty-state">
                         <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                             <circle cx="11" cy="11" r="8" />
@@ -451,7 +454,8 @@ export default function FilesPage() {
                         <h3 className="empty-state-title">{t('common.noResults')}</h3>
                         <p className="empty-state-description">{t('files.noMatchFiles', { term: searchTerm })}</p>
                     </div>
-                ) : (
+                )}
+                {!isLoading && filteredFiles.length > 0 && (
                     <div className="file-list">
                         {paginatedFiles.map((file) => {
                             const fileKey = getFileKey(file)

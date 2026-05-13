@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -13,6 +17,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+/**
+ * Test coverage for Status Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(StatusController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -23,6 +33,9 @@ public class StatusControllerTest {
     @MockBean
     private PrewarmService prewarmService;
 
+    /**
+     * Tests status.
+     */
     @Test
     public void testStatus() {
         webTestClient.get().uri("/gateway/status")
@@ -32,6 +45,9 @@ public class StatusControllerTest {
                 .expectBody(String.class).isEqualTo("ok");
     }
 
+    /**
+     * Tests me no user id header returns unknown.
+     */
     @Test
     public void testMe_noUserIdHeader_returnsUnknown() {
         // /me is excluded from UserContextFilter, so no user attributes are set.
@@ -44,6 +60,9 @@ public class StatusControllerTest {
                 .jsonPath("$.role").isEqualTo("user");
     }
 
+    /**
+     * Tests me with user id header returns user.
+     */
     @Test
     public void testMe_withUserIdHeader_returnsUser() {
         webTestClient.get().uri("/gateway/me")
@@ -56,6 +75,9 @@ public class StatusControllerTest {
                 .jsonPath("$.role").isEqualTo("user");
     }
 
+    /**
+     * Tests config.
+     */
     @Test
     public void testConfig() {
         webTestClient.get().uri("/gateway/config")
@@ -66,6 +88,9 @@ public class StatusControllerTest {
                 .jsonPath("$.officePreview.enabled").isEqualTo(false);
     }
 
+    /**
+     * Tests unauthorized no key.
+     */
     @Test
     public void testUnauthorized_noKey() {
         webTestClient.get().uri("/gateway/me")

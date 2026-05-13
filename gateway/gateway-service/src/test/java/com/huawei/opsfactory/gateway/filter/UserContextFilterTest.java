@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.filter;
 
 import com.huawei.opsfactory.gateway.common.model.UserRole;
@@ -20,11 +24,20 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for User Context Filter.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class UserContextFilterTest {
     private UserContextFilter filter;
     private GatewayProperties gatewayProperties;
     private PrewarmService prewarmService;
 
+    /**
+     * Sets the up.
+     */
     @Before
     public void setUp() {
         prewarmService = mock(PrewarmService.class);
@@ -33,6 +46,9 @@ public class UserContextFilterTest {
         filter = new UserContextFilter(prewarmService, gatewayProperties);
     }
 
+    /**
+     * Tests extracts user id from header.
+     */
     @Test
     public void testExtractsUserIdFromHeader() {
         MockServerHttpRequest request = MockServerHttpRequest.get("/test")
@@ -48,6 +64,9 @@ public class UserContextFilterTest {
         assertEquals(UserRole.USER, exchange.getAttribute(UserContextFilter.USER_ROLE_ATTR));
     }
 
+    /**
+     * Tests rejects400 when no user id header.
+     */
     @Test
     public void testRejects400WhenNoUserIdHeader() {
         MockServerHttpRequest request = MockServerHttpRequest.get("/test").build();
@@ -62,6 +81,9 @@ public class UserContextFilterTest {
         assertNull(exchange.getAttribute(UserContextFilter.USER_ID_ATTR));
     }
 
+    /**
+     * Tests sys user gets admin role.
+     */
     @Test
     public void testSysUserGetsAdminRole() {
         MockServerHttpRequest request = MockServerHttpRequest.get("/test")
@@ -76,6 +98,9 @@ public class UserContextFilterTest {
         assertEquals(UserRole.ADMIN, exchange.getAttribute(UserContextFilter.USER_ROLE_ATTR));
     }
 
+    /**
+     * Tests empty user id returns400.
+     */
     @Test
     public void testEmptyUserIdReturns400() {
         MockServerHttpRequest request = MockServerHttpRequest.get("/test")
@@ -92,6 +117,9 @@ public class UserContextFilterTest {
         assertNull(exchange.getAttribute(UserContextFilter.USER_ID_ATTR));
     }
 
+    /**
+     * Tests configured admin user gets admin role.
+     */
     @Test
     public void testConfiguredAdminUserGetsAdminRole() {
         when(gatewayProperties.getAdminUsers()).thenReturn(List.of("admin", "aiops"));
@@ -108,6 +136,9 @@ public class UserContextFilterTest {
         assertEquals(UserRole.ADMIN, exchange.getAttribute(UserContextFilter.USER_ROLE_ATTR));
     }
 
+    /**
+     * Tests non admin user gets user role.
+     */
     @Test
     public void testNonAdminUserGetsUserRole() {
         when(gatewayProperties.getAdminUsers()).thenReturn(List.of("admin", "aiops"));
@@ -124,6 +155,9 @@ public class UserContextFilterTest {
         assertEquals(UserRole.USER, exchange.getAttribute(UserContextFilter.USER_ROLE_ATTR));
     }
 
+    /**
+     * Tests trace start does not prewarm user.
+     */
     @Test
     public void testTraceStartDoesNotPrewarmUser() {
         MockServerHttpRequest request = MockServerHttpRequest.post("/gateway/agents/qa-agent/sessions/20260429_3/trace")
@@ -140,6 +174,9 @@ public class UserContextFilterTest {
         verify(prewarmService, never()).onUserActivity("admin");
     }
 
+    /**
+     * Tests trace download does not prewarm user.
+     */
     @Test
     public void testTraceDownloadDoesNotPrewarmUser() {
         MockServerHttpRequest request = MockServerHttpRequest.get("/gateway/session-traces/job-1/download")
@@ -156,6 +193,9 @@ public class UserContextFilterTest {
         verify(prewarmService, never()).onUserActivity("admin");
     }
 
+    /**
+     * Tests regular gateway request prewarms user.
+     */
     @Test
     public void testRegularGatewayRequestPrewarmsUser() {
         MockServerHttpRequest request = MockServerHttpRequest.get("/gateway/agents")

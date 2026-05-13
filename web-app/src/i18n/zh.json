@@ -2,6 +2,7 @@
   "common": {
     "cancel": "取消",
     "confirm": "确认",
+    "confirmTitle": "确认操作",
     "delete": "删除",
     "showing": "显示第 {{start}}-{{end}} 条，共 {{total}} 条",
     "perPage": "条/页",

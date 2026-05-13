@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import YAML from 'yaml'
@@ -98,7 +102,9 @@ async function readSettings(): Promise<KnowledgeSettings> {
 
 async function normalizeSourceIds(sourceIds: unknown): Promise<string[]> {
   if (Array.isArray(sourceIds) && sourceIds.length > 0) {
-    return sourceIds.filter((sourceId): sourceId is string => typeof sourceId === 'string' && sourceId.trim().length > 0)
+    return sourceIds.filter((sourceId): sourceId is string =>
+      typeof sourceId === 'string' && sourceId.trim().length > 0,
+    )
   }
   const settings = await readSettings()
   return settings.sourceId ? [settings.sourceId] : []
@@ -191,7 +197,11 @@ export async function handleFetch(args: ToolArgs): Promise<string> {
   }
 
   const neighborWindow = args.neighborWindow ?? 1
-  if (!Number.isInteger(neighborWindow) || Number(neighborWindow) < 1 || Number(neighborWindow) > KNOWLEDGE_FETCH_MAX_NEIGHBOR_WINDOW) {
+  if (
+    !Number.isInteger(neighborWindow) ||
+    Number(neighborWindow) < 1 ||
+    Number(neighborWindow) > KNOWLEDGE_FETCH_MAX_NEIGHBOR_WINDOW
+  ) {
     throw new Error(`fetch.neighborWindow must be an integer between 1 and ${KNOWLEDGE_FETCH_MAX_NEIGHBOR_WINDOW}`)
   }
 

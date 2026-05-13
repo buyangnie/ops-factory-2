@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
@@ -80,7 +84,22 @@ describe('handleSearch', () => {
   it('passes explicit sourceIds through', async () => {
     routes['POST /knowledge/search'] = {
       query: '容量规划',
-      hits: [{ chunkId: 'chk_1', sourceId: 'src_x', title: '容量', titlePath: [], snippet: '说明', score: 0.9, lexicalScore: 0.9, semanticScore: 0.2, fusionScore: 0.9, documentId: 'doc_1', pageFrom: 1, pageTo: 1 }],
+      hits: [
+        {
+          chunkId: 'chk_1',
+          sourceId: 'src_x',
+          title: '容量',
+          titlePath: [],
+          snippet: '说明',
+          score: 0.9,
+          lexicalScore: 0.9,
+          semanticScore: 0.2,
+          fusionScore: 0.9,
+          documentId: 'doc_1',
+          pageFrom: 1,
+          pageTo: 1,
+        },
+      ],
       total: 1,
     }
 
@@ -99,7 +118,11 @@ describe('handleSearch', () => {
 
 describe('handleFetch', () => {
   it('fetches chunk detail with optional neighbors', async () => {
-    routes['GET /knowledge/fetch/chk_123?includeNeighbors=true&neighborWindow=2&includeMarkdown=true&includeRawText=true'] = {
+    const routeKey = [
+      'GET /knowledge/fetch/chk_123?',
+      'includeNeighbors=true&neighborWindow=2&includeMarkdown=true&includeRawText=true',
+    ].join('')
+    routes[routeKey] = {
       chunkId: 'chk_123',
       documentId: 'doc_1',
       sourceId: 'src_ac8da09a7cfd',
@@ -136,7 +159,11 @@ describe('dispatch', () => {
   })
 
   it('routes fetch', async () => {
-    routes['GET /knowledge/fetch/chk_1?includeNeighbors=false&neighborWindow=1&includeMarkdown=true&includeRawText=true'] = {
+    const routeKey = [
+      'GET /knowledge/fetch/chk_1?',
+      'includeNeighbors=false&neighborWindow=1&includeMarkdown=true&includeRawText=true',
+    ].join('')
+    routes[routeKey] = {
       chunkId: 'chk_1',
       documentId: 'doc_1',
       sourceId: 'src_ac8da09a7cfd',

@@ -85,9 +85,10 @@ export default function SkillSection({ agentId, onBrowseMarket, refreshKey = 0, 
                 <div className="skill-alert skill-alert-error">{error}</div>
             )}
 
-            {isLoading ? (
+            {isLoading && (
                 <div className="skill-loading">{t('skill.loadingSkills')}</div>
-            ) : skills.length > 0 ? (
+            )}
+            {!isLoading && skills.length > 0 && (
                 <div className="skill-grid">
                     {skills.map(skill => (
                         <SkillCard
@@ -98,7 +99,8 @@ export default function SkillSection({ agentId, onBrowseMarket, refreshKey = 0, 
                         />
                     ))}
                 </div>
-            ) : (
+            )}
+            {!isLoading && skills.length === 0 && (
                 <div className="skill-empty">
                     <p>{t('skill.noSkills')}</p>
                 </div>

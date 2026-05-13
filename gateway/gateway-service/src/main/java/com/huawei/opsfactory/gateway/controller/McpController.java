@@ -9,8 +9,10 @@ import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.process.InstanceManager;
 import com.huawei.opsfactory.gateway.proxy.GoosedProxy;
 import com.huawei.opsfactory.gateway.service.AgentConfigService;
-import java.io.IOException;
-import java.util.Map;
+
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,8 +25,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * REST controller for managing MCP (Model Context Protocol) extensions on agent instances.
@@ -36,13 +39,23 @@ import reactor.core.scheduler.Schedulers;
 @RequestMapping("/gateway/agents/{agentId}/mcp")
 public class McpController {
     private static final String KNOWLEDGE_SERVICE_MCP = "knowledge-service";
+
     private static final String KNOWLEDGE_CLI_MCP = "knowledge-cli";
 
     private final InstanceManager instanceManager;
+
     private final GoosedProxy goosedProxy;
+
     private final AgentConfigService agentConfigService;
 
-    public McpController(InstanceManager instanceManager, GoosedProxy goosedProxy, AgentConfigService agentConfigService) {
+    /**
+     * Creates the mcp controller instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
+    public McpController(InstanceManager instanceManager, GoosedProxy goosedProxy,
+        AgentConfigService agentConfigService) {
         this.instanceManager = instanceManager;
         this.goosedProxy = goosedProxy;
         this.agentConfigService = agentConfigService;
@@ -51,92 +64,93 @@ public class McpController {
     /**
      * Lists MCP extensions configured on the agent's system instance.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping
     public Mono<Void> getMcpExtensions(@PathVariable("agentId") String agentId, ServerWebExchange exchange) {
         requireAdmin(exchange);
         // Route to the system instance
         return instanceManager.getOrSpawn(agentId, GatewayConstants.SYSTEM_USER)
-                .flatMap(instance -> goosedProxy.proxy(
-                        exchange.getRequest(), exchange.getResponse(),
-                        instance.getPort(), "/config/extensions", instance.getSecretKey()));
+            .flatMap(instance -> goosedProxy.proxy(exchange.getRequest(), exchange.getResponse(), instance.getPort(),
+                "/config/extensions", instance.getSecretKey()));
     }
 
     /**
      * Creates a new MCP extension on the agent's system instance and recycles running instances.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param body the body parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PostMapping
-    public Mono<String> createMcpExtension(@PathVariable("agentId") String agentId,
-                                            @RequestBody String body,
-                                            ServerWebExchange exchange) {
+    public Mono<String> createMcpExtension(@PathVariable("agentId") String agentId, @RequestBody String body,
+        ServerWebExchange exchange) {
         requireAdmin(exchange);
 
         // Persist config to the system instance, then recycle all agent instances so
         // subsequent requests start from a clean process with the updated config.
-        return instanceManager.getOrSpawn(agentId, GatewayConstants.SYSTEM_USER)
-                .flatMap(sysInstance -> {
-                    WebClient wc = goosedProxy.getWebClient();
-                    String sysTarget = goosedProxy.goosedBaseUrl(sysInstance.getPort());
+        return instanceManager.getOrSpawn(agentId, GatewayConstants.SYSTEM_USER).flatMap(sysInstance -> {
+            WebClient wc = goosedProxy.getWebClient();
+            String sysTarget = goosedProxy.goosedBaseUrl(sysInstance.getPort());
 
-                    return wc.post()
-                            .uri(sysTarget + "/config/extensions")
-                            .header(GatewayConstants.HEADER_SECRET_KEY, sysInstance.getSecretKey())
-                            .header("Content-Type", "application/json")
-                            .bodyValue(body)
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .map(sysResult -> {
-                                instanceManager.stopAllForAgent(agentId);
-                                return sysResult;
-                            });
+            return wc.post()
+                .uri(sysTarget + "/config/extensions")
+                .header(GatewayConstants.HEADER_SECRET_KEY, sysInstance.getSecretKey())
+                .header("Content-Type", "application/json")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(sysResult -> {
+                    instanceManager.stopAllForAgent(agentId);
+                    return sysResult;
                 });
+        });
     }
 
     /**
      * Deletes an MCP extension by name and recycles running instances.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param name the name parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @DeleteMapping("/{name}")
-    public Mono<String> deleteMcpExtension(@PathVariable("agentId") String agentId,
-                                            @PathVariable("name") String name,
-                                            ServerWebExchange exchange) {
+    public Mono<String> deleteMcpExtension(@PathVariable("agentId") String agentId, @PathVariable("name") String name,
+        ServerWebExchange exchange) {
         requireAdmin(exchange);
         String path = "/config/extensions/" + name;
 
-        return instanceManager.getOrSpawn(agentId, GatewayConstants.SYSTEM_USER)
-                .flatMap(sysInstance -> {
-                    WebClient wc = goosedProxy.getWebClient();
-                    String sysTarget = goosedProxy.goosedBaseUrl(sysInstance.getPort());
+        return instanceManager.getOrSpawn(agentId, GatewayConstants.SYSTEM_USER).flatMap(sysInstance -> {
+            WebClient wc = goosedProxy.getWebClient();
+            String sysTarget = goosedProxy.goosedBaseUrl(sysInstance.getPort());
 
-                    return wc.delete()
-                            .uri(sysTarget + path)
-                            .header(GatewayConstants.HEADER_SECRET_KEY, sysInstance.getSecretKey())
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .map(sysResult -> {
-                                instanceManager.stopAllForAgent(agentId);
-                                return sysResult;
-                            });
+            return wc.delete()
+                .uri(sysTarget + path)
+                .header(GatewayConstants.HEADER_SECRET_KEY, sysInstance.getSecretKey())
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(sysResult -> {
+                    instanceManager.stopAllForAgent(agentId);
+                    return sysResult;
                 });
+        });
     }
 
     /**
      * Gets the settings for a specific MCP extension.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param name the name parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping("/{name}/settings")
     public Mono<ResponseEntity<Map<String, Object>>> getMcpSettings(@PathVariable("agentId") String agentId,
-                                                                    @PathVariable("name") String name,
-                                                                    ServerWebExchange exchange) {
+        @PathVariable("name") String name, ServerWebExchange exchange) {
         requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             try {
@@ -151,17 +165,16 @@ public class McpController {
                     return ResponseEntity.ok(settings);
                 }
                 if (settings == null) {
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.<String, Object>of());
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.<String, Object> of());
                 }
                 return ResponseEntity.ok(settings);
             } catch (IOException e) {
                 if (hasConfigBackedSettings(name)) {
                     return ResponseEntity.ok(emptyKnowledgeSettings(name));
                 }
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.<String, Object>of(
-                    "code", "SETTINGS_READ_FAILED",
-                    "message", "Failed to read MCP settings"
-                ));
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.<String, Object> of("code", "SETTINGS_READ_FAILED", "message",
+                        "Failed to read MCP settings"));
             }
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -169,29 +182,27 @@ public class McpController {
     /**
      * Updates the settings for a specific MCP extension.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param name the name parameter
+     * @param body the body parameter
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @PutMapping("/{name}/settings")
     public Mono<ResponseEntity<Map<String, Object>>> putMcpSettings(@PathVariable("agentId") String agentId,
-                                                                    @PathVariable("name") String name,
-                                                                    @RequestBody Map<String, Object> body,
-                                                                    ServerWebExchange exchange) {
+        @PathVariable("name") String name, @RequestBody Map<String, Object> body, ServerWebExchange exchange) {
         requireAdmin(exchange);
         return Mono.fromCallable(() -> {
             try {
                 agentConfigService.writeMcpSettings(agentId, name, body);
                 return ResponseEntity.ok(body);
             } catch (IllegalArgumentException e) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.<String, Object>of(
-                    "code", "RESOURCE_NOT_FOUND",
-                    "message", e.getMessage()
-                ));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.<String, Object> of("code", "RESOURCE_NOT_FOUND", "message", e.getMessage()));
             } catch (IOException e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.<String, Object>of(
-                    "code", "SETTINGS_WRITE_FAILED",
-                    "message", "Failed to write MCP settings"
-                ));
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.<String, Object> of("code", "SETTINGS_WRITE_FAILED", "message",
+                        "Failed to write MCP settings"));
             }
         }).subscribeOn(Schedulers.boundedElastic());
     }

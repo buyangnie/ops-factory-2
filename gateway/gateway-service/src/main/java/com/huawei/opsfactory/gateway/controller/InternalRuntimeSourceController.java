@@ -12,6 +12,7 @@ import com.huawei.opsfactory.gateway.monitoring.MetricsSnapshot;
 import com.huawei.opsfactory.gateway.process.InstanceManager;
 import com.huawei.opsfactory.gateway.service.AgentConfigService;
 import com.huawei.opsfactory.gateway.service.LangfuseService;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,9 +21,9 @@ import org.springframework.web.server.ServerWebExchange;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -36,9 +37,13 @@ import java.util.stream.Collectors;
 @RequestMapping("/gateway/runtime-source")
 public class InternalRuntimeSourceController {
     private final InstanceManager instanceManager;
+
     private final AgentConfigService agentConfigService;
+
     private final LangfuseService langfuseService;
+
     private final GatewayProperties gatewayProperties;
+
     private final MetricsBuffer metricsBuffer;
 
     @Value("${server.port:3000}")
@@ -47,11 +52,14 @@ public class InternalRuntimeSourceController {
     @Value("${server.address:0.0.0.0}")
     private String serverHost;
 
-    public InternalRuntimeSourceController(InstanceManager instanceManager,
-                                           AgentConfigService agentConfigService,
-                                           LangfuseService langfuseService,
-                                           GatewayProperties gatewayProperties,
-                                           MetricsBuffer metricsBuffer) {
+    /**
+     * Creates the internal runtime source controller.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
+    public InternalRuntimeSourceController(InstanceManager instanceManager, AgentConfigService agentConfigService,
+        LangfuseService langfuseService, GatewayProperties gatewayProperties, MetricsBuffer metricsBuffer) {
         this.instanceManager = instanceManager;
         this.agentConfigService = agentConfigService;
         this.langfuseService = langfuseService;
@@ -59,11 +67,26 @@ public class InternalRuntimeSourceController {
         this.metricsBuffer = metricsBuffer;
     }
 
+    private static String formatUptime(long ms) {
+        long seconds = ms / 1000;
+        long days = seconds / 86400;
+        long hours = (seconds % 86400) / 3600;
+        long minutes = (seconds % 3600) / 60;
+        long secs = seconds % 60;
+        if (days > 0) {
+            return days + "d " + hours + "h " + minutes + "m";
+        }
+        if (hours > 0) {
+            return hours + "h " + minutes + "m";
+        }
+        return minutes + "m " + secs + "s";
+    }
+
     /**
      * Returns system-level information including uptime, agent count, and configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping("/system")
     public Map<String, Object> system(ServerWebExchange exchange) {
@@ -72,16 +95,11 @@ public class InternalRuntimeSourceController {
         long idleTimeoutMs = gatewayProperties.getIdle().getTimeoutMinutes() * 60_000L;
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("gateway", Map.of(
-                "uptimeMs", uptimeMs,
-                "uptimeFormatted", formatUptime(uptimeMs),
-                "host", serverHost,
-                "port", serverPort));
-        result.put("agents", Map.of(
-                "configured", agentConfigService.getRegistry().size()));
-        result.put("idle", Map.of(
-                "timeoutMs", idleTimeoutMs,
-                "checkIntervalMs", gatewayProperties.getIdle().getCheckIntervalMs()));
+        result.put("gateway", Map.of("uptimeMs", uptimeMs, "uptimeFormatted", formatUptime(uptimeMs), "host",
+            serverHost, "port", serverPort));
+        result.put("agents", Map.of("configured", agentConfigService.getRegistry().size()));
+        result.put("idle",
+            Map.of("timeoutMs", idleTimeoutMs, "checkIntervalMs", gatewayProperties.getIdle().getCheckIntervalMs()));
         Map<String, Object> langfuse = new LinkedHashMap<>();
         langfuse.put("configured", langfuseService.isConfigured());
         String langfuseHost = gatewayProperties.getLangfuse().getHost();
@@ -93,28 +111,26 @@ public class InternalRuntimeSourceController {
     /**
      * Returns the current status of all managed goosed instances.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping("/instances")
     public Map<String, Object> instances(ServerWebExchange exchange) {
         requireAdmin(exchange);
         List<ManagedInstance> allInstances = new ArrayList<>(instanceManager.getAllInstances());
         Map<String, List<Map<String, Object>>> grouped = allInstances.stream()
-                .collect(Collectors.groupingBy(
-                        ManagedInstance::getAgentId,
-                        LinkedHashMap::new,
-                        Collectors.mapping(instance -> {
-                            Map<String, Object> item = new LinkedHashMap<>();
-                            item.put("agentId", instance.getAgentId());
-                            item.put("userId", instance.getUserId());
-                            item.put("port", instance.getPort());
-                            item.put("pid", instance.getPid());
-                            item.put("status", instance.getStatus().name().toLowerCase(Locale.ROOT));
-                            item.put("lastActivity", instance.getLastActivity());
-                            item.put("idleSinceMs", System.currentTimeMillis() - instance.getLastActivity());
-                            return item;
-                        }, Collectors.toList())));
+            .collect(
+                Collectors.groupingBy(ManagedInstance::getAgentId, LinkedHashMap::new, Collectors.mapping(instance -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("agentId", instance.getAgentId());
+                    item.put("userId", instance.getUserId());
+                    item.put("port", instance.getPort());
+                    item.put("pid", instance.getPid());
+                    item.put("status", instance.getStatus().name().toLowerCase(Locale.ROOT));
+                    item.put("lastActivity", instance.getLastActivity());
+                    item.put("idleSinceMs", System.currentTimeMillis() - instance.getLastActivity());
+                    return item;
+                }, Collectors.toList())));
 
         List<Map<String, Object>> byAgent = new ArrayList<>();
         for (var entry : grouped.entrySet()) {
@@ -126,9 +142,8 @@ public class InternalRuntimeSourceController {
             byAgent.add(group);
         }
 
-        long running = allInstances.stream()
-                .filter(instance -> instance.getStatus() == ManagedInstance.Status.RUNNING)
-                .count();
+        long running =
+            allInstances.stream().filter(instance -> instance.getStatus() == ManagedInstance.Status.RUNNING).count();
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("totalInstances", allInstances.size());
@@ -140,8 +155,8 @@ public class InternalRuntimeSourceController {
     /**
      * Returns aggregated metrics including request counts, latency, throughput, and time series data.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param exchange the exchange parameter
+     * @return the result
      */
     @GetMapping("/metrics")
     public Map<String, Object> metrics(ServerWebExchange exchange) {
@@ -181,8 +196,10 @@ public class InternalRuntimeSourceController {
                 tokensPerSecSum += snapshot.getTokensPerSec();
                 tokensPerSecCount++;
             }
-            if (snapshot.getP95LatencyMs() > maxP95Latency) maxP95Latency = snapshot.getP95LatencyMs();
-            if (snapshot.getP95TtftMs() > maxP95Ttft) maxP95Ttft = snapshot.getP95TtftMs();
+            if (snapshot.getP95LatencyMs() > maxP95Latency)
+                maxP95Latency = snapshot.getP95LatencyMs();
+            if (snapshot.getP95TtftMs() > maxP95Ttft)
+                maxP95Ttft = snapshot.getP95TtftMs();
         }
 
         double avgLatency = totalRequests > 0 ? weightedLatencySum / totalRequests : 0;
@@ -218,17 +235,6 @@ public class InternalRuntimeSourceController {
         result.put("series", series);
         result.put("agentMetrics", metricsBuffer.getAgentStats());
         return result;
-    }
-
-    private static String formatUptime(long ms) {
-        long seconds = ms / 1000;
-        long days = seconds / 86400;
-        long hours = (seconds % 86400) / 3600;
-        long minutes = (seconds % 3600) / 60;
-        long secs = seconds % 60;
-        if (days > 0) return days + "d " + hours + "h " + minutes + "m";
-        if (hours > 0) return hours + "h " + minutes + "m";
-        return minutes + "m " + secs + "s";
     }
 
     private void requireAdmin(ServerWebExchange exchange) {

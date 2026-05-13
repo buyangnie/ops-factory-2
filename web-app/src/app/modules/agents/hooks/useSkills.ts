@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import type { SkillEntry, SkillsResponse } from '../../../../types/skill'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 import { useUser } from '../../../platform/providers/UserContext'
 
@@ -23,7 +23,7 @@ export function useSkills(): UseSkillsResult {
         setError(null)
 
         try {
-            const res = await fetch(`${GATEWAY_URL}/agents/${agentId}/skills`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/agents/${agentId}/skills`, {
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),
             })
@@ -43,7 +43,7 @@ export function useSkills(): UseSkillsResult {
 
     const uninstallSkill = useCallback(async (agentId: string, skillId: string) => {
         try {
-            const res = await fetch(`${GATEWAY_URL}/agents/${encodeURIComponent(agentId)}/skills/${encodeURIComponent(skillId)}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/agents/${encodeURIComponent(agentId)}/skills/${encodeURIComponent(skillId)}`, {
                 method: 'DELETE',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),

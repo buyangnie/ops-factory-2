@@ -2,6 +2,7 @@
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "confirmTitle": "Confirm",
     "delete": "Delete",
     "showing": "Showing {{start}}-{{end}} of {{total}}",
     "perPage": "per page",

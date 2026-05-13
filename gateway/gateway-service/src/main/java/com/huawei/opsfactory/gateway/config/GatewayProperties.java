@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -24,28 +23,47 @@ import java.util.List;
 @ConfigurationProperties(prefix = "gateway")
 public class GatewayProperties {
     private static final Logger log = LoggerFactory.getLogger(GatewayProperties.class);
+
     private static final String CONFIG_PATH_KEY = "GATEWAY_CONFIG_PATH";
 
     private String secretKey = "test";
+
     private String corsOrigin = "http://127.0.0.1:5173";
+
     private String goosedBin = "goosed";
+
     private boolean gooseTls = true;
 
     private Paths paths = new Paths();
+
     private Idle idle = new Idle();
+
     private Upload upload = new Upload();
+
     private Limits limits = new Limits();
+
     private Prewarm prewarm = new Prewarm();
+
     private Sse sse = new Sse();
+
     private Langfuse langfuse = new Langfuse();
+
     private OfficePreview officePreview = new OfficePreview();
+
     private Logging logging = new Logging();
+
     private String credentialEncryptionKey = "changeit-changeit-changeit-32";
+
     private RemoteExecution remoteExecution = new RemoteExecution();
+
     private FileCapsules fileCapsules = new FileCapsules();
+
     private FileBrowser files = new FileBrowser();
+
     private SkillMarket skillMarket = new SkillMarket();
+
     private Knowledge knowledge = new Knowledge();
+
     private List<String> adminUsers = List.of("admin");
 
     // ---- Getters / Setters ----
@@ -53,8 +71,7 @@ public class GatewayProperties {
     /**
      * Returns the secret key used for gateway authentication.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public String getSecretKey() {
         return secretKey;
@@ -63,8 +80,7 @@ public class GatewayProperties {
     /**
      * Sets the secret key used for gateway authentication.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param secretKey the secretKey parameter
      */
     public void setSecretKey(String secretKey) {
         this.secretKey = secretKey;
@@ -73,8 +89,7 @@ public class GatewayProperties {
     /**
      * Returns the allowed CORS origin pattern.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public String getCorsOrigin() {
         return corsOrigin;
@@ -83,8 +98,7 @@ public class GatewayProperties {
     /**
      * Sets the allowed CORS origin pattern.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param corsOrigin the corsOrigin parameter
      */
     public void setCorsOrigin(String corsOrigin) {
         this.corsOrigin = corsOrigin;
@@ -93,8 +107,7 @@ public class GatewayProperties {
     /**
      * Returns the path to the goosed binary.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public String getGoosedBin() {
         return goosedBin;
@@ -103,8 +116,7 @@ public class GatewayProperties {
     /**
      * Sets the path to the goosed binary.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param goosedBin the goosedBin parameter
      */
     public void setGoosedBin(String goosedBin) {
         this.goosedBin = goosedBin;
@@ -113,8 +125,7 @@ public class GatewayProperties {
     /**
      * Returns whether TLS is enabled for goosed communication.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public boolean isGooseTls() {
         return gooseTls;
@@ -123,8 +134,7 @@ public class GatewayProperties {
     /**
      * Sets whether TLS is enabled for goosed communication.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param gooseTls the gooseTls parameter
      */
     public void setGooseTls(boolean gooseTls) {
         this.gooseTls = gooseTls;
@@ -133,8 +143,7 @@ public class GatewayProperties {
     /**
      * Returns the URL scheme (http or https) based on the TLS setting.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public String gooseScheme() {
         return gooseTls ? "https" : "http";
@@ -143,8 +152,7 @@ public class GatewayProperties {
     /**
      * Returns the path configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Paths getPaths() {
         return paths;
@@ -153,8 +161,7 @@ public class GatewayProperties {
     /**
      * Sets the path configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param paths the paths parameter
      */
     public void setPaths(Paths paths) {
         this.paths = paths;
@@ -163,8 +170,7 @@ public class GatewayProperties {
     /**
      * Returns the idle timeout configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Idle getIdle() {
         return idle;
@@ -173,8 +179,7 @@ public class GatewayProperties {
     /**
      * Sets the idle timeout configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param idle the idle parameter
      */
     public void setIdle(Idle idle) {
         this.idle = idle;
@@ -183,8 +188,7 @@ public class GatewayProperties {
     /**
      * Returns the upload size limit configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Upload getUpload() {
         return upload;
@@ -193,8 +197,7 @@ public class GatewayProperties {
     /**
      * Sets the upload size limit configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param upload the upload parameter
      */
     public void setUpload(Upload upload) {
         this.upload = upload;
@@ -203,8 +206,7 @@ public class GatewayProperties {
     /**
      * Returns the Langfuse observability configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Langfuse getLangfuse() {
         return langfuse;
@@ -213,8 +215,7 @@ public class GatewayProperties {
     /**
      * Sets the Langfuse observability configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param langfuse the langfuse parameter
      */
     public void setLangfuse(Langfuse langfuse) {
         this.langfuse = langfuse;
@@ -223,8 +224,7 @@ public class GatewayProperties {
     /**
      * Returns the instance limit configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Limits getLimits() {
         return limits;
@@ -233,8 +233,7 @@ public class GatewayProperties {
     /**
      * Sets the instance limit configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param limits the limits parameter
      */
     public void setLimits(Limits limits) {
         this.limits = limits;
@@ -243,8 +242,7 @@ public class GatewayProperties {
     /**
      * Returns the prewarm configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Prewarm getPrewarm() {
         return prewarm;
@@ -253,8 +251,7 @@ public class GatewayProperties {
     /**
      * Sets the prewarm configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param prewarm the prewarm parameter
      */
     public void setPrewarm(Prewarm prewarm) {
         this.prewarm = prewarm;
@@ -263,8 +260,7 @@ public class GatewayProperties {
     /**
      * Returns the SSE timeout configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Sse getSse() {
         return sse;
@@ -273,8 +269,7 @@ public class GatewayProperties {
     /**
      * Sets the SSE timeout configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param sse the sse parameter
      */
     public void setSse(Sse sse) {
         this.sse = sse;
@@ -283,8 +278,7 @@ public class GatewayProperties {
     /**
      * Returns the Office preview configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public OfficePreview getOfficePreview() {
         return officePreview;
@@ -293,8 +287,7 @@ public class GatewayProperties {
     /**
      * Sets the Office preview configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param officePreview the officePreview parameter
      */
     public void setOfficePreview(OfficePreview officePreview) {
         this.officePreview = officePreview;
@@ -303,8 +296,7 @@ public class GatewayProperties {
     /**
      * Returns the logging configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Logging getLogging() {
         return logging;
@@ -313,8 +305,7 @@ public class GatewayProperties {
     /**
      * Sets the logging configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param logging the logging parameter
      */
     public void setLogging(Logging logging) {
         this.logging = logging;
@@ -323,8 +314,7 @@ public class GatewayProperties {
     /**
      * Returns the credential encryption key.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public String getCredentialEncryptionKey() {
         return credentialEncryptionKey;
@@ -333,8 +323,7 @@ public class GatewayProperties {
     /**
      * Sets the credential encryption key.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param credentialEncryptionKey the credentialEncryptionKey parameter
      */
     public void setCredentialEncryptionKey(String credentialEncryptionKey) {
         this.credentialEncryptionKey = credentialEncryptionKey;
@@ -343,8 +332,7 @@ public class GatewayProperties {
     /**
      * Returns the remote execution configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public RemoteExecution getRemoteExecution() {
         return remoteExecution;
@@ -353,8 +341,7 @@ public class GatewayProperties {
     /**
      * Sets the remote execution configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param remoteExecution the remoteExecution parameter
      */
     public void setRemoteExecution(RemoteExecution remoteExecution) {
         this.remoteExecution = remoteExecution;
@@ -363,8 +350,7 @@ public class GatewayProperties {
     /**
      * Returns the file capsules configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public FileCapsules getFileCapsules() {
         return fileCapsules;
@@ -373,8 +359,7 @@ public class GatewayProperties {
     /**
      * Sets the file capsules configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param fileCapsules the fileCapsules parameter
      */
     public void setFileCapsules(FileCapsules fileCapsules) {
         this.fileCapsules = fileCapsules;
@@ -383,8 +368,7 @@ public class GatewayProperties {
     /**
      * Returns the file browser configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public FileBrowser getFiles() {
         return files;
@@ -393,8 +377,7 @@ public class GatewayProperties {
     /**
      * Sets the file browser configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param files the files parameter
      */
     public void setFiles(FileBrowser files) {
         this.files = files;
@@ -403,8 +386,7 @@ public class GatewayProperties {
     /**
      * Returns the skill market configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public SkillMarket getSkillMarket() {
         return skillMarket;
@@ -413,8 +395,7 @@ public class GatewayProperties {
     /**
      * Sets the skill market configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param skillMarket the skillMarket parameter
      */
     public void setSkillMarket(SkillMarket skillMarket) {
         this.skillMarket = skillMarket;
@@ -423,8 +404,7 @@ public class GatewayProperties {
     /**
      * Returns the knowledge feature configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Knowledge getKnowledge() {
         return knowledge;
@@ -433,8 +413,7 @@ public class GatewayProperties {
     /**
      * Sets the knowledge feature configuration.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param knowledge the knowledge parameter
      */
     public void setKnowledge(Knowledge knowledge) {
         this.knowledge = knowledge;
@@ -443,8 +422,7 @@ public class GatewayProperties {
     /**
      * Returns the list of admin user IDs.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public List<String> getAdminUsers() {
         return adminUsers;
@@ -453,8 +431,7 @@ public class GatewayProperties {
     /**
      * Sets the list of admin user IDs.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param adminUsers the adminUsers parameter
      */
     public void setAdminUsers(List<String> adminUsers) {
         this.adminUsers = adminUsers;
@@ -463,8 +440,7 @@ public class GatewayProperties {
     /**
      * Resolves the absolute path to the gateway configuration file.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Path getConfigPath() {
         String configuredPath = configuredConfigPath();
@@ -482,8 +458,7 @@ public class GatewayProperties {
     /**
      * Returns the directory containing the gateway configuration file.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Path getConfigDirectory() {
         Path configPath = getConfigPath();
@@ -497,8 +472,7 @@ public class GatewayProperties {
     /**
      * Resolves the absolute path to the project root directory.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Path getProjectRootPath() {
         Path configuredRoot = Path.of(paths.getProjectRoot());
@@ -514,8 +488,7 @@ public class GatewayProperties {
     /**
      * Resolves the absolute path to the gateway root directory.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Path getGatewayRootPath() {
         if (configuredConfigPath() == null) {
@@ -541,161 +514,643 @@ public class GatewayProperties {
 
     public static class Paths {
         private String projectRoot = "..";
+
         private String agentsDir = "agents";
+
         private String usersDir = "users";
 
-        public String getProjectRoot() { return projectRoot; }
-        public void setProjectRoot(String projectRoot) { this.projectRoot = projectRoot; }
-        public String getAgentsDir() { return agentsDir; }
-        public void setAgentsDir(String agentsDir) { this.agentsDir = agentsDir; }
-        public String getUsersDir() { return usersDir; }
-        public void setUsersDir(String usersDir) { this.usersDir = usersDir; }
+        /**
+         * Gets the project root.
+         *
+         * @return the result
+         */
+        public String getProjectRoot() {
+            return projectRoot;
+        }
+
+        /**
+         * Sets the project root.
+         *
+         * @param projectRoot the projectRoot parameter
+         */
+        public void setProjectRoot(String projectRoot) {
+            this.projectRoot = projectRoot;
+        }
+
+        /**
+         * Gets the agents dir.
+         *
+         * @return the result
+         */
+        public String getAgentsDir() {
+            return agentsDir;
+        }
+
+        /**
+         * Sets the agents dir.
+         *
+         * @param agentsDir the agentsDir parameter
+         */
+        public void setAgentsDir(String agentsDir) {
+            this.agentsDir = agentsDir;
+        }
+
+        /**
+         * Gets the users dir.
+         *
+         * @return the result
+         */
+        public String getUsersDir() {
+            return usersDir;
+        }
+
+        /**
+         * Sets the users dir.
+         *
+         * @param usersDir the usersDir parameter
+         */
+        public void setUsersDir(String usersDir) {
+            this.usersDir = usersDir;
+        }
     }
 
     public static class Idle {
         private int timeoutMinutes = 15;
+
         private long checkIntervalMs = 60000L;
+
         private int maxRestartAttempts = 3;
+
         private long restartBaseDelayMs = 5000L;
 
-        public int getTimeoutMinutes() { return timeoutMinutes; }
-        public void setTimeoutMinutes(int timeoutMinutes) { this.timeoutMinutes = timeoutMinutes; }
-        public long getCheckIntervalMs() { return checkIntervalMs; }
-        public void setCheckIntervalMs(long checkIntervalMs) { this.checkIntervalMs = checkIntervalMs; }
-        public int getMaxRestartAttempts() { return maxRestartAttempts; }
-        public void setMaxRestartAttempts(int maxRestartAttempts) { this.maxRestartAttempts = maxRestartAttempts; }
-        public long getRestartBaseDelayMs() { return restartBaseDelayMs; }
-        public void setRestartBaseDelayMs(long restartBaseDelayMs) { this.restartBaseDelayMs = restartBaseDelayMs; }
+        /**
+         * Gets the timeout minutes.
+         *
+         * @return the result
+         */
+        public int getTimeoutMinutes() {
+            return timeoutMinutes;
+        }
+
+        /**
+         * Sets the timeout minutes.
+         *
+         * @param timeoutMinutes the timeoutMinutes parameter
+         */
+        public void setTimeoutMinutes(int timeoutMinutes) {
+            this.timeoutMinutes = timeoutMinutes;
+        }
+
+        /**
+         * Gets the check interval ms.
+         *
+         * @return the result
+         */
+        public long getCheckIntervalMs() {
+            return checkIntervalMs;
+        }
+
+        /**
+         * Sets the check interval ms.
+         *
+         * @param checkIntervalMs the checkIntervalMs parameter
+         */
+        public void setCheckIntervalMs(long checkIntervalMs) {
+            this.checkIntervalMs = checkIntervalMs;
+        }
+
+        /**
+         * Gets the max restart attempts.
+         *
+         * @return the result
+         */
+        public int getMaxRestartAttempts() {
+            return maxRestartAttempts;
+        }
+
+        /**
+         * Sets the max restart attempts.
+         *
+         * @param maxRestartAttempts the maxRestartAttempts parameter
+         */
+        public void setMaxRestartAttempts(int maxRestartAttempts) {
+            this.maxRestartAttempts = maxRestartAttempts;
+        }
+
+        /**
+         * Gets the restart base delay ms.
+         *
+         * @return the result
+         */
+        public long getRestartBaseDelayMs() {
+            return restartBaseDelayMs;
+        }
+
+        /**
+         * Sets the restart base delay ms.
+         *
+         * @param restartBaseDelayMs the restartBaseDelayMs parameter
+         */
+        public void setRestartBaseDelayMs(long restartBaseDelayMs) {
+            this.restartBaseDelayMs = restartBaseDelayMs;
+        }
     }
 
     public static class Upload {
         private int maxFileSizeMb = 50;
+
         private int maxImageSizeMb = 20;
 
-        public int getMaxFileSizeMb() { return maxFileSizeMb; }
-        public void setMaxFileSizeMb(int maxFileSizeMb) { this.maxFileSizeMb = maxFileSizeMb; }
-        public int getMaxImageSizeMb() { return maxImageSizeMb; }
-        public void setMaxImageSizeMb(int maxImageSizeMb) { this.maxImageSizeMb = maxImageSizeMb; }
+        /**
+         * Gets the max file size mb.
+         *
+         * @return the result
+         */
+        public int getMaxFileSizeMb() {
+            return maxFileSizeMb;
+        }
+
+        /**
+         * Sets the max file size mb.
+         *
+         * @param maxFileSizeMb the maxFileSizeMb parameter
+         */
+        public void setMaxFileSizeMb(int maxFileSizeMb) {
+            this.maxFileSizeMb = maxFileSizeMb;
+        }
+
+        /**
+         * Gets the max image size mb.
+         *
+         * @return the result
+         */
+        public int getMaxImageSizeMb() {
+            return maxImageSizeMb;
+        }
+
+        /**
+         * Sets the max image size mb.
+         *
+         * @param maxImageSizeMb the maxImageSizeMb parameter
+         */
+        public void setMaxImageSizeMb(int maxImageSizeMb) {
+            this.maxImageSizeMb = maxImageSizeMb;
+        }
     }
 
     public static class Langfuse {
         private String host = "";
+
         private String publicKey = "";
+
         private String secretKey = "";
 
-        public String getHost() { return host; }
-        public void setHost(String host) { this.host = host; }
-        public String getPublicKey() { return publicKey; }
-        public void setPublicKey(String publicKey) { this.publicKey = publicKey; }
-        public String getSecretKey() { return secretKey; }
-        public void setSecretKey(String secretKey) { this.secretKey = secretKey; }
+        /**
+         * Gets the host.
+         *
+         * @return the result
+         */
+        public String getHost() {
+            return host;
+        }
+
+        /**
+         * Sets the host.
+         *
+         * @param host the host parameter
+         */
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        /**
+         * Gets the public key.
+         *
+         * @return the result
+         */
+        public String getPublicKey() {
+            return publicKey;
+        }
+
+        /**
+         * Sets the public key.
+         *
+         * @param publicKey the publicKey parameter
+         */
+        public void setPublicKey(String publicKey) {
+            this.publicKey = publicKey;
+        }
+
+        /**
+         * Gets the secret key.
+         *
+         * @return the result
+         */
+        public String getSecretKey() {
+            return secretKey;
+        }
+
+        /**
+         * Sets the secret key.
+         *
+         * @param secretKey the secretKey parameter
+         */
+        public void setSecretKey(String secretKey) {
+            this.secretKey = secretKey;
+        }
     }
 
     public static class Limits {
         private int maxInstancesPerUser = 5;
+
         private int maxInstancesGlobal = 50;
 
-        public int getMaxInstancesPerUser() { return maxInstancesPerUser; }
-        public void setMaxInstancesPerUser(int maxInstancesPerUser) { this.maxInstancesPerUser = maxInstancesPerUser; }
-        public int getMaxInstancesGlobal() { return maxInstancesGlobal; }
-        public void setMaxInstancesGlobal(int maxInstancesGlobal) { this.maxInstancesGlobal = maxInstancesGlobal; }
+        /**
+         * Gets the max instances per user.
+         *
+         * @return the result
+         */
+        public int getMaxInstancesPerUser() {
+            return maxInstancesPerUser;
+        }
+
+        /**
+         * Sets the max instances per user.
+         *
+         * @param maxInstancesPerUser the maxInstancesPerUser parameter
+         */
+        public void setMaxInstancesPerUser(int maxInstancesPerUser) {
+            this.maxInstancesPerUser = maxInstancesPerUser;
+        }
+
+        /**
+         * Gets the max instances global.
+         *
+         * @return the result
+         */
+        public int getMaxInstancesGlobal() {
+            return maxInstancesGlobal;
+        }
+
+        /**
+         * Sets the max instances global.
+         *
+         * @param maxInstancesGlobal the maxInstancesGlobal parameter
+         */
+        public void setMaxInstancesGlobal(int maxInstancesGlobal) {
+            this.maxInstancesGlobal = maxInstancesGlobal;
+        }
     }
 
     public static class Sse {
         private int firstByteTimeoutSec = 120;
+
         private int idleTimeoutSec = 600;
+
         private int maxDurationSec = 1200;
 
-        public int getFirstByteTimeoutSec() { return firstByteTimeoutSec; }
-        public void setFirstByteTimeoutSec(int firstByteTimeoutSec) { this.firstByteTimeoutSec = firstByteTimeoutSec; }
-        public int getIdleTimeoutSec() { return idleTimeoutSec; }
-        public void setIdleTimeoutSec(int idleTimeoutSec) { this.idleTimeoutSec = idleTimeoutSec; }
-        public int getMaxDurationSec() { return maxDurationSec; }
-        public void setMaxDurationSec(int maxDurationSec) { this.maxDurationSec = maxDurationSec; }
+        /**
+         * Gets the first byte timeout sec.
+         *
+         * @return the result
+         */
+        public int getFirstByteTimeoutSec() {
+            return firstByteTimeoutSec;
+        }
+
+        /**
+         * Sets the first byte timeout sec.
+         *
+         * @param firstByteTimeoutSec the firstByteTimeoutSec parameter
+         */
+        public void setFirstByteTimeoutSec(int firstByteTimeoutSec) {
+            this.firstByteTimeoutSec = firstByteTimeoutSec;
+        }
+
+        /**
+         * Gets the idle timeout sec.
+         *
+         * @return the result
+         */
+        public int getIdleTimeoutSec() {
+            return idleTimeoutSec;
+        }
+
+        /**
+         * Sets the idle timeout sec.
+         *
+         * @param idleTimeoutSec the idleTimeoutSec parameter
+         */
+        public void setIdleTimeoutSec(int idleTimeoutSec) {
+            this.idleTimeoutSec = idleTimeoutSec;
+        }
+
+        /**
+         * Gets the max duration sec.
+         *
+         * @return the result
+         */
+        public int getMaxDurationSec() {
+            return maxDurationSec;
+        }
+
+        /**
+         * Sets the max duration sec.
+         *
+         * @param maxDurationSec the maxDurationSec parameter
+         */
+        public void setMaxDurationSec(int maxDurationSec) {
+            this.maxDurationSec = maxDurationSec;
+        }
     }
 
     public static class Prewarm {
         private boolean enabled = true;
+
         private String defaultAgentId = "universal-agent";
 
-        public boolean isEnabled() { return enabled; }
-        public void setEnabled(boolean enabled) { this.enabled = enabled; }
-        public String getDefaultAgentId() { return defaultAgentId; }
-        public void setDefaultAgentId(String defaultAgentId) { this.defaultAgentId = defaultAgentId; }
+        /**
+         * Returns the enabled flag.
+         *
+         * @return the result
+         */
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        /**
+         * Updates the enabled flag.
+         *
+         * @param enabled the enabled parameter
+         */
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        /**
+         * Gets the default agent id.
+         *
+         * @return the result
+         */
+        public String getDefaultAgentId() {
+            return defaultAgentId;
+        }
+
+        /**
+         * Sets the default agent id.
+         *
+         * @param defaultAgentId the defaultAgentId parameter
+         */
+        public void setDefaultAgentId(String defaultAgentId) {
+            this.defaultAgentId = defaultAgentId;
+        }
     }
 
     public static class OfficePreview {
         private boolean enabled = false;
+
         private String onlyofficeUrl = "";
+
         private String fileBaseUrl = "";
 
-        public boolean isEnabled() { return enabled; }
-        public void setEnabled(boolean enabled) { this.enabled = enabled; }
-        public String getOnlyofficeUrl() { return onlyofficeUrl; }
-        public void setOnlyofficeUrl(String onlyofficeUrl) { this.onlyofficeUrl = onlyofficeUrl; }
-        public String getFileBaseUrl() { return fileBaseUrl; }
-        public void setFileBaseUrl(String fileBaseUrl) { this.fileBaseUrl = fileBaseUrl; }
+        /**
+         * Returns the enabled flag.
+         *
+         * @return the result
+         */
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        /**
+         * Updates the enabled flag.
+         *
+         * @param enabled the enabled parameter
+         */
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        /**
+         * Gets the onlyoffice url.
+         *
+         * @return the result
+         */
+        public String getOnlyofficeUrl() {
+            return onlyofficeUrl;
+        }
+
+        /**
+         * Sets the onlyoffice url.
+         *
+         * @param onlyofficeUrl the onlyofficeUrl parameter
+         */
+        public void setOnlyofficeUrl(String onlyofficeUrl) {
+            this.onlyofficeUrl = onlyofficeUrl;
+        }
+
+        /**
+         * Gets the file base url.
+         *
+         * @return the result
+         */
+        public String getFileBaseUrl() {
+            return fileBaseUrl;
+        }
+
+        /**
+         * Sets the file base url.
+         *
+         * @param fileBaseUrl the fileBaseUrl parameter
+         */
+        public void setFileBaseUrl(String fileBaseUrl) {
+            this.fileBaseUrl = fileBaseUrl;
+        }
     }
 
     public static class Logging {
         private boolean accessLogEnabled = true;
+
         private boolean includeUpstreamErrorBody = false;
+
         private boolean includeSseChunkPreview = false;
+
         private int sseChunkPreviewMaxChars = 160;
 
-        public boolean isAccessLogEnabled() { return accessLogEnabled; }
-        public void setAccessLogEnabled(boolean accessLogEnabled) { this.accessLogEnabled = accessLogEnabled; }
-        public boolean isIncludeUpstreamErrorBody() { return includeUpstreamErrorBody; }
-        public void setIncludeUpstreamErrorBody(boolean includeUpstreamErrorBody) { this.includeUpstreamErrorBody = includeUpstreamErrorBody; }
-        public boolean isIncludeSseChunkPreview() { return includeSseChunkPreview; }
-        public void setIncludeSseChunkPreview(boolean includeSseChunkPreview) { this.includeSseChunkPreview = includeSseChunkPreview; }
-        public int getSseChunkPreviewMaxChars() { return sseChunkPreviewMaxChars; }
-        public void setSseChunkPreviewMaxChars(int sseChunkPreviewMaxChars) { this.sseChunkPreviewMaxChars = sseChunkPreviewMaxChars; }
+        /**
+         * Returns the access log enabled flag.
+         *
+         * @return the result
+         */
+        public boolean isAccessLogEnabled() {
+            return accessLogEnabled;
+        }
+
+        /**
+         * Updates the access log enabled flag.
+         *
+         * @param accessLogEnabled the accessLogEnabled parameter
+         */
+        public void setAccessLogEnabled(boolean accessLogEnabled) {
+            this.accessLogEnabled = accessLogEnabled;
+        }
+
+        /**
+         * Returns the include upstream error body flag.
+         *
+         * @return the result
+         */
+        public boolean isIncludeUpstreamErrorBody() {
+            return includeUpstreamErrorBody;
+        }
+
+        /**
+         * Updates the include upstream error body flag.
+         *
+         * @param includeUpstreamErrorBody the includeUpstreamErrorBody parameter
+         */
+        public void setIncludeUpstreamErrorBody(boolean includeUpstreamErrorBody) {
+            this.includeUpstreamErrorBody = includeUpstreamErrorBody;
+        }
+
+        /**
+         * Returns the include sse chunk preview flag.
+         *
+         * @return the result
+         */
+        public boolean isIncludeSseChunkPreview() {
+            return includeSseChunkPreview;
+        }
+
+        /**
+         * Updates the include sse chunk preview flag.
+         *
+         * @param includeSseChunkPreview the includeSseChunkPreview parameter
+         */
+        public void setIncludeSseChunkPreview(boolean includeSseChunkPreview) {
+            this.includeSseChunkPreview = includeSseChunkPreview;
+        }
+
+        /**
+         * Gets the sse chunk preview max chars.
+         *
+         * @return the result
+         */
+        public int getSseChunkPreviewMaxChars() {
+            return sseChunkPreviewMaxChars;
+        }
+
+        /**
+         * Sets the sse chunk preview max chars.
+         *
+         * @param sseChunkPreviewMaxChars the sseChunkPreviewMaxChars parameter
+         */
+        public void setSseChunkPreviewMaxChars(int sseChunkPreviewMaxChars) {
+            this.sseChunkPreviewMaxChars = sseChunkPreviewMaxChars;
+        }
     }
 
     public static class RemoteExecution {
         private int defaultTimeout = 30;
+
         private int maxTimeout = 120;
 
-        public int getDefaultTimeout() { return defaultTimeout; }
-        public void setDefaultTimeout(int defaultTimeout) { this.defaultTimeout = defaultTimeout; }
-        public int getMaxTimeout() { return maxTimeout; }
-        public void setMaxTimeout(int maxTimeout) { this.maxTimeout = maxTimeout; }
+        /**
+         * Gets the default timeout.
+         *
+         * @return the result
+         */
+        public int getDefaultTimeout() {
+            return defaultTimeout;
+        }
+
+        /**
+         * Sets the default timeout.
+         *
+         * @param defaultTimeout the defaultTimeout parameter
+         */
+        public void setDefaultTimeout(int defaultTimeout) {
+            this.defaultTimeout = defaultTimeout;
+        }
+
+        /**
+         * Gets the max timeout.
+         *
+         * @return the result
+         */
+        public int getMaxTimeout() {
+            return maxTimeout;
+        }
+
+        /**
+         * Sets the max timeout.
+         *
+         * @param maxTimeout the maxTimeout parameter
+         */
+        public void setMaxTimeout(int maxTimeout) {
+            this.maxTimeout = maxTimeout;
+        }
     }
 
     public static class FileCapsules {
-        private List<String> allowedExtensions = List.of(
-                "doc", "docx",
-                "xls", "xlsx",
-                "ppt", "pptx",
-                "csv",
-                "txt",
-                "json",
-                "md", "markdown",
-                "html", "htm");
+        private List<String> allowedExtensions = List.of("doc", "docx", "xls", "xlsx", "ppt", "pptx", "pdf", "csv",
+            "txt", "json", "md", "markdown", "html", "htm");
 
-        public List<String> getAllowedExtensions() { return allowedExtensions; }
+        /**
+         * Gets the allowed extensions.
+         *
+         * @return the result
+         */
+        public List<String> getAllowedExtensions() {
+            return allowedExtensions;
+        }
 
-        public void setAllowedExtensions(List<String> allowedExtensions) { this.allowedExtensions = allowedExtensions; }
+        /**
+         * Sets the allowed extensions.
+         *
+         * @param allowedExtensions the allowedExtensions parameter
+         */
+        public void setAllowedExtensions(List<String> allowedExtensions) {
+            this.allowedExtensions = allowedExtensions;
+        }
     }
 
     public static class FileBrowser {
-        private List<FileScanRoot> scanRoots = List.of(
-                new FileScanRoot("workingDir", "${userAgentDir}", false),
-                new FileScanRoot("output", "${userAgentDir}/output", false));
+        private List<FileScanRoot> scanRoots = List.of(new FileScanRoot("workingDir", "${userAgentDir}", false),
+            new FileScanRoot("output", "${userAgentDir}/output", false));
 
-        public List<FileScanRoot> getScanRoots() { return scanRoots; }
+        /**
+         * Gets the scan roots.
+         *
+         * @return the result
+         */
+        public List<FileScanRoot> getScanRoots() {
+            return scanRoots;
+        }
 
-        public void setScanRoots(List<FileScanRoot> scanRoots) { this.scanRoots = scanRoots; }
+        /**
+         * Sets the scan roots.
+         *
+         * @param scanRoots the scanRoots parameter
+         */
+        public void setScanRoots(List<FileScanRoot> scanRoots) {
+            this.scanRoots = scanRoots;
+        }
     }
 
     public static class FileScanRoot {
         private String id = "";
+
         private String path = "";
+
         private boolean recursive = false;
+
         private List<String> excludeDirs = List.of();
+
         private int maxDepth = 6;
+
         private int maxFiles = 1000;
+
         private long scanTimeoutMs = 2000;
 
         public FileScanRoot() {
@@ -707,55 +1162,221 @@ public class GatewayProperties {
             this.recursive = recursive;
         }
 
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-        public String getPath() { return path; }
-        public void setPath(String path) { this.path = path; }
-        public boolean isRecursive() { return recursive; }
-        public void setRecursive(boolean recursive) { this.recursive = recursive; }
-        public List<String> getExcludeDirs() { return excludeDirs; }
-        public void setExcludeDirs(List<String> excludeDirs) { this.excludeDirs = excludeDirs; }
-        public int getMaxDepth() { return maxDepth; }
-        public void setMaxDepth(int maxDepth) { this.maxDepth = maxDepth; }
-        public int getMaxFiles() { return maxFiles; }
-        public void setMaxFiles(int maxFiles) { this.maxFiles = maxFiles; }
-        public long getScanTimeoutMs() { return scanTimeoutMs; }
-        public void setScanTimeoutMs(long scanTimeoutMs) { this.scanTimeoutMs = scanTimeoutMs; }
+        /**
+         * Gets the id.
+         *
+         * @return the result
+         */
+        public String getId() {
+            return id;
+        }
+
+        /**
+         * Sets the id.
+         *
+         * @param id the id parameter
+         */
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        /**
+         * Gets the path.
+         *
+         * @return the result
+         */
+        public String getPath() {
+            return path;
+        }
+
+        /**
+         * Sets the path.
+         *
+         * @param path the path parameter
+         */
+        public void setPath(String path) {
+            this.path = path;
+        }
+
+        /**
+         * Returns the recursive flag.
+         *
+         * @return the result
+         */
+        public boolean isRecursive() {
+            return recursive;
+        }
+
+        /**
+         * Updates the recursive flag.
+         *
+         * @param recursive the recursive parameter
+         */
+        public void setRecursive(boolean recursive) {
+            this.recursive = recursive;
+        }
+
+        /**
+         * Gets the exclude dirs.
+         *
+         * @return the result
+         */
+        public List<String> getExcludeDirs() {
+            return excludeDirs;
+        }
+
+        /**
+         * Sets the exclude dirs.
+         *
+         * @param excludeDirs the excludeDirs parameter
+         */
+        public void setExcludeDirs(List<String> excludeDirs) {
+            this.excludeDirs = excludeDirs;
+        }
+
+        /**
+         * Gets the max depth.
+         *
+         * @return the result
+         */
+        public int getMaxDepth() {
+            return maxDepth;
+        }
+
+        /**
+         * Sets the max depth.
+         *
+         * @param maxDepth the maxDepth parameter
+         */
+        public void setMaxDepth(int maxDepth) {
+            this.maxDepth = maxDepth;
+        }
+
+        /**
+         * Gets the max files.
+         *
+         * @return the result
+         */
+        public int getMaxFiles() {
+            return maxFiles;
+        }
+
+        /**
+         * Sets the max files.
+         *
+         * @param maxFiles the maxFiles parameter
+         */
+        public void setMaxFiles(int maxFiles) {
+            this.maxFiles = maxFiles;
+        }
+
+        /**
+         * Gets the scan timeout ms.
+         *
+         * @return the result
+         */
+        public long getScanTimeoutMs() {
+            return scanTimeoutMs;
+        }
+
+        /**
+         * Sets the scan timeout ms.
+         *
+         * @param scanTimeoutMs the scanTimeoutMs parameter
+         */
+        public void setScanTimeoutMs(long scanTimeoutMs) {
+            this.scanTimeoutMs = scanTimeoutMs;
+        }
     }
 
     public static class SkillMarket {
         private String baseUrl = "http://127.0.0.1:8095";
+
         private int requestTimeoutMs = 10000;
+
         private int maxPackageSizeMb = 200;
 
-        public String getBaseUrl() { return baseUrl; }
-        public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
-        public int getRequestTimeoutMs() { return requestTimeoutMs; }
-        public void setRequestTimeoutMs(int requestTimeoutMs) { this.requestTimeoutMs = requestTimeoutMs; }
-        public int getMaxPackageSizeMb() { return maxPackageSizeMb; }
-        public void setMaxPackageSizeMb(int maxPackageSizeMb) { this.maxPackageSizeMb = maxPackageSizeMb; }
+        /**
+         * Gets the base url.
+         *
+         * @return the result
+         */
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        /**
+         * Sets the base url.
+         *
+         * @param baseUrl the baseUrl parameter
+         */
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        /**
+         * Gets the request timeout ms.
+         *
+         * @return the result
+         */
+        public int getRequestTimeoutMs() {
+            return requestTimeoutMs;
+        }
+
+        /**
+         * Sets the request timeout ms.
+         *
+         * @param requestTimeoutMs the requestTimeoutMs parameter
+         */
+        public void setRequestTimeoutMs(int requestTimeoutMs) {
+            this.requestTimeoutMs = requestTimeoutMs;
+        }
+
+        /**
+         * Gets the max package size mb.
+         *
+         * @return the result
+         */
+        public int getMaxPackageSizeMb() {
+            return maxPackageSizeMb;
+        }
+
+        /**
+         * Sets the max package size mb.
+         *
+         * @param maxPackageSizeMb the maxPackageSizeMb parameter
+         */
+        public void setMaxPackageSizeMb(int maxPackageSizeMb) {
+            this.maxPackageSizeMb = maxPackageSizeMb;
+        }
     }
 
     public static class Knowledge {
         private String artifactsRoot = "../knowledge-service/data/artifacts";
 
-        public String getArtifactsRoot() { return artifactsRoot; }
-        public void setArtifactsRoot(String artifactsRoot) { this.artifactsRoot = artifactsRoot; }
+        /**
+         * Gets the artifacts root.
+         *
+         * @return the result
+         */
+        public String getArtifactsRoot() {
+            return artifactsRoot;
+        }
+
+        /**
+         * Sets the artifacts root.
+         *
+         * @param artifactsRoot the artifactsRoot parameter
+         */
+        public void setArtifactsRoot(String artifactsRoot) {
+            this.artifactsRoot = artifactsRoot;
+        }
     }
 
-    // ---- PostConstruct for logging configuration values ----
-
-    /**
-     * Logs the loaded configuration values at startup and normalizes the goosed binary path.
-     *
-     * @author x00000000
-     * @since 2026-05-09
-     */
-    @PostConstruct
-    public void logConfiguration() {
-        normalizeGoosedBin();
-        log.info("GatewayProperties loaded: gooseTls={}, gooseScheme={}, goosedBin={}",
-                gooseTls, gooseScheme(), goosedBin);
+    @Override
+    public String toString() {
+        return "GatewayProperties{" + "secretKey='***'" + ", corsOrigin='" + corsOrigin + '\'' + ", gooseTls="
+            + gooseTls + ", gooseScheme='" + gooseScheme() + '\'' + ", goosedBin='" + goosedBin + '\'' + '}';
     }
 
     private void normalizeGoosedBin() {

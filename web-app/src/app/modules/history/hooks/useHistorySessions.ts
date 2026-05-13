@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { useUser } from '../../../platform/providers/UserContext'
 import { trackedFetch } from '../../../platform/logging/requestClient'
 import type { Session } from '@goosed/sdk'
@@ -40,7 +40,7 @@ export function useHistorySessions(params: {
             if (params.search?.trim()) qs.set('search', params.search.trim())
             if (params.agentId) qs.set('agentId', params.agentId)
             if (params.type) qs.set('type', params.type)
-            const res = await trackedFetch(`${GATEWAY_URL}/sessions?${qs}`, {
+            const res = await trackedFetch(`${runtime.GATEWAY_URL}/sessions?${qs}`, {
                 category: 'request',
                 name: 'request.send',
                 headers: gatewayHeaders(userId),

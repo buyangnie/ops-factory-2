@@ -71,6 +71,7 @@ public class VectorIndexService {
     }
 
     public void rebuildIndex(List<SearchService.SearchableChunk> chunks, Map<String, List<Double>> vectors) {
+        recreateIndexDirectory();
         try (Directory directory = openDirectory()) {
             IndexWriterConfig config = new IndexWriterConfig();
             config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
@@ -85,6 +86,16 @@ public class VectorIndexService {
             }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to rebuild vector index", e);
+        }
+    }
+
+    private void recreateIndexDirectory() {
+        Path indexDir = storageManager.indexDir(INDEX_NAME);
+        storageManager.deleteRecursively(indexDir);
+        try {
+            Files.createDirectories(indexDir);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to recreate vector index directory", e);
         }
     }
 

@@ -1,7 +1,18 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.service;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import com.huawei.opsfactory.gateway.common.model.AgentRegistryEntry;
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -14,12 +25,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
+/**
+ * Test coverage for Agent Config Service.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class AgentConfigServiceTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -29,6 +40,11 @@ public class AgentConfigServiceTest {
     private Path gatewayRoot;
     private String previousGatewayConfigPath;
 
+    /**
+     * Sets the up.
+     *
+     * @throws IOException if the operation fails
+     */
     @Before
     public void setUp() throws IOException {
         gatewayRoot = tempFolder.getRoot().toPath().resolve("gateway");
@@ -62,6 +78,9 @@ public class AgentConfigServiceTest {
         service.loadRegistry();
     }
 
+    /**
+     * Executes the tear down operation.
+     */
     @After
     public void tearDown() {
         if (previousGatewayConfigPath == null) {
@@ -71,6 +90,9 @@ public class AgentConfigServiceTest {
         }
     }
 
+    /**
+     * Tests load registry.
+     */
     @Test
     public void testLoadRegistry() {
         List<AgentRegistryEntry> registry = service.getRegistry();
@@ -81,6 +103,11 @@ public class AgentConfigServiceTest {
         assertEquals("KB Agent", registry.get(1).name());
     }
 
+    /**
+     * Tests load registry when gateway config path points to gateway config.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadRegistryWhenGatewayConfigPathPointsToGatewayConfig() throws IOException {
         Path externalRoot = tempFolder.getRoot().toPath().resolve("external-runtime");
@@ -115,6 +142,9 @@ public class AgentConfigServiceTest {
         }
     }
 
+    /**
+     * Tests load resident instances expands wildcard and specific agent.
+     */
     @Test
     public void testLoadResidentInstances_expandsWildcardAndSpecificAgent() {
         assertTrue(service.isResidentInstance("test-agent", "admin"));
@@ -124,6 +154,11 @@ public class AgentConfigServiceTest {
         assertEquals(3, service.getResidentInstances().size());
     }
 
+    /**
+     * Tests load resident instances ignores unknown and duplicate agents.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadResidentInstances_ignoresUnknownAndDuplicateAgents() throws IOException {
         String configYaml = "agents:\n"
@@ -144,6 +179,9 @@ public class AgentConfigServiceTest {
         assertEquals(1, freshService.getResidentInstances().size());
     }
 
+    /**
+     * Tests find agent exists.
+     */
     @Test
     public void testFindAgent_exists() {
         AgentRegistryEntry entry = service.findAgent("test-agent");
@@ -151,11 +189,19 @@ public class AgentConfigServiceTest {
         assertEquals("Test Agent", entry.name());
     }
 
+    /**
+     * Tests find agent not found.
+     */
     @Test
     public void testFindAgent_notFound() {
         assertNull(service.findAgent("nonexistent"));
     }
 
+    /**
+     * Tests load agent config yaml.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadAgentConfigYaml() throws IOException {
         Path configDir = gatewayRoot.resolve("agents").resolve("test-agent").resolve("config");
@@ -168,12 +214,20 @@ public class AgentConfigServiceTest {
         assertEquals("gpt-4o", config.get("GOOSE_MODEL"));
     }
 
+    /**
+     * Tests load agent config yaml no file.
+     */
     @Test
     public void testLoadAgentConfigYaml_noFile() {
         Map<String, Object> config = service.loadAgentConfigYaml("nonexistent");
         assertTrue(config.isEmpty());
     }
 
+    /**
+     * Tests read write agents md.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testReadWriteAgentsMd() throws IOException {
         Path agentDir = gatewayRoot.resolve("agents").resolve("test-agent");
@@ -188,12 +242,20 @@ public class AgentConfigServiceTest {
         assertEquals("# Updated\nNew content\n", updated);
     }
 
+    /**
+     * Tests read agents md no file.
+     */
     @Test
     public void testReadAgentsMd_noFile() {
         String md = service.readAgentsMd("nonexistent");
         assertEquals("", md);
     }
 
+    /**
+     * Tests list skills.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testListSkills() throws IOException {
         Path skillsDir = gatewayRoot.resolve("agents").resolve("test-agent")
@@ -204,14 +266,17 @@ public class AgentConfigServiceTest {
 
         // Add SKILL.md with frontmatter to skill-a
         Files.writeString(skillsDir.resolve("skill-a").resolve("SKILL.md"),
-                "---\nname: Skill A\ndescription: Description of skill A\npinned: true\ndisplay-order: -100\n---\n# Skill A\n");
+                "---\nname: Skill A\ndescription: Description of skill A\npinned: true\ndisplay-order: " +
+                        "-100\n---\n# Skill A\n");
 
         List<Map<String, String>> skills = service.listSkills("test-agent");
         assertEquals(2, skills.size());
 
         List<String> names = skills.stream().map(s -> s.get("name")).toList();
-        assertTrue(names.contains("Skill A"));  // parsed from frontmatter
-        assertTrue(names.contains("skill-b"));  // fallback to dir name
+        // parsed from frontmatter
+        assertTrue(names.contains("Skill A"));
+        // fallback to dir name
+        assertTrue(names.contains("skill-b"));
 
         // Verify skill-a has parsed description
         Map<String, String> skillA = skills.stream()
@@ -227,12 +292,20 @@ public class AgentConfigServiceTest {
         assertEquals("", skillB.get("description"));
     }
 
+    /**
+     * Tests list skills no skills dir.
+     */
     @Test
     public void testListSkills_noSkillsDir() {
         List<Map<String, String>> skills = service.listSkills("nonexistent");
         assertTrue(skills.isEmpty());
     }
 
+    /**
+     * Tests create agent.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testCreateAgent() throws IOException {
         Path templateDir = gatewayRoot.resolve("agents").resolve("universal-agent").resolve("config");
@@ -248,20 +321,37 @@ public class AgentConfigServiceTest {
         assertNotNull(service.findAgent("new-agent"));
 
         assertTrue(Files.exists(gatewayRoot.resolve("agents").resolve("new-agent").resolve("AGENTS.md")));
-        assertTrue(Files.exists(gatewayRoot.resolve("agents").resolve("new-agent").resolve("config").resolve("config.yaml")));
-        assertTrue(Files.exists(gatewayRoot.resolve("agents").resolve("new-agent").resolve("config").resolve("secrets.yaml")));
+        assertTrue(Files.exists(gatewayRoot.resolve("agents").resolve("new-agent").resolve(
+                "config").resolve("config.yaml")));
+        assertTrue(Files.exists(gatewayRoot.resolve("agents").resolve("new-agent").resolve(
+                "config").resolve("secrets.yaml")));
     }
 
+    /**
+     * Tests create agent duplicate id.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testCreateAgent_duplicateId() throws IOException {
         service.createAgent("test-agent", "Duplicate");
     }
 
+    /**
+     * Tests create agent invalid id.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testCreateAgent_invalidId() throws IOException {
         service.createAgent("INVALID!", "Bad ID");
     }
 
+    /**
+     * Tests delete agent.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testDeleteAgent() throws IOException {
         Path agentDir = gatewayRoot.resolve("agents").resolve("test-agent");
@@ -274,11 +364,21 @@ public class AgentConfigServiceTest {
         assertFalse(Files.exists(agentDir));
     }
 
+    /**
+     * Tests delete agent not found.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testDeleteAgent_notFound() throws IOException {
         service.deleteAgent("nonexistent");
     }
 
+    /**
+     * Tests load agent secrets yaml.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadAgentSecretsYaml() throws IOException {
         Path configDir = gatewayRoot.resolve("agents").resolve("test-agent").resolve("config");
@@ -291,17 +391,30 @@ public class AgentConfigServiceTest {
         assertEquals("ak-test456", secrets.get("ANTHROPIC_KEY"));
     }
 
+    /**
+     * Tests load agent secrets yaml no file.
+     */
     @Test
     public void testLoadAgentSecretsYaml_noFile() {
         Map<String, Object> secrets = service.loadAgentSecretsYaml("nonexistent");
         assertTrue(secrets.isEmpty());
     }
 
+    /**
+     * Tests create agent duplicate name.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testCreateAgent_duplicateName() throws IOException {
         service.createAgent("another-agent", "Test Agent");
     }
 
+    /**
+     * Tests create agent no template.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testCreateAgent_noTemplate() throws IOException {
         Map<String, Object> result = service.createAgent("new-agent", "New Agent");
@@ -310,6 +423,9 @@ public class AgentConfigServiceTest {
         assertEquals("openai", result.get("provider"));
     }
 
+    /**
+     * Tests getters resolve correct paths.
+     */
     @Test
     public void testGettersResolveCorrectPaths() {
         Path agentsDir = service.getAgentsDir();
@@ -319,12 +435,20 @@ public class AgentConfigServiceTest {
         assertTrue(usersDir.toString().endsWith("gateway/users"));
     }
 
+    /**
+     * Tests get agent config dir.
+     */
     @Test
     public void testGetAgentConfigDir() {
         Path configDir = service.getAgentConfigDir("test-agent");
         assertTrue(configDir.toString().endsWith("agents/test-agent/config"));
     }
 
+    /**
+     * Tests delete agent removes from yaml.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testDeleteAgent_removesFromYaml() throws IOException {
         Path agentDir = gatewayRoot.resolve("agents").resolve("test-agent");
@@ -340,6 +464,9 @@ public class AgentConfigServiceTest {
         assertNull(freshService.findAgent("test-agent"));
     }
 
+    /**
+     * Tests registry is unmodifiable.
+     */
     @Test
     public void testRegistryIsUnmodifiable() {
         List<AgentRegistryEntry> registry = service.getRegistry();
@@ -350,6 +477,11 @@ public class AgentConfigServiceTest {
         }
     }
 
+    /**
+     * Tests create agent updates agents yaml.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testCreateAgent_updatesAgentsYaml() throws IOException {
         Path templateDir = gatewayRoot.resolve("agents").resolve("universal-agent").resolve("config");
@@ -364,11 +496,21 @@ public class AgentConfigServiceTest {
         assertNotNull(freshService.findAgent("created-agent"));
     }
 
+    /**
+     * Tests create agent single char id.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testCreateAgent_singleCharId() throws IOException {
         service.createAgent("a", "Single Char");
     }
 
+    /**
+     * Tests create agent skills directory created.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testCreateAgent_skillsDirectoryCreated() throws IOException {
         service.createAgent("new-agent", "New Agent");
@@ -377,6 +519,11 @@ public class AgentConfigServiceTest {
         assertTrue(Files.isDirectory(skillsDir));
     }
 
+    /**
+     * Tests load registry empty agents yaml.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadRegistry_emptyAgentsYaml() throws IOException {
         Files.writeString(gatewayRoot.resolve("config.yaml"), "");
@@ -385,6 +532,11 @@ public class AgentConfigServiceTest {
         assertTrue(freshService.getRegistry().isEmpty());
     }
 
+    /**
+     * Tests load registry no agents key.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadRegistry_noAgentsKey() throws IOException {
         Files.writeString(gatewayRoot.resolve("config.yaml"), "other: value\n");
@@ -393,6 +545,11 @@ public class AgentConfigServiceTest {
         assertTrue(freshService.getRegistry().isEmpty());
     }
 
+    /**
+     * Tests load registry enabled false excludes agent.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadRegistry_enabledFalseExcludesAgent() throws IOException {
         String configYaml = "agents:\n"
@@ -411,6 +568,11 @@ public class AgentConfigServiceTest {
         assertNull(freshService.findAgent("agent-b"));
     }
 
+    /**
+     * Tests load registry enabled true includes agent.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadRegistry_enabledTrueIncludesAgent() throws IOException {
         String configYaml = "agents:\n"
@@ -424,6 +586,11 @@ public class AgentConfigServiceTest {
         assertNotNull(freshService.findAgent("agent-a"));
     }
 
+    /**
+     * Tests load registry enabled omitted defaults to true.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadRegistry_enabledOmittedDefaultsToTrue() throws IOException {
         String configYaml = "agents:\n"
@@ -437,6 +604,11 @@ public class AgentConfigServiceTest {
         assertNotNull(freshService.findAgent("agent-no-enabled"));
     }
 
+    /**
+     * Tests load registry all disabled results in empty registry.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadRegistry_allDisabledResultsInEmptyRegistry() throws IOException {
         String configYaml = "agents:\n"
@@ -452,12 +624,20 @@ public class AgentConfigServiceTest {
 
     // ── Memory file tests ──────────────────────────────────────────
 
+    /**
+     * Tests list memory files empty.
+     */
     @Test
     public void testListMemoryFiles_empty() {
         List<Map<String, String>> files = service.listMemoryFiles("test-agent");
         assertTrue(files.isEmpty());
     }
 
+    /**
+     * Tests list memory files with files.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testListMemoryFiles_withFiles() throws IOException {
         Path memoryDir = gatewayRoot.resolve("agents").resolve("test-agent")
@@ -478,6 +658,11 @@ public class AgentConfigServiceTest {
         assertEquals("# tools\nuse black for formatting", dev.get("content"));
     }
 
+    /**
+     * Tests list memory files ignores non txt.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testListMemoryFiles_ignoresNonTxt() throws IOException {
         Path memoryDir = gatewayRoot.resolve("agents").resolve("test-agent")
@@ -491,6 +676,11 @@ public class AgentConfigServiceTest {
         assertEquals("valid", files.get(0).get("category"));
     }
 
+    /**
+     * Tests read memory file exists.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testReadMemoryFile_exists() throws IOException {
         Path memoryDir = gatewayRoot.resolve("agents").resolve("test-agent")
@@ -502,12 +692,20 @@ public class AgentConfigServiceTest {
         assertEquals("hello world", content);
     }
 
+    /**
+     * Tests read memory file not found.
+     */
     @Test
     public void testReadMemoryFile_notFound() {
         String content = service.readMemoryFile("test-agent", "nonexistent");
         assertNull(content);
     }
 
+    /**
+     * Tests write memory file creates directory and file.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testWriteMemoryFile_createsDirectoryAndFile() throws IOException {
         service.writeMemoryFile("test-agent", "new-category", "some content");
@@ -518,6 +716,11 @@ public class AgentConfigServiceTest {
         assertEquals("some content", Files.readString(file));
     }
 
+    /**
+     * Tests write memory file updates existing.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testWriteMemoryFile_updatesExisting() throws IOException {
         service.writeMemoryFile("test-agent", "cat", "v1");
@@ -526,12 +729,22 @@ public class AgentConfigServiceTest {
         assertEquals("v2", service.readMemoryFile("test-agent", "cat"));
     }
 
+    /**
+     * Tests write memory file too large.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testWriteMemoryFile_tooLarge() throws IOException {
         String largeContent = "x".repeat(101 * 1024);
         service.writeMemoryFile("test-agent", "big", largeContent);
     }
 
+    /**
+     * Tests delete memory file success.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testDeleteMemoryFile_success() throws IOException {
         Path memoryDir = gatewayRoot.resolve("agents").resolve("test-agent")
@@ -543,11 +756,21 @@ public class AgentConfigServiceTest {
         assertFalse(Files.exists(memoryDir.resolve("toDelete.txt")));
     }
 
+    /**
+     * Tests delete memory file not found.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testDeleteMemoryFile_notFound() throws IOException {
         service.deleteMemoryFile("test-agent", "nonexistent");
     }
 
+    /**
+     * Tests write and read round trip.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testWriteAndReadRoundTrip() throws IOException {
         String content = "# formatting tools\nuse black\n\n# deployment\nuse k8s";
@@ -555,6 +778,11 @@ public class AgentConfigServiceTest {
         assertEquals(content, service.readMemoryFile("test-agent", "dev"));
     }
 
+    /**
+     * Tests list memory files after write and delete.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testListMemoryFiles_afterWriteAndDelete() throws IOException {
         service.writeMemoryFile("test-agent", "a", "content-a");
@@ -567,6 +795,11 @@ public class AgentConfigServiceTest {
         assertEquals("b", remaining.get(0).get("category"));
     }
 
+    /**
+     * Tests write knowledge cli settings stores source id and relative artifacts root.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testWriteKnowledgeCliSettings_storesSourceIdAndRelativeArtifactsRoot() throws IOException {
         Path configDir = gatewayRoot.resolve("agents").resolve("qa-cli-agent").resolve("config");
@@ -587,6 +820,11 @@ public class AgentConfigServiceTest {
                 service.getKnowledgeCliRootDir("qa-cli-agent"));
     }
 
+    /**
+     * Tests write knowledge cli settings uses configured artifacts root.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testWriteKnowledgeCliSettings_usesConfiguredArtifactsRoot() throws IOException {
         Path configDir = gatewayRoot.resolve("agents").resolve("qa-cli-agent").resolve("config");
@@ -607,6 +845,11 @@ public class AgentConfigServiceTest {
         assertEquals(externalArtifactsRoot.resolve("src_external").normalize().toString(), settings.get("rootDir"));
     }
 
+    /**
+     * Tests write knowledge cli settings clear resets default root.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testWriteKnowledgeCliSettings_clearResetsDefaultRoot() throws IOException {
         Path configDir = gatewayRoot.resolve("agents").resolve("qa-cli-agent").resolve("config");
@@ -626,6 +869,11 @@ public class AgentConfigServiceTest {
         assertEquals("../data", settings.get("rootDir"));
     }
 
+    /**
+     * Tests load registry disabled agent is excluded from resident expansion.
+     *
+     * @throws IOException if the operation fails
+     */
     @Test
     public void testLoadRegistry_disabledAgentIsExcludedFromResidentExpansion() throws IOException {
         String configYaml = "agents:\n"

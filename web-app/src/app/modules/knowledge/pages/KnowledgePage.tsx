@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../../platform/providers/ToastContext'
-import { KNOWLEDGE_SERVICE_URL } from '../../../../config/runtime'
+import { runtime } from '../../../../config/runtime'
 import CardGrid from '../../../platform/ui/cards/CardGrid'
 import PageHeader from '../../../platform/ui/primitives/PageHeader'
 import ResourceCard, {
@@ -100,7 +100,7 @@ function CreateKnowledgeModal({
 
         setCreating(true)
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/sources`, {
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -199,7 +199,7 @@ function DeleteKnowledgeModal({
         setError(null)
         setDeleting(true)
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/sources/${source.id}`, {
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources/${source.id}`, {
                 method: 'DELETE',
             })
             const data = await response.json().catch(() => null)
@@ -268,7 +268,7 @@ export default function Knowledge() {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await fetch(`${KNOWLEDGE_SERVICE_URL}/sources?page=1&pageSize=100`)
+            const response = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources?page=1&pageSize=100`)
             const data = await response.json() as SourceListResponse
             if (!response.ok) {
                 throw new Error((data as { message?: string }).message || response.statusText)
@@ -278,7 +278,7 @@ export default function Knowledge() {
             const statsEntries = await Promise.all(
                 (data.items || []).map(async source => {
                     try {
-                        const statsResponse = await fetch(`${KNOWLEDGE_SERVICE_URL}/sources/${source.id}/stats`)
+                        const statsResponse = await fetch(`${runtime.KNOWLEDGE_SERVICE_URL}/sources/${source.id}/stats`)
                         const statsData = await statsResponse.json() as SourceStats
                         if (!statsResponse.ok) {
                             throw new Error(statsResponse.statusText)
@@ -381,16 +381,18 @@ export default function Knowledge() {
                     />
                 )}
             >
-                {isLoading ? (
+                {isLoading && (
                     <div className="empty-state">
                         <div className="empty-state-title">{t('common.loading')}</div>
                     </div>
-                ) : filteredSources.length === 0 ? (
+                )}
+                {!isLoading && filteredSources.length === 0 && (
                     <div className="empty-state">
                         <div className="empty-state-title">{t('knowledge.emptyTitle')}</div>
                         <div className="empty-state-description">{t('knowledge.emptyHint')}</div>
                     </div>
-                ) : (
+                )}
+                {!isLoading && filteredSources.length > 0 && (
                     <CardGrid className="knowledge-resource-grid">
                         {filteredSources.map(source => {
                             const sourceStats = stats[source.id]

@@ -4,14 +4,15 @@
 
 package com.huawei.opsfactory.gateway.service;
 
+import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -26,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import jakarta.annotation.PostConstruct;
+
 /**
  * Manages host group hierarchy and tree construction with cascade delete support.
  *
@@ -35,20 +38,25 @@ import java.util.UUID;
 @Service
 public class HostGroupService {
     private static final Logger log = LoggerFactory.getLogger(HostGroupService.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final GatewayProperties properties;
+
     private Path groupsDir;
 
+    /**
+     * Creates the host group service instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public HostGroupService(GatewayProperties properties) {
         this.properties = properties;
     }
 
     /**
      * Initializes the host groups data directory at startup.
-     *
-     * @author x00000000
-     * @since 2026-05-09
      */
     @PostConstruct
     public void init() {
@@ -67,8 +75,7 @@ public class HostGroupService {
     /**
      * Lists all host groups.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public List<Map<String, Object>> listGroups() {
         List<Map<String, Object>> groups = new ArrayList<>();
@@ -80,13 +87,9 @@ public class HostGroupService {
                 if (!Files.isRegularFile(file)) {
                     continue;
                 }
-                try {
-                    Map<String, Object> group = readFile(file);
-                    if (group != null) {
-                        groups.add(group);
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to read group file: {}", file, e);
+                Map<String, Object> group = readFile(file);
+                if (group != null) {
+                    groups.add(group);
                 }
             }
         } catch (IOException e) {
@@ -98,8 +101,8 @@ public class HostGroupService {
     /**
      * Gets a host group by its ID.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @return the result
      */
     public Map<String, Object> getGroup(String id) {
         Path file = groupsDir.resolve(id + ".json");
@@ -114,6 +117,10 @@ public class HostGroupService {
      * Build tree structure: top-level groups → sub-groups → clusters (leaf nodes).
      * Clusters are attached based on their groupId matching a group's id.
      * Business services are attached to their groupId node.
+     *
+     * @param groups the groups parameter
+     * @param clusters the clusters parameter
+     * @return the result
      */
     public Map<String, Object> getTree(List<Map<String, Object>> groups, List<Map<String, Object>> clusters) {
         return getTree(groups, clusters, List.of());
@@ -122,11 +129,13 @@ public class HostGroupService {
     /**
      * Builds tree structure including top-level groups, sub-groups, clusters, and business services.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param groups the groups parameter
+     * @param clusters the clusters parameter
+     * @param businessServices the businessServices parameter
+     * @return the result
      */
     public Map<String, Object> getTree(List<Map<String, Object>> groups, List<Map<String, Object>> clusters,
-                                        List<Map<String, Object>> businessServices) {
+        List<Map<String, Object>> businessServices) {
         Map<String, String> groupNameMap = new LinkedHashMap<>();
         for (Map<String, Object> g : groups) {
             groupNameMap.put((String) g.get("id"), (String) g.get("name"));
@@ -147,7 +156,8 @@ public class HostGroupService {
             String groupId = (String) cluster.get("groupId");
             if (groupId != null && groupNodeMap.containsKey(groupId)) {
                 @SuppressWarnings("unchecked")
-                List<Map<String, Object>> clusterList = (List<Map<String, Object>>) groupNodeMap.get(groupId).get("clusters");
+                List<Map<String, Object>> clusterList =
+                    (List<Map<String, Object>>) groupNodeMap.get(groupId).get("clusters");
                 clusterList.add(cluster);
             }
         }
@@ -157,7 +167,8 @@ public class HostGroupService {
             String groupId = (String) bs.get("groupId");
             if (groupId != null && groupNodeMap.containsKey(groupId)) {
                 @SuppressWarnings("unchecked")
-                List<Map<String, Object>> bsList = (List<Map<String, Object>>) groupNodeMap.get(groupId).get("businessServices");
+                List<Map<String, Object>> bsList =
+                    (List<Map<String, Object>>) groupNodeMap.get(groupId).get("businessServices");
                 bsList.add(bs);
             }
         }
@@ -189,8 +200,8 @@ public class HostGroupService {
     /**
      * Creates a new host group from the provided field map.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param body the body parameter
+     * @return the result
      */
     public Map<String, Object> createGroup(Map<String, Object> body) {
         String id = UUID.randomUUID().toString();
@@ -214,8 +225,9 @@ public class HostGroupService {
     /**
      * Updates an existing host group with the provided field map.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param id the id parameter
+     * @param body the body parameter
+     * @return the result
      */
     public Map<String, Object> updateGroup(String id, Map<String, Object> body) {
         Path file = groupsDir.resolve(id + ".json");
@@ -248,6 +260,8 @@ public class HostGroupService {
 
     /**
      * Delete a group. Rejects if the group has sub-groups or clusters.
+     *
+     * @param id the id parameter
      * @param clusterService used to check for clusters in this group
      * @return true if deleted
      */
@@ -284,9 +298,15 @@ public class HostGroupService {
     /**
      * Force-delete a group with cascade: deletes business services, recursively force-deletes
      * sub-groups, force-deletes clusters (which cascade-delete hosts), then deletes the group.
+     *
+     * @param id the id parameter
+     * @param clusterService the clusterService parameter
+     * @param hostService the hostService parameter
+     * @param businessServiceService the businessServiceService parameter
+     * @return the result
      */
-    public boolean forceDeleteGroup(String id, ClusterService clusterService,
-                                     HostService hostService, BusinessServiceService businessServiceService) {
+    public boolean forceDeleteGroup(String id, ClusterService clusterService, HostService hostService,
+        BusinessServiceService businessServiceService) {
         // 1. Delete business services under this group
         for (Map<String, Object> bs : businessServiceService.listBusinessServices(id, null)) {
             businessServiceService.deleteBusinessService((String) bs.get("id"));
@@ -326,6 +346,9 @@ public class HostGroupService {
      * Compute the set of group IDs that are effectively disabled, either directly
      * or by inheritance from a disabled ancestor. Uses fixed-point iteration to
      * handle arbitrary nesting depth.
+     *
+     * @param groups the groups parameter
+     * @return the result
      */
     public Set<String> getDisabledGroupIds(List<Map<String, Object>> groups) {
         Set<String> disabled = new HashSet<>();
@@ -334,7 +357,9 @@ public class HostGroupService {
             changed = false;
             for (Map<String, Object> g : groups) {
                 String id = (String) g.get("id");
-                if (disabled.contains(id)) continue;
+                if (disabled.contains(id)) {
+                    continue;
+                }
                 boolean selfOff = Boolean.FALSE.equals(g.get("enabled"));
                 String pid = (String) g.get("parentId");
                 boolean parentOff = pid != null && disabled.contains(pid);

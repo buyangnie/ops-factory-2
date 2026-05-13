@@ -21,16 +21,21 @@ import java.util.stream.Collectors;
 public class ChannelAdapterRegistry {
     private final Map<String, ChannelAdapter> adaptersByType;
 
+    /**
+     * Creates the channel adapter registry instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public ChannelAdapterRegistry(List<ChannelAdapter> adapters) {
-        this.adaptersByType = adapters.stream()
-                .collect(Collectors.toMap(ChannelAdapter::type, Function.identity()));
+        this.adaptersByType = adapters.stream().collect(Collectors.toMap(ChannelAdapter::type, Function.identity()));
     }
 
     /**
      * Resolves the adapter for the given channel type, throwing if not found.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param type the type parameter
+     * @return the result
      */
     public ChannelAdapter require(String type) {
         ChannelAdapter adapter = adaptersByType.get(type);

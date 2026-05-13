@@ -85,11 +85,11 @@ interface ToastContainerProps {
 }
 
 function ToastContainer({ toasts, onRemove, presentation }: ToastContainerProps) {
-    const displayToasts = toasts.length > 0
-        ? toasts
-        : presentation.preview
-            ? TOAST_PREVIEW_FIXTURES
-            : []
+    const displayToasts = (() => {
+        if (toasts.length > 0) return toasts
+        if (presentation.preview) return TOAST_PREVIEW_FIXTURES
+        return []
+    })()
 
     if (displayToasts.length === 0) return null
 
@@ -192,6 +192,8 @@ function renderToastIcon(type: Toast['type']) {
             return <TriangleAlert size={16} strokeWidth={2.25} />
         case 'info':
             return <Info size={16} strokeWidth={2.25} />
+        default:
+            return null
     }
 }
 

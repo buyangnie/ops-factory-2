@@ -8,7 +8,11 @@ export function RightPanelHost() {
     const { isMarketOpen, marketActiveTab, closeMarket, setMarketActiveTab } = useRightPanel()
     const isPreviewOpen = !!previewFile
     const isRightPanelOpen = isMarketOpen || isPreviewOpen
-    const panelMode = isMarketOpen ? 'drawer' : isPreviewOpen ? `preview${isPreviewFullscreen ? ' fullscreen' : ''}` : ''
+    const panelMode = (() => {
+        if (isMarketOpen) return 'drawer'
+        if (isPreviewOpen) return `preview${isPreviewFullscreen ? ' fullscreen' : ''}`
+        return ''
+    })()
 
     return (
         <div className={`right-panel-host ${isRightPanelOpen ? 'open' : ''} ${panelMode}`}>

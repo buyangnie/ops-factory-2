@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import os from 'node:os'
@@ -23,12 +27,25 @@ async function withTempRoot(run: (rootDir: string) => Promise<void>) {
 }
 
 test('extractConfiguredRootDir reads only knowledge-cli scope rootDir', () => {
+  const yamlStyleConfig =
+    'extensions:\n' +
+    '  other:\n' +
+    '    rootDir: /tmp/wrong\n' +
+    '  knowledge-cli:\n' +
+    '    x-opsfactory:\n' +
+    '      scope:\n' +
+    '        rootDir: ../../../../knowledge-service/data/artifacts/src_1\n' +
+    '        sourceId: src_1\n'
+  const jsonStyleConfig =
+    'extensions: {other: {rootDir: /tmp/wrong}, knowledge-cli: {x-opsfactory: {scope: ' +
+    '{rootDir: ../../../../knowledge-service/data/artifacts/src_1, sourceId: src_1}}}}\n'
+
   assert.equal(
-    extractConfiguredRootDir('extensions:\n  other:\n    rootDir: /tmp/wrong\n  knowledge-cli:\n    x-opsfactory:\n      scope:\n        rootDir: ../../../../knowledge-service/data/artifacts/src_1\n        sourceId: src_1\n'),
+    extractConfiguredRootDir(yamlStyleConfig),
     '../../../../knowledge-service/data/artifacts/src_1',
   )
   assert.equal(
-    extractConfiguredRootDir('extensions: {other: {rootDir: /tmp/wrong}, knowledge-cli: {x-opsfactory: {scope: {rootDir: ../../../../knowledge-service/data/artifacts/src_1, sourceId: src_1}}}}\n'),
+    extractConfiguredRootDir(jsonStyleConfig),
     '../../../../knowledge-service/data/artifacts/src_1',
   )
 })
@@ -136,7 +153,15 @@ test('search_content searches files hidden by ignore rules', async () => {
     const artifactDir = path.join(rootDir, 'knowledge-service', 'data', 'artifacts', 'src_1', 'doc_1')
     await mkdir(artifactDir, { recursive: true })
     await writeFile(path.join(rootDir, '.gitignore'), 'knowledge-service/data/**\n', 'utf8')
-    const contentPath = path.join(resolvedRoot, 'knowledge-service', 'data', 'artifacts', 'src_1', 'doc_1', 'content.md')
+    const contentPath = path.join(
+      resolvedRoot,
+      'knowledge-service',
+      'data',
+      'artifacts',
+      'src_1',
+      'doc_1',
+      'content.md',
+    )
     await writeFile(contentPath, '## 接口日志信息表(t_staticlog)\n', 'utf8')
 
     const result = JSON.parse(await handleSearchContent({ query: 't_staticlog', glob: '*.md' }))

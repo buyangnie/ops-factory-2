@@ -5,7 +5,9 @@
 package com.huawei.opsfactory.gateway.filter;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
-import java.util.UUID;
+
+import reactor.core.publisher.Mono;
+
 import org.apache.logging.log4j.ThreadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +17,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
-import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 /**
  * Web filter that assigns a unique request ID and logs access details for each HTTP request.
@@ -27,12 +30,19 @@ import reactor.core.publisher.Mono;
 @Order(1)
 public class RequestContextFilter implements WebFilter {
     public static final String REQUEST_ID_ATTR = "requestId";
+
     public static final String REQUEST_ID_HEADER = "X-Request-Id";
 
     private static final Logger log = LoggerFactory.getLogger(RequestContextFilter.class);
 
     private final GatewayProperties properties;
 
+    /**
+     * Creates the request context filter instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public RequestContextFilter(GatewayProperties properties) {
         this.properties = properties;
     }
@@ -40,8 +50,9 @@ public class RequestContextFilter implements WebFilter {
     /**
      * Assigns a unique request ID and logs access details for each HTTP request.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param exchange the exchange parameter
+     * @param chain the chain parameter
+     * @return the result
      */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -53,32 +64,26 @@ public class RequestContextFilter implements WebFilter {
         exchange.getResponse().getHeaders().set(REQUEST_ID_HEADER, requestId);
         ThreadContext.put("requestId", requestId);
 
-        return chain.filter(exchange)
-            .doFinally(signalType -> {
-                if (!properties.getLogging().isAccessLogEnabled()) {
-                    ThreadContext.remove("requestId");
-                    ThreadContext.remove("userId");
-                    return;
+        return chain.filter(exchange).doFinally(signalType -> {
+            if (!properties.getLogging().isAccessLogEnabled()) {
+                ThreadContext.remove("requestId");
+                ThreadContext.remove("userId");
+                return;
+            }
+            Integer status = exchange.getResponse().getRawStatusCode();
+            String userId = exchange.getAttribute(UserContextFilter.USER_ID_ATTR);
+            try {
+                ThreadContext.put("requestId", requestId);
+                if (userId != null && !userId.isBlank()) {
+                    ThreadContext.put("userId", userId);
                 }
-                Integer status = exchange.getResponse().getRawStatusCode();
-                String userId = exchange.getAttribute(UserContextFilter.USER_ID_ATTR);
-                try {
-                    ThreadContext.put("requestId", requestId);
-                    if (userId != null && !userId.isBlank()) {
-                        ThreadContext.put("userId", userId);
-                    }
-                    log.info(
-                        "HTTP {} {} completed status={} durationMs={}",
-                        request.getMethodValue(),
-                        request.getURI().getPath(),
-                        status != null ? status : 200,
-                        System.currentTimeMillis() - startedAt
-                    );
-                } finally {
-                    ThreadContext.remove("requestId");
-                    ThreadContext.remove("userId");
-                }
-            });
+                log.info("HTTP {} {} completed status={} durationMs={}", request.getMethod(),
+                    request.getURI().getPath(), status != null ? status : 200, System.currentTimeMillis() - startedAt);
+            } finally {
+                ThreadContext.remove("requestId");
+                ThreadContext.remove("userId");
+            }
+        });
     }
 
     private String resolveRequestId(ServerHttpRequest request) {

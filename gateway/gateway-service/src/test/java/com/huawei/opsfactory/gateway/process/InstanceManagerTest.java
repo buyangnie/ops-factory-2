@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.process;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
@@ -12,12 +16,19 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for Instance Manager.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 public class InstanceManagerTest {
     private InstanceManager instanceManager;
     private GatewayProperties properties;
@@ -25,6 +36,11 @@ public class InstanceManagerTest {
     private RuntimePreparer runtimePreparer;
     private AgentConfigService agentConfigService;
 
+    /**
+     * Sets the up.
+     *
+     * @throws Exception if the operation fails
+     */
     @Before
     public void setUp() throws Exception {
         properties = new GatewayProperties();
@@ -41,11 +57,17 @@ public class InstanceManagerTest {
                 3000, false, "");
     }
 
+    /**
+     * Tests get instance no instance.
+     */
     @Test
     public void testGetInstance_noInstance() {
         assertNull(instanceManager.getInstance("agent1", "user1"));
     }
 
+    /**
+     * Tests get all instances empty.
+     */
     @Test
     public void testGetAllInstances_empty() {
         Collection<ManagedInstance> all = instanceManager.getAllInstances();
@@ -53,6 +75,9 @@ public class InstanceManagerTest {
         assertTrue(all.isEmpty());
     }
 
+    /**
+     * Tests stop instance.
+     */
     @Test
     public void testStopInstance() {
         // Create a mock instance manually with a mock process
@@ -72,6 +97,9 @@ public class InstanceManagerTest {
         assertEquals(ManagedInstance.Status.STOPPED, instance.getStatus());
     }
 
+    /**
+     * Tests stop all for agent.
+     */
     @Test
     public void testStopAllForAgent() {
         Process mockProcess = mock(Process.class);
@@ -98,6 +126,11 @@ public class InstanceManagerTest {
         assertNotNull(instanceManager.getInstance("agent2", "user1"));
     }
 
+    /**
+     * Tests touch all for user.
+     *
+     * @throws InterruptedException if the operation fails
+     */
     @Test
     public void testTouchAllForUser() throws InterruptedException {
         Process mockProcess = mock(Process.class);
@@ -121,6 +154,9 @@ public class InstanceManagerTest {
         assertEquals(beforeUser2, inst3.getLastActivity());
     }
 
+    /**
+     * Tests stop all.
+     */
     @Test
     public void testStopAll() {
         Process mockProcess = mock(Process.class);
@@ -139,6 +175,9 @@ public class InstanceManagerTest {
         assertTrue(instanceManager.getAllInstances().isEmpty());
     }
 
+    /**
+     * Tests stop all handles errors.
+     */
     @Test
     public void testStopAll_handlesErrors() {
         Process mockProcess = mock(Process.class);
@@ -153,6 +192,9 @@ public class InstanceManagerTest {
         instanceManager.stopAll();
     }
 
+    /**
+     * Tests get or spawn removes instance when process died.
+     */
     @Test
     public void testGetOrSpawn_removesInstanceWhenProcessDied() {
         Process mockProcess = mock(Process.class);
@@ -165,11 +207,7 @@ public class InstanceManagerTest {
 
         // getOrSpawn detects the dead process, removes the stale entry, then
         // tries to spawn a new one — which fails in unit tests (no goosed binary).
-        try {
-            instanceManager.getOrSpawn("agent1", "user1").block();
-        } catch (Exception ignored) {
-            // Expected: spawn fails without real goosed binary
-        }
+        assertThrows(RuntimeException.class, () -> instanceManager.getOrSpawn("agent1", "user1").block());
 
         // The stale entry should have been removed
         assertNull(instanceManager.getInstance("agent1", "user1"));
@@ -177,6 +215,9 @@ public class InstanceManagerTest {
 
     /**
      * Helper to add instances directly to the internal map via reflection.
+     *
+     * @author x00000000
+     * @since 2026-05-09
      */
     private void addInstanceDirectly(ManagedInstance instance) {
         try {
@@ -186,7 +227,7 @@ public class InstanceManagerTest {
             java.util.concurrent.ConcurrentHashMap<String, ManagedInstance> instances =
                     (java.util.concurrent.ConcurrentHashMap<String, ManagedInstance>) field.get(instanceManager);
             instances.put(instance.getKey(), instance);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
     }

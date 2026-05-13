@@ -123,11 +123,12 @@ export default function ManagedServiceDetailPage() {
                             <p className="control-center-detail-section-meta">{config?.path}</p>
                         </div>
                         <div className="control-center-detail-actions">
-                            {!config ? null : !isEditing ? (
+                            {config && !isEditing && (
                                 <Button variant="secondary" onClick={() => setIsEditing(true)}>
                                     {t('common.edit')}
                                 </Button>
-                            ) : (
+                            )}
+                            {config && isEditing && (
                                 <>
                                     <Button
                                         variant="secondary"

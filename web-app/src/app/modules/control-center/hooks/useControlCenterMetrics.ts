@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { CONTROL_CENTER_URL, controlCenterHeaders } from '../../../../config/runtime'
+import { runtime, controlCenterHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 
 // ---- Types matching GET /runtime/metrics response ----
@@ -65,7 +65,7 @@ export function useMetrics(autoRefreshMs = 30_000): UseMetricsResult {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${CONTROL_CENTER_URL}/runtime/metrics`, {
+      const res = await fetch(`${runtime.CONTROL_CENTER_URL}/runtime/metrics`, {
         headers: controlCenterHeaders(),
         signal: signal || AbortSignal.timeout(10_000),
       })

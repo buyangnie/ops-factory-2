@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { CONTROL_CENTER_URL, controlCenterHeaders } from '../../../../config/runtime'
+import { runtime, controlCenterHeaders } from '../../../../config/runtime'
 import { getErrorMessage } from '../../../../utils/errorMessages'
 
 export type ControlCenterAction = 'probe' | 'restart' | 'start' | 'stop'
@@ -22,7 +22,7 @@ export function useControlCenterActions() {
         setPendingServiceId(serviceId)
         setPendingAction(action)
         try {
-            const response = await fetch(`${CONTROL_CENTER_URL}/services/${serviceId}/actions/${action}`, {
+            const response = await fetch(`${runtime.CONTROL_CENTER_URL}/services/${serviceId}/actions/${action}`, {
                 method: 'POST',
                 headers: controlCenterHeaders(),
                 signal: AbortSignal.timeout(30_000),

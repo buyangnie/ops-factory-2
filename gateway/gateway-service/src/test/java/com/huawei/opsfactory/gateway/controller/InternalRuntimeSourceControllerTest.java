@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
@@ -24,6 +28,12 @@ import java.util.Map;
 
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for Internal Runtime Source Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(InternalRuntimeSourceController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -46,6 +56,9 @@ public class InternalRuntimeSourceControllerTest {
     @MockBean
     private MetricsBuffer metricsBuffer;
 
+    /**
+     * Tests system as admin.
+     */
     @Test
     public void testSystem_asAdmin() {
         when(agentConfigService.getRegistry()).thenReturn(List.of());
@@ -66,6 +79,9 @@ public class InternalRuntimeSourceControllerTest {
                 .jsonPath("$.langfuse.configured").isEqualTo(false);
     }
 
+    /**
+     * Tests system non admin forbidden.
+     */
     @Test
     public void testSystem_nonAdminForbidden() {
         webTestClient.get().uri("/gateway/runtime-source/system")
@@ -75,6 +91,9 @@ public class InternalRuntimeSourceControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests instances.
+     */
     @Test
     public void testInstances() {
         ManagedInstance inst = new ManagedInstance("agent1", "user1", 9090, 5678L, null, "test-secret");
@@ -99,6 +118,9 @@ public class InternalRuntimeSourceControllerTest {
                 .jsonPath("$.byAgent[0].instances[0].idleSinceMs").isNumber();
     }
 
+    /**
+     * Tests instances non admin forbidden.
+     */
     @Test
     public void testInstances_nonAdminForbidden() {
         webTestClient.get().uri("/gateway/runtime-source/instances")
@@ -108,6 +130,9 @@ public class InternalRuntimeSourceControllerTest {
                 .expectStatus().isForbidden();
     }
 
+    /**
+     * Tests metrics empty.
+     */
     @Test
     public void testMetrics_empty() {
         when(metricsBuffer.getSnapshots(120)).thenReturn(List.of());
@@ -127,6 +152,9 @@ public class InternalRuntimeSourceControllerTest {
                 .jsonPath("$.series.length()").isEqualTo(0);
     }
 
+    /**
+     * Tests metrics with snapshots.
+     */
     @Test
     public void testMetrics_withSnapshots() {
         MetricsSnapshot s1 = new MetricsSnapshot();
@@ -176,6 +204,9 @@ public class InternalRuntimeSourceControllerTest {
                 .jsonPath("$.series[1].t").isEqualTo(2000);
     }
 
+    /**
+     * Tests metrics non admin forbidden.
+     */
     @Test
     public void testMetrics_nonAdminForbidden() {
         webTestClient.get().uri("/gateway/runtime-source/metrics")

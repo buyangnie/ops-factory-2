@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { GATEWAY_URL, gatewayHeaders } from '../../../../config/runtime'
+import { runtime, gatewayHeaders } from '../../../../config/runtime'
 import { useUser } from '../../../platform/providers/UserContext'
 import type { HostGroup } from '../../../../types/host'
 
-function apiBase() { return `${GATEWAY_URL}/host-groups` }
+function apiBase() { return `${runtime.GATEWAY_URL}/host-groups` }
 
 export function useHostGroups() {
     const { userId } = useUser()

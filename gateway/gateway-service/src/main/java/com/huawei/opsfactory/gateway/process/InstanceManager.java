@@ -4,22 +4,22 @@
 
 package com.huawei.opsfactory.gateway.process;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huawei.opsfactory.gateway.common.constants.GatewayConstants;
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
 import com.huawei.opsfactory.gateway.common.util.ProcessUtil;
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.huawei.opsfactory.gateway.service.AgentConfigService;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
@@ -28,25 +28,29 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import javax.net.ssl.SSLSocketFactory;
-import java.security.cert.X509Certificate;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * Manages the lifecycle of goosed agent processes including spawning, health checks, and termination.
@@ -58,30 +62,47 @@ import java.util.concurrent.locks.ReentrantLock;
 @org.springframework.context.annotation.DependsOn("systemUserMigrationService")
 public class InstanceManager {
     private static final Logger log = LoggerFactory.getLogger(InstanceManager.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final GatewayProperties properties;
+
     private final PortAllocator portAllocator;
+
     private final RuntimePreparer runtimePreparer;
+
     private final AgentConfigService agentConfigService;
+
     private final SSLSocketFactory trustAllSslFactory;
+
     private final int serverPort;
+
     private final boolean serverSslEnabled;
+
     private final String gatewayApiPassword;
 
-    /** key = "agentId:userId" -> ManagedInstance */
+    /**
+     * key = "agentId:userId" -> ManagedInstance
+     */
     private final ConcurrentHashMap<String, ManagedInstance> instances = new ConcurrentHashMap<>();
-    /** Per-key spawn locks to prevent concurrent spawns */
+
+    /**
+     * Per-key spawn locks to prevent concurrent spawns
+     */
     private final ConcurrentHashMap<String, ReentrantLock> spawnLocks = new ConcurrentHashMap<>();
 
-    public InstanceManager(GatewayProperties properties,
-                           PortAllocator portAllocator,
-                           RuntimePreparer runtimePreparer,
-                           AgentConfigService agentConfigService,
-                           @Value("${server.port:3000}") int serverPort,
-                           @Value("${server.ssl.enabled:false}") boolean serverSslEnabled,
-                           @Value("${gateway.api.password:}") String gatewayApiPassword) {
+    /**
+     * Creates the instance manager instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
+    public InstanceManager(GatewayProperties properties, PortAllocator portAllocator, RuntimePreparer runtimePreparer,
+        AgentConfigService agentConfigService, @Value("${server.port:3000}") int serverPort,
+        @Value("${server.ssl.enabled:false}") boolean serverSslEnabled,
+        @Value("${gateway.api.password:}") String gatewayApiPassword) {
         this.properties = properties;
         this.portAllocator = portAllocator;
         this.runtimePreparer = runtimePreparer;
@@ -94,16 +115,40 @@ public class InstanceManager {
 
     private static SSLSocketFactory createTrustAllSslFactory() {
         try {
-            TrustManager[] trustAll = { new X509TrustManager() {
-                public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
-                public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+            TrustManager[] trustAll = {new X509TrustManager() {
+
+                /**
+                 * Returns the accepted issuers.
+                 *
+                 * @return the result
+                 */
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+
+                /**
+                 * Executes the check client trusted operation.
+                 *
+                 * @param certs the certs parameter
+                 * @param authType the authType parameter
+                 */
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                }
+
+                /**
+                 * Executes the check server trusted operation.
+                 *
+                 * @param certs the certs parameter
+                 * @param authType the authType parameter
+                 */
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                }
             }};
             SSLContext sc = SSLContext.getInstance("TLS");
             sc.init(null, trustAll, new java.security.SecureRandom());
             return sc.getSocketFactory();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create trust-all SSL factory", e);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Failed to create trust-all SSL factory", e);
         }
     }
 
@@ -122,20 +167,28 @@ public class InstanceManager {
                 log.info("Auto-starting resident instance for {}:{}", target.agentId(), target.userId());
                 ManagedInstance instance = doSpawn(target.agentId(), target.userId());
                 registerDefaultSchedules(target.agentId(), instance.getPort(), instance.getSecretKey());
-            } catch (Exception e) {
-                log.error("Failed to auto-start resident instance for {}:{}: {}",
-                        target.agentId(), target.userId(), e.getMessage());
+            } catch (IOException | IllegalStateException e) {
+                log.error("Failed to auto-start resident instance for {}:{}: {}", target.agentId(), target.userId(),
+                    e.getMessage());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Interrupted while auto-starting resident instance for {}:{}", target.agentId(),
+                    target.userId());
             }
         });
     }
 
     /**
      * Scan agent's config/recipes/ directory and register each recipe as a paused schedule.
+     *
+     * @author x00000000
+     * @since 2026-05-09
      */
     private void registerDefaultSchedules(String agentId, int port, String secretKey) {
-        Path recipesDir = agentConfigService.getAgentsDir()
-                .resolve(agentId).resolve("config").resolve("recipes");
-        if (!Files.isDirectory(recipesDir)) return;
+        Path recipesDir = agentConfigService.getAgentsDir().resolve(agentId).resolve("config").resolve("recipes");
+        if (!Files.isDirectory(recipesDir)) {
+            return;
+        }
 
         try {
             // Fetch existing schedules
@@ -144,19 +197,21 @@ public class InstanceManager {
                 String listJson = httpGet(port, "/schedule/list", secretKey);
                 // Simple parsing: extract "id" values from jobs array
                 if (listJson != null && listJson.contains("\"jobs\"")) {
-                    Map<String, Object> parsed = MAPPER.readValue(listJson,
-                            new TypeReference<Map<String, Object>>() {});
+                    Map<String, Object> parsed =
+                        MAPPER.readValue(listJson, new TypeReference<Map<String, Object>>() {});
                     Object jobs = parsed.get("jobs");
                     if (jobs instanceof List<?> jobList) {
                         for (Object job : jobList) {
                             if (job instanceof Map<?, ?> jobMap) {
                                 Object id = jobMap.get("id");
-                                if (id != null) existingIds.add(id.toString());
+                                if (id != null) {
+                                    existingIds.add(id.toString());
+                                }
                             }
                         }
                     }
                 }
-            } catch (Exception e) {
+            } catch (IOException | IllegalArgumentException e) {
                 log.warn("Failed to list existing schedules for {}: {}", agentId, e.getMessage());
             }
 
@@ -197,12 +252,12 @@ public class InstanceManager {
                         // Pause immediately
                         httpPost(port, "/schedule/" + scheduleId + "/pause", "{}", secretKey);
                         log.info("Registered schedule \"{}\" for {} (paused)", scheduleId, agentId);
-                    } catch (Exception e) {
+                    } catch (IOException | IllegalArgumentException e) {
                         log.warn("Error registering schedule {} for {}: {}", scheduleId, agentId, e.getMessage());
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.warn("Error scanning recipes for {}: {}", agentId, e.getMessage());
         }
     }
@@ -233,7 +288,7 @@ public class InstanceManager {
             } finally {
                 conn.disconnect();
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.debug("Health check failed for port {}: {}", port, e.getMessage());
             return false;
         }
@@ -279,6 +334,10 @@ public class InstanceManager {
     /**
      * Get a running instance or spawn a new one.
      * Returns a Mono that resolves to the ManagedInstance.
+     *
+     * @param agentId the agentId parameter
+     * @param userId the userId parameter
+     * @return the result
      */
     public Mono<ManagedInstance> getOrSpawn(String agentId, String userId) {
         String key = ManagedInstance.buildKey(agentId, userId);
@@ -289,8 +348,8 @@ public class InstanceManager {
         ManagedInstance existing = instances.get(key);
         if (existing != null && existing.getStatus() == ManagedInstance.Status.RUNNING) {
             if (!existing.getProcess().isAlive()) {
-                log.warn("Instance {}:{} process died (port={}), removing stale entry",
-                        agentId, userId, existing.getPort());
+                log.warn("Instance {}:{} process died (port={}), removing stale entry", agentId, userId,
+                    existing.getPort());
                 existing.setStatus(ManagedInstance.Status.STOPPED);
                 instances.remove(key);
             } else {
@@ -298,17 +357,17 @@ public class InstanceManager {
                 return Mono.fromCallable(() -> {
                     long probeStart = System.currentTimeMillis();
                     if (!isHealthy(existing.getPort())) {
-                        log.warn("Instance {}:{} unresponsive on port={}, killing and respawning",
-                                agentId, userId, existing.getPort());
+                        log.warn("Instance {}:{} unresponsive on port={}, killing and respawning", agentId, userId,
+                            existing.getPort());
                         stopInstance(existing);
                         return doSpawn(agentId, userId);
                     }
                     long probeMs = System.currentTimeMillis() - probeStart;
                     long totalMs = System.currentTimeMillis() - requestStart;
-                    log.debug("Reusing existing instance {}:{} port={} pid={}", agentId, userId,
-                            existing.getPort(), existing.getPid());
+                    log.debug("Reusing existing instance {}:{} port={} pid={}", agentId, userId, existing.getPort(),
+                        existing.getPid());
                     log.info("[INSTANCE] resolved existing instance {}:{} port={} pid={} probeMs={} totalMs={}",
-                            agentId, userId, existing.getPort(), existing.getPid(), probeMs, totalMs);
+                        agentId, userId, existing.getPort(), existing.getPid(), probeMs, totalMs);
                     existing.touch();
                     existing.resetRestartCount();
                     return existing;
@@ -318,13 +377,12 @@ public class InstanceManager {
 
         log.info("[INSTANCE] no running instance for {}:{}, spawning new one", agentId, userId);
         return Mono.fromCallable(() -> doSpawn(agentId, userId))
-                .doOnNext(instance -> log.info("[INSTANCE] spawned new instance {}:{} port={} pid={} totalMs={}",
-                        agentId, userId, instance.getPort(), instance.getPid(),
-                        System.currentTimeMillis() - requestStart))
-                .subscribeOn(Schedulers.boundedElastic());
+            .doOnNext(instance -> log.info("[INSTANCE] spawned new instance {}:{} port={} pid={} totalMs={}", agentId,
+                userId, instance.getPort(), instance.getPid(), System.currentTimeMillis() - requestStart))
+            .subscribeOn(Schedulers.boundedElastic());
     }
 
-    private ManagedInstance doSpawn(String agentId, String userId) throws Exception {
+    private ManagedInstance doSpawn(String agentId, String userId) throws IOException, InterruptedException {
         String key = ManagedInstance.buildKey(agentId, userId);
         long spawnStart = System.currentTimeMillis();
         ReentrantLock lock = spawnLocks.computeIfAbsent(key, k -> new ReentrantLock());
@@ -335,17 +393,17 @@ public class InstanceManager {
             if (existing != null && existing.getStatus() == ManagedInstance.Status.RUNNING) {
                 existing.touch();
                 log.info("[INSTANCE] concurrent spawn reused existing instance {}:{} port={} pid={} totalMs={}",
-                        agentId, userId, existing.getPort(), existing.getPid(),
-                        System.currentTimeMillis() - spawnStart);
+                    agentId, userId, existing.getPort(), existing.getPid(), System.currentTimeMillis() - spawnStart);
                 return existing;
             }
 
             // Check instance limits
             int maxPerUser = properties.getLimits().getMaxInstancesPerUser();
             int maxGlobal = properties.getLimits().getMaxInstancesGlobal();
-            long userCount = instances.values().stream()
-                    .filter(i -> i.getUserId().equals(userId) && i.getStatus() == ManagedInstance.Status.RUNNING)
-                    .count();
+            long userCount = instances.values()
+                .stream()
+                .filter(i -> i.getUserId().equals(userId) && i.getStatus() == ManagedInstance.Status.RUNNING)
+                .count();
             if (userCount >= maxPerUser) {
                 throw new IllegalStateException("Per-user instance limit reached (" + maxPerUser + ")");
             }
@@ -359,8 +417,8 @@ public class InstanceManager {
             int port = portAllocator.allocate();
             long prepareMs = System.currentTimeMillis() - prepareStart;
 
-            log.info("Preparing to spawn goosed for {}:{} on port {}, runtimeRoot={}, goosedBin={}",
-                    agentId, userId, port, runtimeRoot, properties.getGoosedBin());
+            log.info("Preparing to spawn goosed for {}:{} on port {}, runtimeRoot={}, goosedBin={}", agentId, userId,
+                port, runtimeRoot, properties.getGoosedBin());
 
             Map<String, String> env = buildEnvironment(agentId, userId, port, runtimeRoot);
             String instanceSecret = env.get("GOOSE_SERVER__SECRET_KEY");
@@ -371,18 +429,18 @@ public class InstanceManager {
             pb.redirectErrorStream(true);
 
             long processStart = System.currentTimeMillis();
-            log.info("Spawning goosed for {}:{} on port {}, command: {} agent, TLS={}",
-                    agentId, userId, port, properties.getGoosedBin(), env.get("GOOSE_TLS"));
+            log.info("Spawning goosed for {}:{} on port {}, command: {} agent, TLS={}", agentId, userId, port,
+                properties.getGoosedBin(), env.get("GOOSE_TLS"));
             Process process = pb.start();
             long pid = ProcessUtil.getPid(process);
             long processStartMs = System.currentTimeMillis() - processStart;
-            log.info("goosed process started for {}:{} on port {} with pid={}, GOOSE_TLS env={}",
-                    agentId, userId, port, pid, env.get("GOOSE_TLS"));
+            log.info("goosed process started for {}:{} on port {} with pid={}, GOOSE_TLS env={}", agentId, userId, port,
+                pid, env.get("GOOSE_TLS"));
 
             // Drain stdout/stderr to prevent pipe buffer full → goosed write() blocks → tokio deadlock.
             // goosed's tracing subscriber writes every log to both file and stderr; if the pipe buffer
             // (~64KB) fills up, the write() syscall blocks a tokio worker thread, freezing the runtime.
-            Thread drainThread = new Thread(() -> {
+            Thread.ofPlatform().daemon(true).name("goosed-drain-" + agentId + "-" + userId).start(() -> {
                 try (var in = process.getInputStream()) {
                     byte[] buf = new byte[8192];
                     long totalBytes = 0;
@@ -390,34 +448,28 @@ public class InstanceManager {
                     while ((bytesRead = in.read(buf)) != -1) {
                         totalBytes += bytesRead;
                     }
-                    log.debug("Drain thread for {}:{} finished, total bytes drained: {}",
-                            agentId, userId, totalBytes);
+                    log.debug("Drain thread for {}:{} finished, total bytes drained: {}", agentId, userId, totalBytes);
                 } catch (java.io.IOException e) {
-                    log.debug("Drain thread for {}:{} ended with IOException: {}",
-                            agentId, userId, e.getMessage());
+                    log.debug("Drain thread for {}:{} ended with IOException: {}", agentId, userId, e.getMessage());
                 }
-            }, "goosed-drain-" + agentId + "-" + userId);
-            drainThread.setDaemon(true);
-            drainThread.start();
+            });
 
             ManagedInstance instance = new ManagedInstance(agentId, userId, port, pid, process, instanceSecret);
             instances.put(key, instance);
 
             long readyStart = System.currentTimeMillis();
-            log.debug("Starting health check for {}:{} on port {} (pid={}), URL: {}",
-                    agentId, userId, port, pid, goosedBaseUrl(port) + "/status");
+            log.debug("Starting health check for {}:{} on port {} (pid={}), URL: {}", agentId, userId, port, pid,
+                goosedBaseUrl(port) + "/status");
             waitForReady(port, process);
             long readyMs = System.currentTimeMillis() - readyStart;
             instance.setStatus(ManagedInstance.Status.RUNNING);
             log.info("Instance {}:{} ready on port {} (pid={})", agentId, userId, port, pid);
-            log.info("[INSTANCE] spawn ready {}:{} port={} pid={} prepareMs={} processStartMs={} waitReadyMs={} totalMs={}",
-                    agentId, userId, port, pid, prepareMs, processStartMs, readyMs,
-                    System.currentTimeMillis() - spawnStart);
-
+            log.info(
+                "[INSTANCE] spawn ready {}:{} port={} pid={} prepareMs={} processStartMs={} waitReadyMs={} "
+                    + "totalMs={}",
+                agentId, userId, port, pid, prepareMs, processStartMs, readyMs,
+                System.currentTimeMillis() - spawnStart);
             return instance;
-        } catch (Exception e) {
-            log.error("Failed to spawn {}:{}", agentId, userId, e);
-            throw e;
         } finally {
             lock.unlock();
         }
@@ -430,14 +482,16 @@ public class InstanceManager {
      */
     private void resetStuckRunningSchedules(Path runtimeRoot) {
         Path scheduleFile = runtimeRoot.resolve("data").resolve("schedule.json");
-        if (!Files.exists(scheduleFile)) return;
+        if (!Files.exists(scheduleFile)) {
+            return;
+        }
         try {
             String content = Files.readString(scheduleFile, StandardCharsets.UTF_8);
             if (!content.contains("\"currently_running\":true") && !content.contains("\"currently_running\": true")) {
                 return;
             }
-            List<Map<String, Object>> jobs = MAPPER.readValue(content,
-                    new TypeReference<List<Map<String, Object>>>() {});
+            List<Map<String, Object>> jobs =
+                MAPPER.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
             boolean modified = false;
             for (Map<String, Object> job : jobs) {
                 if (Boolean.TRUE.equals(job.get("currently_running"))) {
@@ -449,10 +503,10 @@ public class InstanceManager {
             }
             if (modified) {
                 Files.writeString(scheduleFile, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(jobs),
-                        StandardCharsets.UTF_8);
+                    StandardCharsets.UTF_8);
                 log.info("Reset stuck currently_running flags in {}", scheduleFile);
             }
-        } catch (Exception e) {
+        } catch (IOException | IllegalArgumentException e) {
             log.warn("Failed to reset schedule state in {}: {}", scheduleFile, e.getMessage());
         }
     }
@@ -465,13 +519,13 @@ public class InstanceManager {
         Map<String, Object> agentSecrets = agentConfigService.loadAgentSecretsYaml(agentId);
         for (var entry : agentConfig.entrySet()) {
             if (entry.getValue() instanceof String || entry.getValue() instanceof Number
-                    || entry.getValue() instanceof Boolean) {
+                || entry.getValue() instanceof Boolean) {
                 env.put(entry.getKey(), entry.getValue().toString());
             }
         }
         for (var entry : agentSecrets.entrySet()) {
             if (entry.getValue() instanceof String || entry.getValue() instanceof Number
-                    || entry.getValue() instanceof Boolean) {
+                || entry.getValue() instanceof Boolean) {
                 env.put(entry.getKey(), entry.getValue().toString());
             }
         }
@@ -492,19 +546,19 @@ public class InstanceManager {
         env.put("HOME", runtimeRoot.resolve("home").toString());
         env.put("USERPROFILE", runtimeRoot.resolve("home").toString());
         env.put("XDG_CONFIG_HOME",
-                agentConfigService.getAgentConfigDir(agentId).toAbsolutePath().normalize().toString());
+            agentConfigService.getAgentConfigDir(agentId).toAbsolutePath().normalize().toString());
         boolean gooseTlsValue = properties.isGooseTls();
         env.put("GOOSE_TLS", String.valueOf(gooseTlsValue));
-        log.info("buildEnvironment: properties.isGooseTls()={}, setting GOOSE_TLS={} for {}:{}",
-                gooseTlsValue, gooseTlsValue, agentId, userId);
+        log.info("buildEnvironment: properties.isGooseTls()={}, setting GOOSE_TLS={} for {}:{}", gooseTlsValue,
+            gooseTlsValue, agentId, userId);
 
         // Enable debug logging for goose internals, but keep rustls/hyper at info
         // to avoid tracing_log deadlock in TLS handshake (rustls debug logs go through
         // tracing_log bridge which can deadlock the tokio runtime)
         env.put("RUST_LOG", "info,goose=debug,goosed=debug,rmcp=debug");
         env.put("GOOSE_DEBUG", "1");
-        log.debug("goosed env for {}:{}: RUST_LOG={}, GOOSE_DEBUG=1, GOOSE_PORT={}, GOOSE_TLS={}",
-                agentId, userId, env.get("RUST_LOG"), port, env.get("GOOSE_TLS"));
+        log.debug("goosed env for {}:{}: RUST_LOG={}, GOOSE_DEBUG=1, GOOSE_PORT={}, GOOSE_TLS={}", agentId, userId,
+            env.get("RUST_LOG"), port, env.get("GOOSE_TLS"));
 
         // Gateway self-URL for MCP extensions that call back to the gateway
         String gatewayScheme = serverSslEnabled ? "https" : "http";
@@ -521,14 +575,14 @@ public class InstanceManager {
         return env;
     }
 
-    private void waitForReady(int port, Process process) throws Exception {
+    private void waitForReady(int port, Process process) throws IOException, InterruptedException {
         String baseUrl = goosedBaseUrl(port);
         URL url = new URL(baseUrl + "/status");
         String healthCheckUrl = url.toString();
-        log.info("[gooseTls config] waitForReady: using baseUrl={}, gooseScheme={}, health check URL: {}",
-                baseUrl, properties.gooseScheme(), healthCheckUrl);
-        log.info("Waiting for goosed on port {} to be ready, health check URL: {}, max attempts: {}",
-                port, healthCheckUrl, GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS);
+        log.info("[gooseTls config] waitForReady: using baseUrl={}, gooseScheme={}, health check URL: {}", baseUrl,
+            properties.gooseScheme(), healthCheckUrl);
+        log.info("Waiting for goosed on port {} to be ready, health check URL: {}, max attempts: {}", port,
+            healthCheckUrl, GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS);
         long interval = GatewayConstants.HEALTH_CHECK_INITIAL_INTERVAL_MS;
         for (int i = 0; i < GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS; i++) {
             if (!ProcessUtil.isAlive(process)) {
@@ -545,15 +599,15 @@ public class InstanceManager {
                         log.info("goosed ready on port {} after {} attempts", port, i + 1);
                         return;
                     } else {
-                        log.warn("Health check attempt {}/{} returned status code {} for {}",
-                                i + 1, GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS, code, healthCheckUrl);
+                        log.warn("Health check attempt {}/{} returned status code {} for {}", i + 1,
+                            GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS, code, healthCheckUrl);
                     }
                 } finally {
                     conn.disconnect();
                 }
             } catch (IOException e) {
-                log.debug("Health check attempt {}/{} failed for {}: {}",
-                        i + 1, GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS, healthCheckUrl, e.getMessage());
+                log.debug("Health check attempt {}/{} failed for {}: {}", i + 1,
+                    GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS, healthCheckUrl, e.getMessage());
             }
             Thread.sleep(interval);
             interval = Math.min(interval * 2, GatewayConstants.HEALTH_CHECK_MAX_INTERVAL_MS);
@@ -561,27 +615,27 @@ public class InstanceManager {
         if (!ProcessUtil.isAlive(process)) {
             throw processExitedException(process, port);
         }
-        log.error("goosed failed to start on port {} after {} attempts - process is alive but not responding. Health check URL: {}",
-                port, GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS, healthCheckUrl);
-        throw new RuntimeException("goosed failed to start on port " + port
-                + " (process alive but not responding after "
-                + GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS + " attempts)");
+        log.error("goosed failed to start on port {} after {} attempts - process is alive but not responding. "
+            + "Health check URL: {}", port, GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS, healthCheckUrl);
+        throw new IllegalStateException("goosed failed to start on port " + port
+            + " (process alive but not responding after " + GatewayConstants.HEALTH_CHECK_MAX_ATTEMPTS + " attempts)");
     }
 
-    private RuntimeException processExitedException(Process process, int port) {
+    private IllegalStateException processExitedException(Process process, int port) {
         int exitCode = process.exitValue();
         String output = ProcessUtil.readOutput(process, 4096);
-        log.error("goosed process exited unexpectedly on port {}, exitCode={}, output (first 4KB): {}",
-                port, exitCode, output);
-        return new RuntimeException("goosed process exited with code " + exitCode
-                + " on port " + port + ". Output: " + output);
+        log.error("goosed process exited unexpectedly on port {}, exitCode={}, output (first 4KB): {}", port, exitCode,
+            output);
+        return new IllegalStateException(
+            "goosed process exited with code " + exitCode + " on port " + port + ". Output: " + output);
     }
 
     /**
      * Gets a managed instance by agent and user identifiers.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param agentId the agentId parameter
+     * @param userId the userId parameter
+     * @return the result
      */
     public ManagedInstance getInstance(String agentId, String userId) {
         return instances.get(ManagedInstance.buildKey(agentId, userId));
@@ -590,8 +644,7 @@ public class InstanceManager {
     /**
      * Gets all managed instances regardless of status.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Collection<ManagedInstance> getAllInstances() {
         return instances.values();
@@ -600,8 +653,7 @@ public class InstanceManager {
     /**
      * Stops a managed instance gracefully and removes it from the registry.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param instance the instance parameter
      */
     public void stopInstance(ManagedInstance instance) {
         log.info("Stopping instance {}:{} (port={})", instance.getAgentId(), instance.getUserId(), instance.getPort());
@@ -613,6 +665,9 @@ public class InstanceManager {
     /**
      * Kill a hung instance asynchronously so the next getOrSpawn() will create a fresh one.
      * Called by gateway health and timeout handlers when goosed is considered unrecoverable.
+     *
+     * @param agentId the agentId parameter
+     * @param userId the userId parameter
      */
     public void forceRecycle(String agentId, String userId) {
         String key = ManagedInstance.buildKey(agentId, userId);
@@ -625,16 +680,21 @@ public class InstanceManager {
 
     /**
      * Stop all instances for a given agent across all users.
+     *
+     * @param agentId the agentId parameter
      */
     public void stopAllForAgent(String agentId) {
-        instances.values().stream()
-                .filter(inst -> inst.getAgentId().equals(agentId))
-                .toList()
-                .forEach(this::stopInstance);
+        instances.values()
+            .stream()
+            .filter(inst -> inst.getAgentId().equals(agentId))
+            .toList()
+            .forEach(this::stopInstance);
     }
 
     /**
      * Touch all instances for a user (keep them alive together).
+     *
+     * @param userId the userId parameter
      */
     public void touchAllForUser(String userId) {
         for (ManagedInstance inst : instances.values()) {
@@ -647,6 +707,10 @@ public class InstanceManager {
     /**
      * Asynchronously respawn a crashed instance. Called by InstanceWatchdog
      * when a dead process is detected during periodic health checks.
+     *
+     * @param agentId the agentId parameter
+     * @param userId the userId parameter
+     * @param restartCount the restartCount parameter
      */
     public void respawnAsync(String agentId, String userId, int restartCount) {
         Mono.fromCallable(() -> {
@@ -654,24 +718,25 @@ public class InstanceManager {
             instance.setRestartCount(restartCount);
             instance.setLastRestartTime(System.currentTimeMillis());
             return instance;
-        }).subscribeOn(Schedulers.boundedElastic())
-          .subscribe(
-              inst -> log.info("Watchdog respawned {}:{} on port {} (restart #{})",
-                      agentId, userId, inst.getPort(), restartCount),
-              err -> log.error("Watchdog failed to respawn {}:{}: {}",
-                      agentId, userId, err.getMessage())
-          );
+        })
+            .subscribeOn(Schedulers.boundedElastic())
+            .subscribe(
+                inst -> log.info("Watchdog respawned {}:{} on port {} (restart #{})", agentId, userId, inst.getPort(),
+                    restartCount),
+                err -> log.error("Watchdog failed to respawn {}:{}: {}", agentId, userId, err.getMessage()));
     }
 
+    /**
+     * Executes the stop all operation.
+     */
     @PreDestroy
     public void stopAll() {
         log.info("Stopping all instances...");
-        for (ManagedInstance inst : instances.values()) {
-            try {
-                stopInstance(inst);
-            } catch (Exception e) {
-                log.error("Error stopping {}:{}", inst.getAgentId(), inst.getUserId(), e);
-            }
+        for (ManagedInstance inst : List.copyOf(instances.values())) {
+            Mono.fromRunnable(() -> stopInstance(inst))
+                .doOnError(error -> log.error("Error stopping {}:{}", inst.getAgentId(), inst.getUserId(), error))
+                .onErrorResume(error -> Mono.empty())
+                .block();
         }
     }
 }

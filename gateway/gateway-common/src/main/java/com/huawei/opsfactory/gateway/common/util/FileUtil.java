@@ -21,6 +21,9 @@ public final class FileUtil {
 
     /**
      * Recursively delete a directory and all its contents.
+     *
+     * @param path the path parameter
+     * @throws IOException if the operation fails
      */
     public static void deleteRecursively(Path path) throws IOException {
         if (Files.isDirectory(path)) {

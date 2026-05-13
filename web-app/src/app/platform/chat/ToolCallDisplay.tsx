@@ -79,7 +79,11 @@ export default function ToolCallDisplay({
     const [showDetails, setShowDetails] = useState(false)
     const [showOutput, setShowOutput] = useState(false)
 
-    const statusClass = isPending ? 'pending' : isError ? 'error' : 'success'
+    const statusClass = (() => {
+        if (isPending) return 'pending'
+        if (isError) return 'error'
+        return 'success'
+    })()
     const displayName = formatToolName(name)
     const formattedResult = result !== undefined ? formatResult(result) : ''
     const resultLineCount = formattedResult ? formattedResult.split('\n').length : 0

@@ -153,18 +153,20 @@ export default function SkillMarketPage() {
                     />
                 )}
             >
-                {isLoading ? (
+                {isLoading && (
                     <div className="empty-state">
                         <div className="empty-state-title">{t('skillMarket.loading')}</div>
                     </div>
-                ) : filteredSkills.length === 0 ? (
+                )}
+                {!isLoading && filteredSkills.length === 0 && (
                     <div className="empty-state">
                         <div className="empty-state-title">{query.trim() ? t('common.noResults') : t('skillMarket.emptyTitle')}</div>
                         <div className="empty-state-description">
                             {query.trim() ? t('skillMarket.noMatchSkills') : t('skillMarket.emptyDescription')}
                         </div>
                     </div>
-                ) : (
+                )}
+                {!isLoading && filteredSkills.length > 0 && (
                     <CardGrid>
                         {filteredSkills.map(skill => {
                             const descriptionText = skill.description?.trim() || t('skill.noDescription')

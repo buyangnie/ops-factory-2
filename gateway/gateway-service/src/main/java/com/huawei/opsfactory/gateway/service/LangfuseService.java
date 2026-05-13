@@ -4,18 +4,24 @@
 
 package com.huawei.opsfactory.gateway.service;
 
+import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.huawei.opsfactory.gateway.config.GatewayProperties;
+
+import reactor.core.publisher.Mono;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -33,89 +39,99 @@ import java.util.TreeMap;
 @Service
 public class LangfuseService {
     private static final Logger log = LoggerFactory.getLogger(LangfuseService.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final GatewayProperties.Langfuse config;
+
     private final WebClient webClient;
 
+    /**
+     * Creates the langfuse service instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public LangfuseService(GatewayProperties properties) {
         this.config = properties.getLangfuse();
-        this.webClient = WebClient.builder()
-                .codecs(c -> c.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
-                .build();
+        this.webClient = WebClient.builder().codecs(c -> c.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)).build();
     }
 
     /**
      * Checks whether the Langfuse integration is properly configured with host, public key, and secret key.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public boolean isConfigured() {
-        return config.getHost() != null && !config.getHost().isBlank()
-                && config.getPublicKey() != null && !config.getPublicKey().isBlank()
-                && config.getSecretKey() != null && !config.getSecretKey().isBlank();
+        return config.getHost() != null && !config.getHost().isBlank() && config.getPublicKey() != null
+            && !config.getPublicKey().isBlank() && config.getSecretKey() != null && !config.getSecretKey().isBlank();
     }
 
     /**
      * Checks whether the Langfuse server is reachable via a health check endpoint.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @return the result
      */
     public Mono<Boolean> checkReachable() {
         if (!isConfigured()) {
             return Mono.just(false);
         }
         String url = config.getHost() + "/api/public/health";
-        String auth = Base64.getEncoder().encodeToString(
-                (config.getPublicKey() + ":" + config.getSecretKey()).getBytes());
+        String auth = Base64.getEncoder()
+            .encodeToString((config.getPublicKey() + ":" + config.getSecretKey()).getBytes(StandardCharsets.UTF_8));
         return webClient.get()
-                .uri(url)
-                .header("Authorization", "Basic " + auth)
-                .retrieve()
-                .toBodilessEntity()
-                .timeout(Duration.ofSeconds(5))
-                .map(response -> response.getStatusCode().is2xxSuccessful())
-                .onErrorResume(e -> {
-                    log.warn("Langfuse health check failed: {}", e.getMessage());
-                    return Mono.just(false);
-                });
+            .uri(url)
+            .header("Authorization", "Basic " + auth)
+            .retrieve()
+            .toBodilessEntity()
+            .timeout(Duration.ofSeconds(5))
+            .map(response -> response.getStatusCode().is2xxSuccessful())
+            .onErrorResume(e -> {
+                log.warn("Langfuse health check failed: {}", e.getMessage());
+                return Mono.just(false);
+            });
     }
 
     /**
      * Fetches raw traces from the Langfuse API within the given time range.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param from the from parameter
+     * @param to the to parameter
+     * @param limit the limit parameter
+     * @param errorsOnly the errorsOnly parameter
+     * @return the result
      */
     public Mono<String> getTraces(String from, String to, int limit, boolean errorsOnly) {
         if (!isConfigured()) {
             return Mono.just("[]");
         }
-        String url = config.getHost() + "/api/public/traces?fromTimestamp=" + from
-                + "&toTimestamp=" + to + "&limit=" + limit;
+        String url =
+            config.getHost() + "/api/public/traces?fromTimestamp=" + from + "&toTimestamp=" + to + "&limit=" + limit;
         return doGet(url);
     }
 
     /**
      * Fetches raw observations from the Langfuse API within the given time range.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param from the from parameter
+     * @param to the to parameter
+     * @return the result
      */
     public Mono<String> getObservations(String from, String to) {
         if (!isConfigured()) {
             return Mono.just("[]");
         }
-        String url = config.getHost() + "/api/public/observations?fromTimestamp=" + from
-                + "&toTimestamp=" + to;
+        String url = config.getHost() + "/api/public/observations?fromTimestamp=" + from + "&toTimestamp=" + to;
         return doGet(url);
     }
 
     /**
      * Compute an overview by fetching traces and observations, then aggregating
      * into totals, averages, percentiles, and daily breakdowns.
+     *
+     * @param from the from parameter
+     * @param to the to parameter
+     * @return the result
      */
     public Mono<Map<String, Object>> getOverview(String from, String to) {
         if (!isConfigured()) {
@@ -128,14 +144,14 @@ public class LangfuseService {
         return Mono.zip(tracesMono, obsMono).map(tuple -> {
             try {
                 return buildOverview(tuple.getT1(), tuple.getT2());
-            } catch (Exception e) {
+            } catch (JsonProcessingException e) {
                 log.error("Failed to build overview: {}", e.getMessage());
                 return emptyOverview();
             }
         });
     }
 
-    private Map<String, Object> buildOverview(String tracesJson, String obsJson) throws Exception {
+    private Map<String, Object> buildOverview(String tracesJson, String obsJson) throws JsonProcessingException {
         JsonNode tracesRoot = MAPPER.readTree(tracesJson);
         JsonNode obsRoot = MAPPER.readTree(obsJson);
 
@@ -143,8 +159,10 @@ public class LangfuseService {
         JsonNode traces = tracesRoot.has("data") ? tracesRoot.get("data") : tracesRoot;
         JsonNode obs = obsRoot.has("data") ? obsRoot.get("data") : obsRoot;
 
-        if (!traces.isArray()) traces = MAPPER.createArrayNode();
-        if (!obs.isArray()) obs = MAPPER.createArrayNode();
+        if (!traces.isArray())
+            traces = MAPPER.createArrayNode();
+        if (!obs.isArray())
+            obs = MAPPER.createArrayNode();
 
         int totalTraces = traces.size();
         int totalObservations = obs.size();
@@ -152,7 +170,8 @@ public class LangfuseService {
         double sumLatency = 0;
         int errorCount = 0;
         List<Double> latencies = new ArrayList<>();
-        TreeMap<String, int[]> dailyMap = new TreeMap<>(); // date -> [traces, observations]
+        // date -> [traces, observations]
+        TreeMap<String, int[]> dailyMap = new TreeMap<>();
 
         for (JsonNode t : traces) {
             double latency = t.path("latency").asDouble(0);
@@ -171,8 +190,8 @@ public class LangfuseService {
             if (!ts.isEmpty()) {
                 try {
                     String date = OffsetDateTime.parse(ts).toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE);
-                    dailyMap.computeIfAbsent(date, k -> new int[]{0, 0})[0]++;
-                } catch (Exception ignored) {
+                    dailyMap.computeIfAbsent(date, k -> new int[] {0, 0})[0]++;
+                } catch (DateTimeParseException e) {
                     // skip unparseable timestamps
                 }
             }
@@ -184,8 +203,9 @@ public class LangfuseService {
             if (!ts.isEmpty()) {
                 try {
                     String date = OffsetDateTime.parse(ts).toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE);
-                    dailyMap.computeIfAbsent(date, k -> new int[]{0, 0})[1]++;
-                } catch (Exception ignored) {
+                    dailyMap.computeIfAbsent(date, k -> new int[] {0, 0})[1]++;
+                } catch (DateTimeParseException e) {
+                    // skip unparseable timestamps
                 }
             }
         }
@@ -201,7 +221,8 @@ public class LangfuseService {
             day.put("date", entry.getKey());
             day.put("traces", entry.getValue()[0]);
             day.put("observations", entry.getValue()[1]);
-            day.put("cost", 0); // per-day cost not easily available from trace-level data
+            // per-day cost not easily available from trace-level data
+            day.put("cost", 0);
             daily.add(day);
         }
 
@@ -218,6 +239,12 @@ public class LangfuseService {
 
     /**
      * Fetch traces and transform into frontend TraceRow[] format.
+     *
+     * @param from the from parameter
+     * @param to the to parameter
+     * @param limit the limit parameter
+     * @param errorsOnly the errorsOnly parameter
+     * @return the result
      */
     public Mono<List<Map<String, Object>>> getTracesFormatted(String from, String to, int limit, boolean errorsOnly) {
         if (!isConfigured()) {
@@ -226,17 +253,19 @@ public class LangfuseService {
         return getTraces(from, to, limit, errorsOnly).map(raw -> {
             try {
                 return parseTraces(raw);
-            } catch (Exception e) {
+            } catch (JsonProcessingException e) {
                 log.error("Failed to parse traces: {}", e.getMessage());
-                return List.<Map<String, Object>>of();
+                return List.<Map<String, Object>> of();
             }
         });
     }
 
-    private List<Map<String, Object>> parseTraces(String json) throws Exception {
+    private List<Map<String, Object>> parseTraces(String json) throws JsonProcessingException {
         JsonNode root = MAPPER.readTree(json);
         JsonNode data = root.has("data") ? root.get("data") : root;
-        if (!data.isArray()) return List.of();
+        if (!data.isArray()) {
+            return List.of();
+        }
 
         List<Map<String, Object>> result = new ArrayList<>();
         for (JsonNode t : data) {
@@ -248,8 +277,7 @@ public class LangfuseService {
             // input: try to get as string, or stringify the JSON
             JsonNode inputNode = t.path("input");
             String input = inputNode.isTextual() ? inputNode.asText()
-                    : (inputNode.isMissingNode() || inputNode.isNull()) ? ""
-                    : inputNode.toString();
+                : (inputNode.isMissingNode() || inputNode.isNull()) ? "" : inputNode.toString();
             row.put("input", input);
 
             row.put("latency", t.path("latency").asDouble(0));
@@ -265,8 +293,7 @@ public class LangfuseService {
             if (hasError) {
                 // Try to extract error message from output or status message
                 JsonNode output = t.path("output");
-                String errorMsg = output.isTextual() ? output.asText()
-                        : t.path("statusMessage").asText("");
+                String errorMsg = output.isTextual() ? output.asText() : t.path("statusMessage").asText("");
                 if (!errorMsg.isEmpty()) {
                     row.put("errorMessage", errorMsg);
                 }
@@ -278,6 +305,10 @@ public class LangfuseService {
 
     /**
      * Fetch observations and transform into frontend { observations: ObservationGroup[] } format.
+     *
+     * @param from the from parameter
+     * @param to the to parameter
+     * @return the result
      */
     public Mono<Map<String, Object>> getObservationsFormatted(String from, String to) {
         if (!isConfigured()) {
@@ -286,17 +317,19 @@ public class LangfuseService {
         return getObservations(from, to).map(raw -> {
             try {
                 return parseObservations(raw);
-            } catch (Exception e) {
+            } catch (JsonProcessingException e) {
                 log.error("Failed to parse observations: {}", e.getMessage());
-                return Map.<String, Object>of("observations", List.of());
+                return Map.<String, Object> of("observations", List.of());
             }
         });
     }
 
-    private Map<String, Object> parseObservations(String json) throws Exception {
+    private Map<String, Object> parseObservations(String json) throws JsonProcessingException {
         JsonNode root = MAPPER.readTree(json);
         JsonNode data = root.has("data") ? root.get("data") : root;
-        if (!data.isArray()) return Map.of("observations", List.of());
+        if (!data.isArray()) {
+            return Map.of("observations", List.of());
+        }
 
         // Group by observation name
         Map<String, List<JsonNode>> groups = new LinkedHashMap<>();
@@ -318,8 +351,8 @@ public class LangfuseService {
                 double lat = o.path("latency").asDouble(0);
                 latencies.add(lat);
                 sumLatency += lat;
-                totalTokens += o.path("totalTokens").asLong(
-                        o.path("promptTokens").asLong(0) + o.path("completionTokens").asLong(0));
+                totalTokens += o.path("totalTokens")
+                    .asLong(o.path("promptTokens").asLong(0) + o.path("completionTokens").asLong(0));
                 totalCost += o.path("totalCost").asDouble(0);
             }
 
@@ -340,7 +373,9 @@ public class LangfuseService {
     }
 
     private static double computeP95(List<Double> latencies) {
-        if (latencies.isEmpty()) return 0;
+        if (latencies.isEmpty()) {
+            return 0;
+        }
         Collections.sort(latencies);
         int idx = (int) Math.ceil(latencies.size() * 0.95) - 1;
         return latencies.get(Math.max(0, idx));
@@ -359,17 +394,17 @@ public class LangfuseService {
     }
 
     private Mono<String> doGet(String url) {
-        String auth = Base64.getEncoder().encodeToString(
-                (config.getPublicKey() + ":" + config.getSecretKey()).getBytes());
+        String auth = Base64.getEncoder()
+            .encodeToString((config.getPublicKey() + ":" + config.getSecretKey()).getBytes(StandardCharsets.UTF_8));
         return webClient.get()
-                .uri(url)
-                .header("Authorization", "Basic " + auth)
-                .retrieve()
-                .bodyToMono(String.class)
-                .timeout(Duration.ofSeconds(15))
-                .onErrorResume(e -> {
-                    log.error("Langfuse API error: {}", e.getMessage());
-                    return Mono.just("[]");
-                });
+            .uri(url)
+            .header("Authorization", "Basic " + auth)
+            .retrieve()
+            .bodyToMono(String.class)
+            .timeout(Duration.ofSeconds(15))
+            .onErrorResume(e -> {
+                log.error("Langfuse API error: {}", e.getMessage());
+                return Mono.just("[]");
+            });
     }
 }

@@ -4,10 +4,12 @@
 
 package com.huawei.opsfactory.gateway.service.channel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelDetail;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelReplyResult;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelSelfTestResult;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,7 +26,8 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Scheduled service that polls the WhatsApp inbox directory, deduplicates inbound messages, and dispatches them to agent sessions.
+ * Scheduled service that polls the WhatsApp inbox directory, deduplicates inbound messages, and dispatches them to
+ * agent sessions.
  *
  * @author x00000000
  * @since 2026-05-09
@@ -32,19 +35,28 @@ import java.util.UUID;
 @Service
 public class WhatsAppMessagePumpService {
     private static final Logger log = LoggerFactory.getLogger(WhatsAppMessagePumpService.class);
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final ChannelConfigService channelConfigService;
+
     private final ChannelRuntimeStorageService runtimeStorageService;
+
     private final ChannelDedupService channelDedupService;
+
     private final SessionBridgeService sessionBridgeService;
+
     private final WhatsAppWebLoginService whatsAppWebLoginService;
 
+    /**
+     * Creates the whats app message pump service instance.
+     *
+     * @author x00000000
+     * @since 2026-05-09
+     */
     public WhatsAppMessagePumpService(ChannelConfigService channelConfigService,
-                                      ChannelRuntimeStorageService runtimeStorageService,
-                                      ChannelDedupService channelDedupService,
-                                      SessionBridgeService sessionBridgeService,
-                                      WhatsAppWebLoginService whatsAppWebLoginService) {
+        ChannelRuntimeStorageService runtimeStorageService, ChannelDedupService channelDedupService,
+        SessionBridgeService sessionBridgeService, WhatsAppWebLoginService whatsAppWebLoginService) {
         this.channelConfigService = channelConfigService;
         this.runtimeStorageService = runtimeStorageService;
         this.channelDedupService = channelDedupService;
@@ -54,9 +66,6 @@ public class WhatsAppMessagePumpService {
 
     /**
      * Periodically polls the WhatsApp inbox directory for new messages and processes them.
-     *
-     * @author x00000000
-     * @since 2026-05-09
      */
     @Scheduled(fixedDelay = 2000)
     public void pumpInbox() {
@@ -76,8 +85,8 @@ public class WhatsAppMessagePumpService {
 
         try (var stream = Files.list(inboxDir)) {
             stream.filter(path -> path.getFileName().toString().endsWith(".json"))
-                    .sorted()
-                    .forEach(path -> processInboundFile(detail, path));
+                .sorted()
+                .forEach(path -> processInboundFile(detail, path));
         } catch (IOException e) {
             log.warn("Failed to scan WhatsApp inbox for {}: {}", detail.id(), e.getMessage());
         }
@@ -86,8 +95,9 @@ public class WhatsAppMessagePumpService {
     /**
      * Runs a self-test on a WhatsApp channel by sending a text to the channel's own phone number.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @param text the text parameter
+     * @return the result
      */
     public ChannelSelfTestResult runSelfTest(String channelId, String text) {
         return runSelfTest(channelId, "admin", text);
@@ -96,8 +106,10 @@ public class WhatsAppMessagePumpService {
     /**
      * Runs a self-test on a WhatsApp channel by sending a text to the channel's own phone and queuing the reply.
      *
-     * @author x00000000
-     * @since 2026-05-09
+     * @param channelId the channelId parameter
+     * @param ownerUserId the ownerUserId parameter
+     * @param text the text parameter
+     * @return the result
      */
     public ChannelSelfTestResult runSelfTest(String channelId, String ownerUserId, String text) {
         ChannelDetail channel = channelConfigService.getChannel(channelId, ownerUserId);
@@ -118,16 +130,10 @@ public class WhatsAppMessagePumpService {
             throw new IllegalStateException("WhatsApp self phone is unavailable. Connect the channel first.");
         }
 
-        ChannelReplyResult reply = sessionBridgeService.sendConversationText(
-                        channel.id(),
-                        ownerUserId,
-                        "default",
-                        selfPhone,
-                        selfPhone,
-                        null,
-                        "direct",
-                        text.trim()
-                )
+        ChannelReplyResult reply =
+            sessionBridgeService
+                .sendConversationText(channel.id(), ownerUserId, "default", selfPhone, selfPhone, null, "direct",
+                    text.trim())
                 .block(Duration.ofMinutes(5));
 
         if (reply == null) {
@@ -137,14 +143,9 @@ public class WhatsAppMessagePumpService {
             writeOutboxCommand(channel, selfPhone, reply.replyText());
         }
         channelConfigService.recordEvent(channel.id(), ownerUserId, "info", "whatsapp.self_test",
-                "Queued self-chat test reply for " + selfPhone);
-        return new ChannelSelfTestResult(
-                channel.id(),
-                selfPhone,
-                reply.agentId(),
-                reply.sessionId(),
-                reply.replyText()
-        );
+            "Queued self-chat test reply for " + selfPhone);
+        return new ChannelSelfTestResult(channel.id(), selfPhone, reply.agentId(), reply.sessionId(),
+            reply.replyText());
     }
 
     @SuppressWarnings("unchecked")
@@ -152,9 +153,9 @@ public class WhatsAppMessagePumpService {
         Map<String, Object> payload;
         try {
             payload = MAPPER.readValue(Files.readString(file, StandardCharsets.UTF_8), Map.class);
-        } catch (Exception e) {
+        } catch (IOException e) {
             channelConfigService.recordEvent(channel.id(), channel.ownerUserId(), "warning", "whatsapp.inbox_invalid",
-                    "Failed to parse inbound WhatsApp file " + file.getFileName());
+                "Failed to parse inbound WhatsApp file " + file.getFileName());
             moveToProcessed(channel, file, "invalid");
             return;
         }
@@ -165,7 +166,7 @@ public class WhatsAppMessagePumpService {
         String text = asString(payload.get("text"));
         if (messageId == null || peerId == null || conversationId == null || text == null || text.isBlank()) {
             channelConfigService.recordEvent(channel.id(), channel.ownerUserId(), "warning", "whatsapp.inbox_invalid",
-                    "Inbound WhatsApp file missing required fields");
+                "Inbound WhatsApp file missing required fields");
             moveToProcessed(channel, file, "invalid");
             return;
         }
@@ -176,25 +177,18 @@ public class WhatsAppMessagePumpService {
         }
 
         try {
-            ChannelReplyResult reply = sessionBridgeService.sendConversationText(
-                            channel.id(),
-                            channel.ownerUserId(),
-                            "default",
-                            peerId,
-                            conversationId,
-                            null,
-                            "direct",
-                            text
-                    )
-                    .block(Duration.ofMinutes(5));
+            ChannelReplyResult reply = sessionBridgeService
+                .sendConversationText(channel.id(), channel.ownerUserId(), "default", peerId, conversationId, null,
+                    "direct", text)
+                .block(Duration.ofMinutes(5));
 
             if (reply != null && reply.replyText() != null && !reply.replyText().isBlank()) {
                 writeOutboxCommand(channel, peerId, reply.replyText());
             }
             moveToProcessed(channel, file, "processed");
-        } catch (Exception e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             channelConfigService.recordEvent(channel.id(), channel.ownerUserId(), "warning", "whatsapp.inbox_failed",
-                    "Failed to process inbound WhatsApp message: " + e.getMessage());
+                "Failed to process inbound WhatsApp message: " + e.getMessage());
             moveToProcessed(channel, file, "error");
         }
     }
@@ -209,9 +203,10 @@ public class WhatsAppMessagePumpService {
         Path file = pendingDir.resolve(payload.get("id") + ".json");
         try {
             Files.createDirectories(pendingDir);
-            Files.writeString(file, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(payload), StandardCharsets.UTF_8);
+            Files.writeString(file, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(payload),
+                StandardCharsets.UTF_8);
             channelConfigService.recordEvent(channel.id(), channel.ownerUserId(), "info", "whatsapp.outbox_enqueued",
-                    "Queued WhatsApp reply for " + peerId);
+                "Queued WhatsApp reply for " + peerId);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write WhatsApp outbox command", e);
         }
@@ -221,11 +216,12 @@ public class WhatsAppMessagePumpService {
         Path processedDir = processedInboxDir(channel);
         try {
             Files.createDirectories(processedDir);
-            Files.move(file, processedDir.resolve(file.getFileName().toString().replace(".json", "-" + suffix + ".json")));
+            Files.move(file,
+                processedDir.resolve(file.getFileName().toString().replace(".json", "-" + suffix + ".json")));
         } catch (IOException e) {
             try {
                 Files.deleteIfExists(file);
-            } catch (IOException ignored) {
+            } catch (IOException deleteError) {
                 // ignore
             }
         }

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.gateway.controller;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
@@ -18,6 +22,12 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test coverage for Session Trace Controller.
+ *
+ * @author x00000000
+ * @since 2026-05-09
+ */
 @RunWith(SpringRunner.class)
 @WebFluxTest(SessionTraceController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
@@ -31,6 +41,9 @@ public class SessionTraceControllerTest {
     @MockBean
     private PrewarmService prewarmService;
 
+    /**
+     * Tests start trace resolves path variables.
+     */
     @Test
     public void testStartTrace_resolvesPathVariables() {
         when(traceService.startTrace("admin", "qa-agent", "20260429_2"))
@@ -58,6 +71,9 @@ public class SessionTraceControllerTest {
         verify(traceService).startTrace("admin", "qa-agent", "20260429_2");
     }
 
+    /**
+     * Tests start trace non admin forbidden.
+     */
     @Test
     public void testStartTrace_nonAdminForbidden() {
         webTestClient.post().uri("/gateway/agents/qa-agent/sessions/20260429_2/trace")
