@@ -2096,6 +2096,7 @@
       "importSuccess": "Whitelist imported successfully",
       "deleteConfirm": "Delete command \"{{pattern}}\"?",
       "patternRequired": "Command pattern is required",
+      "patternInvalidChars": "Command pattern can only contain ASCII characters (no Chinese or other non-ASCII characters)",
       "noCommands": "No Commands",
       "noCommandsHint": "Add commands to the whitelist",
       "exportJson": "Export JSON",

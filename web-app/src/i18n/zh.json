@@ -2096,6 +2096,7 @@
       "importSuccess": "白名单导入成功",
       "deleteConfirm": "确定要删除命令「{{pattern}}」吗？",
       "patternRequired": "命令为必填项",
+      "patternInvalidChars": "命令只能包含ASCII字符（不支持中文或其他非ASCII字符）",
       "noCommands": "暂无白名单命令",
       "noCommandsHint": "添加允许执行的命令到白名单",
       "exportJson": "导出JSON",

@@ -68,10 +68,21 @@ function WhitelistFormModal({
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    const validatePattern = useCallback((value: string): boolean => {
+        const trimmed = value.trim()
+        if (!trimmed) return false
+        return /^[\x00-\x7F]*$/.test(trimmed)
+    }, [])
+
     const handleSave = useCallback(async () => {
         setError(null)
         if (!pattern.trim()) {
             setError(t('remoteDiagnosis.whitelist.patternRequired'))
+            return
+        }
+
+        if (!validatePattern(pattern)) {
+            setError(t('remoteDiagnosis.whitelist.patternInvalidChars'))
             return
         }
 
@@ -87,7 +98,7 @@ function WhitelistFormModal({
         } finally {
             setSaving(false)
         }
-    }, [pattern, description, enabled, onSave, t])
+    }, [pattern, description, enabled, onSave, t, validatePattern])
 
     return (
         <div className="modal-overlay">
