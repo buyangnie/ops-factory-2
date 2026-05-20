@@ -143,6 +143,9 @@ export default function OnlyOfficePreview({
                     <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
                 <p>{t('onlyoffice.loadFailed')}</p>
+                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+                    {t('onlyoffice.loadFailedHint')}
+                </p>
                 <a
                     href={downloadUrl}
                     className="btn btn-secondary"

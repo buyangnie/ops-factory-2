@@ -1577,7 +1577,8 @@
     }
   },
   "onlyoffice": {
-    "loadFailed": "文档格式不支持展示",
+    "loadFailed": "文档预览服务不可用",
+    "loadFailedHint": "请检查文档预览服务是否正常运行",
     "downloadInstead": "下载文件查看"
   },
   "agentConfigure": {

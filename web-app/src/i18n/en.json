@@ -1576,7 +1576,8 @@
     }
   },
   "onlyoffice": {
-    "loadFailed": "Unsupported document format",
+    "loadFailed": "Document preview service unavailable",
+    "loadFailedHint": "Please check if the document preview service is running properly",
     "downloadInstead": "Download file to view"
   },
   "agentConfigure": {
