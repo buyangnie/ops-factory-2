@@ -1822,7 +1822,7 @@ function GenericTabPanel({
     const localizedTab = useMemo(() => localizeTab(tab, _t), [tab, _t])
     const maxValue = (items: ChartDatum[]) => Math.max(...items.map(item => item.value), 1)
 
-    const renderLineChart = (chart: ChartSection, options?: { hideLegend?: boolean }) => {
+    const renderLineChart = (chart: ChartSection, options?: { hideLegend?: boolean; percentage?: boolean; hoursMode?: boolean }) => {
         const colors = chart.config?.colors || ['#5b8db8', '#10b981']
         const seriesNames = chart.config?.series || [_t('businessIntelligence.incidents.charts.volumeSeries')]
 
@@ -1831,7 +1831,10 @@ function GenericTabPanel({
             const parts = item.label.split('|')
             return {
                 period: parts[0] || item.label,
-                values: parts.slice(1).map(v => parseFloat(v) || 0)
+                values: parts.slice(1).map(v => {
+                    const raw = parseFloat(v) || 0
+                    return options?.hoursMode ? raw / 60 : raw
+                })
             }
         })
 
@@ -1883,7 +1886,7 @@ function GenericTabPanel({
                                 fontSize="12"
                                 textAnchor="end"
                             >
-                                {label.value}
+                                {options?.percentage ? `${label.value}%` : label.value}
                             </text>
                         </g>
                     ))}
@@ -2317,7 +2320,7 @@ function GenericTabPanel({
         )
     }
 
-    const renderComboChart = (chart: ChartSection, options?: { hideLegend?: boolean }) => {
+    const renderComboChart = (chart: ChartSection, options?: { hideLegend?: boolean; leftPercentage?: boolean; rightPercentage?: boolean }) => {
         const colors = chart.config?.colors || ['#5b8db8', '#10b981']
         const seriesNames = chart.config?.series || [
             _t('businessIntelligence.incidents.charts.volumeSeries'),
@@ -2345,7 +2348,7 @@ function GenericTabPanel({
         // 3. Percentage scale: series name contains "率" or values clearly %
         const secondSeries = seriesNames.length > 1 ? seriesNames[1] : ''
         const isScoreScale = maxLineValue <= 5 && maxLineValue > 0
-        const isPercentageScale = !isScoreScale && (secondSeries.includes('率') || secondSeries.includes('%'))
+        const isPercentageScale = !isScoreScale && (options?.rightPercentage || secondSeries.includes('率') || secondSeries.includes('%'))
         const isCountScale = !isScoreScale && !isPercentageScale
         const maxRate = isScoreScale ? 5 : isCountScale ? Math.ceil(maxLineValue / 5) * 5 || 5 : 100
 
@@ -2405,7 +2408,7 @@ function GenericTabPanel({
                         />
                     ))}
 
-                    {/* Left Y-axis labels (volume) */}
+                    {/* Left Y-axis labels (volume or percentage) */}
                     {barYAxisLabels.map((label, idx) => (
                         <text
                             key={idx}
@@ -2415,7 +2418,7 @@ function GenericTabPanel({
                             fontSize="12"
                             textAnchor="end"
                         >
-                            {label.value}
+                            {options?.leftPercentage ? `${label.value}%` : label.value}
                         </text>
                     ))}
 
@@ -2897,7 +2900,24 @@ function GenericTabPanel({
 
         return <IncidentBubbleChart key={chart.id} chart={chart} colors={seriesColors} t={_t} />
     }
+    const PERCENTAGE_CHARTS = new Set(['sla-trend', 'req-sla-trend'])
+    // Combo charts where LEFT Y-axis (bar) shows percentage
+    const PERCENTAGE_LEFT_AXIS_COMBOS = new Set(['req-sla-trend'])
+    // Combo charts where RIGHT Y-axis (line) shows percentage (auto-detected by series name in zh, but not en)
+    const PERCENTAGE_RIGHT_AXIS_COMBOS = new Set(['request-sla-time', 'change-success-trend', 'incident-volume-trend'])
+    const HOURS_CHARTS = new Set(['incident-mttr-trend'])
+
     const renderChartContent = (chart: ChartSection, options?: { hideLegend?: boolean }) => {
+        const lineOptions = {
+            ...options,
+            percentage: PERCENTAGE_CHARTS.has(chart.id),
+            hoursMode: HOURS_CHARTS.has(chart.id),
+        }
+        const comboOptions = {
+            ...options,
+            leftPercentage: PERCENTAGE_LEFT_AXIS_COMBOS.has(chart.id),
+            rightPercentage: PERCENTAGE_RIGHT_AXIS_COMBOS.has(chart.id),
+        }
         return (
             <>
                 {chart.type === 'pie' && (
@@ -2908,8 +2928,8 @@ function GenericTabPanel({
                         otherLabel={_t('common.other')}
                     />
                 )}
-                {chart.type === 'line' && renderLineChart(chart, options)}
-                {chart.type === 'combo' && renderComboChart(chart, options)}
+                {chart.type === 'line' && renderLineChart(chart, lineOptions)}
+                {chart.type === 'combo' && renderComboChart(chart, comboOptions)}
                 {chart.type === 'grouped-bar' && renderGroupedBarChart(chart, options)}
                 {chart.type === 'stacked-bar' && renderStackedBarChart(chart, options)}
                 {chart.type === 'column' && renderColumnChart(chart)}

@@ -220,10 +220,10 @@
       "charts": {
         "volumeTrend": "Incident Volume Trend",
         "volumeSeries": "Incident Volume",
-        "slaSeries": "SLA Compliance (%)",
+        "slaSeries": "SLA Compliance",
         "mttrTrend": "Resolution Duration Trend",
-        "mttrSeries": "Average MTTR",
-        "p1p2MttrSeries": "P1/P2 MTTR",
+        "mttrSeries": "Average MTTR (h)",
+        "p1p2MttrSeries": "P1/P2 MTTR (h)",
         "priorityDistribution": "Priority Distribution",
         "typeDistribution": "Incident Type Distribution",
         "changeDensity": "Change Density",

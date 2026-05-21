@@ -67,11 +67,17 @@ public final class MetricsModels {
 
     // ── Requests ──
 
+    public record SlaGroupBreakdown(String label, long total, double responseRate,
+                                     double resolutionRate, double overallRate, long breached) {}
+
     public record RequestMetrics(
         long totalCount, long fulfilledCount,
         double slaRate, double avgCsat, double avgFulfillmentHours,
         List<DistributionItem> typeDistribution,
-        List<DistributionItem> deptDistribution
+        List<DistributionItem> deptDistribution,
+        List<SlaGroupBreakdown> slaByCatalog,
+        List<SlaGroupBreakdown> slaByPriority,
+        List<SlaGroupBreakdown> slaByDepartment
     ) {}
 
     // ── Problems ──

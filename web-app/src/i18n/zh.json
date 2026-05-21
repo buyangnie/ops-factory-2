@@ -220,10 +220,10 @@
       "charts": {
         "volumeTrend": "事件单量趋势",
         "volumeSeries": "事件单量",
-        "slaSeries": "SLA达成率(%)",
+        "slaSeries": "SLA达成率",
         "mttrTrend": "处理时长趋势",
-        "mttrSeries": "平均MTTR",
-        "p1p2MttrSeries": "P1/P2 MTTR",
+        "mttrSeries": "平均MTTR(h)",
+        "p1p2MttrSeries": "P1/P2 MTTR(h)",
         "priorityDistribution": "优先级分布",
         "typeDistribution": "事件类型分布",
         "changeDensity": "变更密度",

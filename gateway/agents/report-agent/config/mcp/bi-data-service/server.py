@@ -421,7 +421,7 @@ def _handle_analyze_request_sla_rate(args: Dict[str, Any], config: RuntimeConfig
 
     params = _build_date_params(args)
 
-    # 1. Overall from /metrics/requests
+    # 1. Overall + grouped SLA data from /metrics/requests
     request_data = _bi_request("GET", "/metrics/requests", config, params=params or None)
     result: Dict[str, Any] = {
         "total": request_data.get("totalCount", 0),
@@ -430,22 +430,17 @@ def _handle_analyze_request_sla_rate(args: Dict[str, Any], config: RuntimeConfig
         "avg_fulfillment_hours": request_data.get("avgFulfillmentHours", 0),
     }
 
-    # 2. by_catalog distribution
+    # 2. Grouped SLA breakdowns (response/resolution/overall rates per group)
     if by_catalog:
-        catalog_body = {"aggregate": {"metric": "distribution", "field": "catalog_item", "groupBy": "catalog_item"}}
-        result["by_catalog"] = _bi_request("POST", "/data/requests/query", config, body=catalog_body)
+        result["by_catalog"] = request_data.get("slaByCatalog", [])
 
-    # 3. by_priority distribution
     if by_priority:
-        prio_body = {"aggregate": {"metric": "distribution", "field": "priority", "groupBy": "priority"}}
-        result["by_priority"] = _bi_request("POST", "/data/requests/query", config, body=prio_body)
+        result["by_priority"] = request_data.get("slaByPriority", [])
 
-    # 4. by_department distribution
     if by_department:
-        dept_body = {"aggregate": {"metric": "distribution", "field": "requester_dept", "groupBy": "requester_dept"}}
-        result["by_department"] = _bi_request("POST", "/data/requests/query", config, body=dept_body)
+        result["by_department"] = request_data.get("slaByDepartment", [])
 
-    # 5. by_time trend (sla_rate only — response_sla_rate/resolution_sla_rate not supported for requests domain)
+    # 3. by_time trend
     if by_time:
         sla_trend = _get_trends("requests", "sla_rate", interval, config, args)
         sla_trend["name"] = "sla_rate"
@@ -879,16 +874,17 @@ TOOLS = [
     {
         "name": "analyze_request_sla_rate",
         "description": (
-            "Analyze service request SLA compliance rate. Returns overall SLA rate, avg CSAT, avg fulfillment hours. "
-            "Default includes by_catalog distribution. Optional: by_priority, by_department, by_time trend (SLA rate). "
+            "Analyze service request SLA compliance rate. Returns overall SLA rate (response AND resolution dual-check), "
+            "avg CSAT, avg fulfillment hours. Default includes by_catalog SLA breakdown (response/resolution/overall rates per group). "
+            "Optional: by_priority SLA breakdown, by_department SLA breakdown, by_time trend. "
             "For Incident SLA, use analyze_sla_rate instead."
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
-                "by_catalog": {"type": "boolean", "description": "Include distribution by service catalog", "default": True},
-                "by_priority": {"type": "boolean", "description": "Include distribution by priority"},
-                "by_department": {"type": "boolean", "description": "Include distribution by requester department"},
+                "by_catalog": {"type": "boolean", "description": "Include SLA breakdown by service catalog", "default": True},
+                "by_priority": {"type": "boolean", "description": "Include SLA breakdown by priority"},
+                "by_department": {"type": "boolean", "description": "Include SLA breakdown by requester department"},
                 "by_time": {"type": "boolean", "description": "Include time-series SLA rate trend"},
                 "interval": {"type": "string", "description": "Time interval: day, week, or month", "default": "week",
                              "enum": ["day", "week", "month"]},

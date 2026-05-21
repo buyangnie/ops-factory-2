@@ -469,24 +469,9 @@ public class BusinessIntelligenceMetricsService {
             .filter(r -> "Fulfilled".equalsIgnoreCase(clean(r.get(BiColumns.CLOSE_CODE))))
             .count();
 
-        // Compute SLA rate from resolution_time_minutes vs per-priority threshold
-        Map<String, Double> resolutionTargets = buildCriteriaMap(
-            rawData.requestSlaCriteria().isEmpty() ? rawData.incidentSlaCriteria() : rawData.requestSlaCriteria(),
-            List.of("resolution_sla_min"));
-        long slaMetCount = 0;
-        long slaTotal = 0;
-        for (Map<String, String> r : requests) {
-            String rt = clean(r.get(BiColumns.REQUEST_RESOLUTION_TIME_M));
-            if (rt.isEmpty()) continue;
-            slaTotal++;
-            double minutes = parseDouble(rt);
-            String priority = clean(r.get(BiColumns.PRIORITY));
-            Double target = resolutionTargets.get(priority);
-            if (target != null && minutes <= target) {
-                slaMetCount++;
-            }
-        }
-        double slaRate = percentageValue(slaMetCount, slaTotal > 0 ? slaTotal : totalCount);
+        List<RequestSlaRecord> slaRecords = buildRequestSlaRecords(rawData);
+        long slaMetCount = slaRecords.stream().filter(RequestSlaRecord::overallMet).count();
+        double slaRate = percentageValue(slaMetCount, slaRecords.size() > 0 ? slaRecords.size() : totalCount);
 
         double avgCsat = average(requests, BiColumns.SATISFACTION_SCORE);
         double avgFulfillmentHours = average(requests, BiColumns.REQUEST_RESOLUTION_TIME_M) / 60.0;
@@ -494,12 +479,17 @@ public class BusinessIntelligenceMetricsService {
         List<DistributionItem> typeDistribution = toDistributionItems(topCounts(requests, BiColumns.REQUEST_TYPE, 6), totalCount);
         List<DistributionItem> deptDistribution = toDistributionItems(topCounts(requests, BiColumns.REQUESTER_DEPT, 8), totalCount);
 
+        List<MetricsModels.SlaGroupBreakdown> slaByCatalog = buildSlaGroupBreakdowns(slaRecords, RequestSlaRecord::catalogItem);
+        List<MetricsModels.SlaGroupBreakdown> slaByPriority = buildSlaGroupBreakdowns(slaRecords, RequestSlaRecord::priority);
+        List<MetricsModels.SlaGroupBreakdown> slaByDepartment = buildSlaGroupBreakdowns(slaRecords, RequestSlaRecord::requesterDept);
+
         log.debug("Computed request metrics totalCount={} fulfilledCount={} slaRate={}", totalCount, fulfilledCount, slaRate);
 
         return new RequestMetrics(
             totalCount, fulfilledCount,
             slaRate, avgCsat, avgFulfillmentHours,
-            typeDistribution, deptDistribution
+            typeDistribution, deptDistribution,
+            slaByCatalog, slaByPriority, slaByDepartment
         );
     }
 
@@ -1562,6 +1552,88 @@ public class BusinessIntelligenceMetricsService {
             ));
     }
 
+    // ── Request SLA records ────────────────────────────────────────────────
+
+    record RequestSlaRecord(
+        String orderNumber,
+        String title,
+        String priority,
+        String category,
+        String catalogItem,
+        String requesterDept,
+        String assignee,
+        LocalDateTime openedAt,
+        double responseMinutes,
+        double resolutionMinutes,
+        boolean responseMet,
+        boolean resolutionMet,
+        double satisfactionScore
+    ) {
+        boolean overallMet() { return responseMet && resolutionMet; }
+        boolean anyBreached() { return !overallMet(); }
+        String violationType() {
+            if (!responseMet && !resolutionMet) return "both_breached";
+            if (!responseMet) return "response_breached";
+            if (!resolutionMet) return "resolution_breached";
+            return "met";
+        }
+        boolean isLowSatisfaction() { return satisfactionScore > 0 && satisfactionScore < 3.5; }
+    }
+
+    List<RequestSlaRecord> buildRequestSlaRecords(BiRawData rawData) {
+        Map<String, Double> responseTargets = buildCriteriaMap(
+            rawData.requestSlaCriteria().isEmpty() ? rawData.incidentSlaCriteria() : rawData.requestSlaCriteria(),
+            List.of("response_sla_min"));
+        Map<String, Double> resolutionTargets = buildCriteriaMap(
+            rawData.requestSlaCriteria().isEmpty() ? rawData.incidentSlaCriteria() : rawData.requestSlaCriteria(),
+            List.of("resolution_sla_min"));
+        return rawData.requests().stream()
+            .map(row -> {
+                String priority = clean(row.get(BiColumns.PRIORITY));
+                Double respTarget = responseTargets.get(priority);
+                Double resoTarget = resolutionTargets.get(priority);
+                if (priority.isBlank() || respTarget == null || resoTarget == null) return null;
+                double responseMinutes = parseDouble(row.get(BiColumns.RESPONSE_TIME_M));
+                double resolutionMinutes = parseDouble(row.get(BiColumns.REQUEST_RESOLUTION_TIME_M));
+                return new RequestSlaRecord(
+                    row.get(BiColumns.REQUEST_NUMBER),
+                    row.get(BiColumns.TITLE),
+                    priority,
+                    row.get(BiColumns.CATEGORY),
+                    row.get(BiColumns.REQUEST_TYPE),
+                    row.get(BiColumns.REQUESTER_DEPT),
+                    row.get(BiColumns.ASSIGNED_TO),
+                    parseDate(row.get(BiColumns.REQUESTED_DATE)),
+                    responseMinutes, resolutionMinutes,
+                    responseMinutes <= respTarget,
+                    resolutionMinutes <= resoTarget,
+                    parseDouble(row.get(BiColumns.SATISFACTION_SCORE))
+                );
+            })
+            .filter(Objects::nonNull)
+            .toList();
+    }
+
+    private List<MetricsModels.SlaGroupBreakdown> buildSlaGroupBreakdowns(
+            List<RequestSlaRecord> records, Function<RequestSlaRecord, String> classifier) {
+        return records.stream()
+            .collect(Collectors.groupingBy(
+                r -> defaultLabel(classifier.apply(r), "未标注"),
+                LinkedHashMap::new, Collectors.toList()))
+            .entrySet().stream()
+            .map(entry -> {
+                List<RequestSlaRecord> group = entry.getValue();
+                long total = group.size();
+                double respRate = percentageValue(group.stream().filter(RequestSlaRecord::responseMet).count(), total);
+                double resoRate = percentageValue(group.stream().filter(RequestSlaRecord::resolutionMet).count(), total);
+                double overallRate = percentageValue(group.stream().filter(RequestSlaRecord::overallMet).count(), total);
+                long breached = group.stream().filter(RequestSlaRecord::anyBreached).count();
+                return new MetricsModels.SlaGroupBreakdown(entry.getKey(), total, respRate, resoRate, overallRate, breached);
+            })
+            .sorted((a, b) -> Double.compare(b.overallRate(), a.overallRate()))
+            .toList();
+    }
+
     // ── Person metrics ─────────────────────────────────────────────────────
 
     record PersonMetrics(
@@ -1662,16 +1734,21 @@ public class BusinessIntelligenceMetricsService {
             boolean highRisk = "High".equalsIgnoreCase(clean(row.get(BiColumns.RISK)));
             b.addChange(success, backout, emergency, dur, caused, highRisk);
         }
+        var reqSlaSource = rawData.requestSlaCriteria().isEmpty()
+            ? rawData.incidentSlaCriteria() : rawData.requestSlaCriteria();
+        Map<String, Double> reqRespTargets = buildCriteriaMap(reqSlaSource, List.of("response_sla_min"));
+        Map<String, Double> reqResoTargets = buildCriteriaMap(reqSlaSource, List.of("resolution_sla_min"));
         for (var row : rawData.requests()) {
             String assignee = defaultLabel(row.get(BiColumns.ASSIGNED_TO), "未标注");
             var b = builders.computeIfAbsent(assignee, k -> new PersonMetricsBuilder());
             double ft = parseDouble(row.get(BiColumns.REQUEST_RESOLUTION_TIME_M));
-            String rt = clean(row.get(BiColumns.REQUEST_RESOLUTION_TIME_M));
             String prio = clean(row.get(BiColumns.PRIORITY));
-            Map<String, Double> reqSla = rawData.requestSlaCriteria().isEmpty()
-                ? buildCriteriaMap(rawData.incidentSlaCriteria(), List.of("resolution_sla_min"))
-                : buildCriteriaMap(rawData.requestSlaCriteria(), List.of("resolution_sla_min"));
-            boolean sla = !rt.isEmpty() && reqSla.containsKey(prio) && parseDouble(rt) <= reqSla.get(prio);
+            String rt = clean(row.get(BiColumns.REQUEST_RESOLUTION_TIME_M));
+            String resp = clean(row.get(BiColumns.RESPONSE_TIME_M));
+            boolean sla = !rt.isEmpty() && !resp.isEmpty()
+                && reqRespTargets.containsKey(prio) && reqResoTargets.containsKey(prio)
+                && parseDouble(resp) <= reqRespTargets.get(prio)
+                && parseDouble(rt) <= reqResoTargets.get(prio);
             double sat = parseDouble(row.get(BiColumns.SATISFACTION_SCORE));
             b.addRequest(ft, sla, sat);
         }
@@ -1824,21 +1901,22 @@ public class BusinessIntelligenceMetricsService {
     private double computeRequestSlaRate(List<Map<String, String>> requests,
                                           List<Map<String, String>> requestSlaCriteria) {
         if (requests.isEmpty()) return 0;
-        Map<String, Double> resolutionTargets = buildCriteriaMap(
-            requestSlaCriteria, List.of("resolution_sla_min"));
+        Map<String, Double> responseTargets = buildCriteriaMap(requestSlaCriteria, List.of("response_sla_min"));
+        Map<String, Double> resolutionTargets = buildCriteriaMap(requestSlaCriteria, List.of("resolution_sla_min"));
         long met = 0;
         long total = 0;
         for (Map<String, String> r : requests) {
-            String rt = clean(r.get(BiColumns.REQUEST_RESOLUTION_TIME_M));
-            if (rt.isEmpty()) continue;
-            total++;
-            double minutes = parseDouble(rt);
             String priority = clean(r.get(BiColumns.PRIORITY));
-            Double target = resolutionTargets.get(priority);
-            if (target != null && minutes <= target) {
+            Double respTarget = responseTargets.get(priority);
+            Double resoTarget = resolutionTargets.get(priority);
+            if (priority.isBlank() || respTarget == null || resoTarget == null) continue;
+            total++;
+            double respMinutes = parseDouble(r.get(BiColumns.RESPONSE_TIME_M));
+            double resoMinutes = parseDouble(r.get(BiColumns.REQUEST_RESOLUTION_TIME_M));
+            if (respMinutes <= respTarget && resoMinutes <= resoTarget) {
                 met++;
             }
         }
-        return percentageValue(met, total > 0 ? total : requests.size());
+        return Math.round(percentageValue(met, total > 0 ? total : requests.size()) * 100.0) / 1.0;
     }
 }

@@ -98,6 +98,11 @@ class BusinessIntelligenceServiceTest {
                         "priority", "P1",
                         "response_sla_min", "15",
                         "resolution_sla_min", "240"
+                    ),
+                    Map.of(
+                        "priority", "P2",
+                        "response_sla_min", "60",
+                        "resolution_sla_min", "480"
                     )
                 ),
                 List.of(

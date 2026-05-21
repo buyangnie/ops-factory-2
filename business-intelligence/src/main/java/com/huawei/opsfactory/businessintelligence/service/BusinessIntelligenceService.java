@@ -110,32 +110,6 @@ public class BusinessIntelligenceService {
         }
     }
 
-    private record RequestSlaRecord(
-        String orderNumber,
-        String title,
-        String priority,
-        String category,
-        String catalogItem,
-        String requesterDept,
-        String assignee,
-        LocalDateTime openedAt,
-        double responseMinutes,
-        double resolutionMinutes,
-        boolean responseMet,
-        boolean resolutionMet,
-        double satisfactionScore
-    ) {
-        private boolean overallMet() { return responseMet && resolutionMet; }
-        private boolean anyBreached() { return !overallMet(); }
-        private String violationType() {
-            if (!responseMet && !resolutionMet) return "both_breached";
-            if (!responseMet) return "response_breached";
-            if (!resolutionMet) return "resolution_breached";
-            return "met";
-        }
-        private boolean isLowSatisfaction() { return satisfactionScore > 0 && satisfactionScore < 3.5; }
-    }
-
     public BusinessIntelligenceService(BiDataProvider dataProvider,
                                         BusinessIntelligenceRuntimeProperties runtimeProperties,
                                         BusinessIntelligenceMetricsService metricsService) {
@@ -433,7 +407,7 @@ public class BusinessIntelligenceService {
         );
 
         // ── Request SLA ──
-        List<RequestSlaRecord> reqRecords = buildRequestSlaRecords(rawData);
+        List<BusinessIntelligenceMetricsService.RequestSlaRecord> reqRecords = metricsService.buildRequestSlaRecords(rawData);
         List<MetricCard> requestCards = buildRequestSlaCards(reqRecords);
         List<ChartSection> requestCharts = buildRequestSlaCharts(reqRecords, rawData, startDate, endDate);
         List<BiModels.TableSection> requestTables = buildRequestSlaTables(reqRecords);
@@ -1762,38 +1736,6 @@ public class BusinessIntelligenceService {
             .toList();
     }
 
-    private List<RequestSlaRecord> buildRequestSlaRecords(BiRawData rawData) {
-        Map<String, Double> responseTargets = buildIncidentCriteriaMap(
-            rawData.requestSlaCriteria(), List.of("response_sla_min"));
-        Map<String, Double> resolutionTargets = buildIncidentCriteriaMap(
-            rawData.requestSlaCriteria(), List.of("resolution_sla_min"));
-        return rawData.requests().stream()
-            .map(row -> {
-                String priority = clean(row.get("priority"));
-                Double respTarget = responseTargets.get(priority);
-                Double resoTarget = resolutionTargets.get(priority);
-                if (priority.isBlank() || respTarget == null || resoTarget == null) return null;
-                double responseMinutes = parseDouble(row.get(BiColumns.RESPONSE_TIME_M));
-                double resolutionMinutes = parseDouble(row.get(BiColumns.REQUEST_RESOLUTION_TIME_M));
-                return new RequestSlaRecord(
-                    row.get(BiColumns.REQUEST_NUMBER),
-                    row.get(BiColumns.TITLE),
-                    priority,
-                    row.get(BiColumns.CATEGORY),
-                    row.get(BiColumns.REQUEST_TYPE),
-                    row.get(BiColumns.REQUESTER_DEPT),
-                    row.get(BiColumns.ASSIGNED_TO),
-                    parseDate(row.get(BiColumns.REQUESTED_DATE)),
-                    responseMinutes, resolutionMinutes,
-                    responseMinutes <= respTarget,
-                    resolutionMinutes <= resoTarget,
-                    parseDouble(row.get(BiColumns.SATISFACTION_SCORE))
-                );
-            })
-            .filter(Objects::nonNull)
-            .toList();
-    }
-
     private Map<String, Double> buildIncidentCriteriaMap(List<Map<String, String>> rows, List<String> candidateKeys) {
         return rows.stream()
             .filter(row -> !clean(row.get("priority")).isBlank())
@@ -1895,18 +1837,18 @@ public class BusinessIntelligenceService {
         return mergeTrendSeries(List.of(responseTrend, resolutionTrend, p12Trend));
     }
 
-    private List<MetricCard> buildRequestSlaCards(List<RequestSlaRecord> records) {
+    private List<MetricCard> buildRequestSlaCards(List<BusinessIntelligenceMetricsService.RequestSlaRecord> records) {
         long total = records.size();
-        long overallMet = records.stream().filter(RequestSlaRecord::overallMet).count();
+        long overallMet = records.stream().filter(BusinessIntelligenceMetricsService.RequestSlaRecord::overallMet).count();
         long breached = total - overallMet;
         String overallRate = percentage(overallMet, total);
 
         double avgDeliveryHours = records.stream()
-            .mapToDouble(RequestSlaRecord::resolutionMinutes).filter(v -> v > 0).average().orElse(0) / 60.0;
+            .mapToDouble(BusinessIntelligenceMetricsService.RequestSlaRecord::resolutionMinutes).filter(v -> v > 0).average().orElse(0) / 60.0;
 
         double breachedCsat = records.stream()
-            .filter(RequestSlaRecord::anyBreached)
-            .mapToDouble(RequestSlaRecord::satisfactionScore).filter(v -> v > 0).average().orElse(0);
+            .filter(BusinessIntelligenceMetricsService.RequestSlaRecord::anyBreached)
+            .mapToDouble(BusinessIntelligenceMetricsService.RequestSlaRecord::satisfactionScore).filter(v -> v > 0).average().orElse(0);
 
         return List.of(
             card("req-sla-overall", "请求SLA达成率", overallRate, toneFromRate(overallRate)),
@@ -1916,7 +1858,7 @@ public class BusinessIntelligenceService {
         );
     }
 
-    private List<ChartSection> buildRequestSlaCharts(List<RequestSlaRecord> records, BiRawData rawData, String startDate, String endDate) {
+    private List<ChartSection> buildRequestSlaCharts(List<BusinessIntelligenceMetricsService.RequestSlaRecord> records, BiRawData rawData, String startDate, String endDate) {
         // SLA + Satisfaction trend (combo)
         TrendResult slaTrend = metricsService.getTrends(rawData, "requests", "sla_rate", "week", null, startDate, endDate);
         TrendResult csatTrend = metricsService.getTrends(rawData, "requests", "csat", "week", null, startDate, endDate);
@@ -1929,9 +1871,9 @@ public class BusinessIntelligenceService {
             .sorted((a, b) -> Integer.compare(b.getValue().size(), a.getValue().size()))
             .limit(8)
             .map(entry -> {
-                List<RequestSlaRecord> group = entry.getValue();
-                long respMet = group.stream().filter(RequestSlaRecord::responseMet).count();
-                long resoMet = group.stream().filter(RequestSlaRecord::resolutionMet).count();
+                List<BusinessIntelligenceMetricsService.RequestSlaRecord> group = entry.getValue();
+                long respMet = group.stream().filter(BusinessIntelligenceMetricsService.RequestSlaRecord::responseMet).count();
+                long resoMet = group.stream().filter(BusinessIntelligenceMetricsService.RequestSlaRecord::resolutionMet).count();
                 double respRate = percentageValue(respMet, group.size()) * 100.0;
                 double resoRate = percentageValue(resoMet, group.size()) * 100.0;
                 return new ChartDatum(
@@ -1941,7 +1883,7 @@ public class BusinessIntelligenceService {
 
         // Violation by department (pie)
         List<ChartDatum> violationByDept = records.stream()
-            .filter(RequestSlaRecord::anyBreached)
+            .filter(BusinessIntelligenceMetricsService.RequestSlaRecord::anyBreached)
             .collect(Collectors.groupingBy(r -> defaultLabel(r.requesterDept(), "未标注"), LinkedHashMap::new, Collectors.counting()))
             .entrySet().stream()
             .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
@@ -1951,7 +1893,7 @@ public class BusinessIntelligenceService {
 
         // Violation by catalog (pie)
         List<ChartDatum> violationByCatalog = records.stream()
-            .filter(RequestSlaRecord::anyBreached)
+            .filter(BusinessIntelligenceMetricsService.RequestSlaRecord::anyBreached)
             .collect(Collectors.groupingBy(r -> defaultLabel(r.catalogItem(), "未标注"), LinkedHashMap::new, Collectors.counting()))
             .entrySet().stream()
             .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
@@ -1973,15 +1915,15 @@ public class BusinessIntelligenceService {
         );
     }
 
-    private List<BiModels.TableSection> buildRequestSlaTables(List<RequestSlaRecord> records) {
+    private List<BiModels.TableSection> buildRequestSlaTables(List<BusinessIntelligenceMetricsService.RequestSlaRecord> records) {
         return List.of(
             table("req-sla-violation-samples", "请求违约及低满意度样本",
                 List.of("编号", "标题", "服务目录", "请求部门", "处理人", "响应时长", "解决时长", "违约类型", "满意度"),
                 records.stream()
-                    .filter(RequestSlaRecord::anyBreached)
+                    .filter(BusinessIntelligenceMetricsService.RequestSlaRecord::anyBreached)
                     .sorted(Comparator
-                        .comparing((RequestSlaRecord r) -> priorityRank(r.priority()))
-                        .thenComparing(RequestSlaRecord::resolutionMinutes, Comparator.reverseOrder()))
+                        .comparing((BusinessIntelligenceMetricsService.RequestSlaRecord r) -> priorityRank(r.priority()))
+                        .thenComparing(BusinessIntelligenceMetricsService.RequestSlaRecord::resolutionMinutes, Comparator.reverseOrder()))
                     .limit(12)
                     .map(r -> List.of(
                         defaultLabel(r.orderNumber(), "—"),
