@@ -94,6 +94,21 @@ function BusinessIntelligenceIcon() {
     )
 }
 
+function OperationIntelligenceIcon() {
+    return (
+        <IconFrame strokeWidth={1.85}>
+            <circle cx="7.5" cy="16.5" r="2.5" />
+            <path d="M7.5 14v-3.5l2.5-2h4" />
+            <circle cx="14" cy="12" r="2.5" />
+            <path d="M14 9.5V6l-2-2h-2" />
+            <circle cx="10" cy="5" r="1.5" />
+            <path d="M10 3.5V2.5" />
+            <path d="M8 4l-1.5-1" />
+            <path d="M12 4l1.5-1" />
+        </IconFrame>
+    )
+}
+
 function WorkflowIcon() {
     return (
         <IconFrame strokeWidth={1.85}>
@@ -190,6 +205,7 @@ const ICONS: Record<IconKey, () => ReactNode> = {
     channels: ChannelsIcon,
     diagnosis: WorkflowIcon,
     businessIntelligence: BusinessIntelligenceIcon,
+    operationIntelligence: OperationIntelligenceIcon,
     agents: AgentsIcon,
     skillMarket: SkillMarketIcon,
     knowledge: KnowledgeIcon,

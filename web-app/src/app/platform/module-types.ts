@@ -13,6 +13,7 @@ export type IconKey =
     | 'channels'
     | 'diagnosis'
     | 'businessIntelligence'
+    | 'operationIntelligence'
     | 'agents'
     | 'skillMarket'
     | 'knowledge'
