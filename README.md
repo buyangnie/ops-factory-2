@@ -172,7 +172,11 @@ Mandatory for the main stack:
 
 ```bash
 cp gateway/config.yaml.example gateway/config.yaml
-cp web-app/config.json.example web-app/config.json
+# 独立运行（standalone）模式
+cp web-app/config.standalone.json.example web-app/config.json
+
+# 壳应用 / embed 模式
+# cp web-app/config.embed.json.example web-app/config.json
 cp knowledge-service/config.yaml.example knowledge-service/config.yaml
 cp skill-market/config.yaml.example skill-market/config.yaml
 cp control-center/config.yaml.example control-center/config.yaml
@@ -281,7 +285,8 @@ Main config entry points:
 - [`operation-intelligence/config.yaml.example`](./operation-intelligence/config.yaml.example)
 - [`langfuse/config.yaml.example`](./langfuse/config.yaml.example)
 - [`onlyoffice/config.yaml.example`](./onlyoffice/config.yaml.example)
-- [`web-app/config.json.example`](./web-app/config.json.example)
+- [`web-app/config.standalone.json.example`](./web-app/config.standalone.json.example)
+- [`web-app/config.embed.json.example`](./web-app/config.embed.json.example)
 
 When adding or changing configuration:
 - update the owning service’s example config

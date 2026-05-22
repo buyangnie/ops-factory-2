@@ -117,3 +117,6 @@ dist
 
 # MacOS
 .DS_Store
+
+# Runtime config (deployer provides from example files)
+config.json

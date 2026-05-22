@@ -295,7 +295,12 @@ chmod +x langfuse/scripts/ctl.sh onlyoffice/scripts/ctl.sh
 
 ```bash
 cp gateway/config.yaml.example gateway/config.yaml
-cp web-app/config.json.example web-app/config.json
+# 独立运行（standalone）模式
+cp web-app/config.standalone.json.example web-app/config.json
+# 或壳应用 / embed 模式：
+# cp web-app/config.embed.json.example web-app/config.json
+# 注意：embed 模式下空 URL 会解析成同源 /gateway、/skill-market、/operation-intelligence 等路径，
+# 要求壳应用或部署网关提供对应反向代理。
 cp knowledge-service/config.yaml.example knowledge-service/config.yaml
 cp business-intelligence/config.yaml.example business-intelligence/config.yaml
 cp skill-market/config.yaml.example skill-market/config.yaml
