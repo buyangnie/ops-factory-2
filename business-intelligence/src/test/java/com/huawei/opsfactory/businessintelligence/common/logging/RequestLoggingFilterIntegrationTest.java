@@ -47,8 +47,8 @@ class RequestLoggingFilterIntegrationTest {
             assertThat(requestId).isNotBlank();
             assertThat(appender.events())
                 .anySatisfy(event -> {
-                    String loggedRequestId = Objects.toString(event.getContextData().getValue(LoggingKeys.REQUEST_ID), null);
-                    assertThat(event.getMessage().getFormattedMessage())
+                    String loggedRequestId = event.getMDCPropertyMap().get(LoggingKeys.REQUEST_ID);
+                    assertThat(event.getFormattedMessage())
                         .contains("HTTP GET /business-intelligence/overview completed status=200");
                     assertThat(loggedRequestId).isEqualTo(requestId);
                 });
@@ -68,7 +68,7 @@ class RequestLoggingFilterIntegrationTest {
             assertThat(result.getResponse().getHeader(LoggingKeys.REQUEST_ID_HEADER)).isEqualTo(requestId);
             assertThat(appender.events())
                 .anySatisfy(event -> {
-                    String loggedRequestId = Objects.toString(event.getContextData().getValue(LoggingKeys.REQUEST_ID), null);
+                    String loggedRequestId = event.getMDCPropertyMap().get(LoggingKeys.REQUEST_ID);
                     assertThat(loggedRequestId).isEqualTo(requestId);
                 });
         }

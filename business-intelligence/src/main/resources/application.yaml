@@ -8,7 +8,7 @@ spring:
     import: optional:file:./config.yaml
 
 logging:
-  config: classpath:log4j2-spring.xml
+  config: classpath:logback-spring.xml
 
 management:
   endpoints:

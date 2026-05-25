@@ -37,7 +37,7 @@ async function startGatewayWithCors(corsOrigin: string): Promise<GatewayInstance
 
   const jarPath = join(GATEWAY_DIR, 'gateway-service', 'target', 'gateway-service.jar')
   const libDir = join(GATEWAY_DIR, 'gateway-service', 'target', 'lib')
-  const log4jConfig = join(GATEWAY_DIR, 'gateway-service', 'target', 'resources', 'log4j2.xml')
+  const logbackConfig = join(GATEWAY_DIR, 'gateway-service', 'target', 'resources', 'logback-spring.xml')
 
   const javaArgs = [
     `-Dloader.path=${libDir}`,
@@ -47,7 +47,7 @@ async function startGatewayWithCors(corsOrigin: string): Promise<GatewayInstance
     `-Dgateway.goosed-bin=${process.env.GOOSED_BIN || 'goosed'}`,
     `-Dgateway.paths.project-root=${PROJECT_ROOT}`,
     `-Dgateway.cors-origin=${corsOrigin}`,
-    `-Dlogging.config=file:${log4jConfig}`,
+    `-Dlogging.config=file:${logbackConfig}`,
     '-jar', jarPath,
   ]
 

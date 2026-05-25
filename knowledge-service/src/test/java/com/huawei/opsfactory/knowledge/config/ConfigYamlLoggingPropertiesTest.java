@@ -7,10 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.huawei.opsfactory.knowledge.service.EmbeddingService;
 import com.huawei.opsfactory.knowledge.service.KnowledgeServiceFacade;
 import com.huawei.opsfactory.knowledge.support.TestLogAppender;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,7 +20,12 @@ import org.springframework.core.env.Environment;
 import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest(properties = {
-    "knowledge.runtime.base-dir=target/test-runtime-config-yaml"
+    "knowledge.runtime.base-dir=target/test-runtime-config-yaml",
+    "knowledge.logging.include-query-text=false",
+    "logging.level.root=INFO",
+    "logging.level.com.huawei.opsfactory.knowledge=INFO",
+    "logging.level.com.huawei.opsfactory.knowledge.service.EmbeddingService=WARN",
+    "logging.level.com.huawei.opsfactory.knowledge.service.SearchService=INFO"
 })
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -41,8 +45,10 @@ class ConfigYamlLoggingPropertiesTest {
 
     @Test
     void shouldLoadLoggingSettingsFromConfigYaml() {
-        LoggerContext context = (LoggerContext) LogManager.getContext(false);
-        Configuration configuration = context.getConfiguration();
+        LoggerContext context = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
+        Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
+        Logger facadeLogger = context.getLogger(KnowledgeServiceFacade.class.getName());
+        Logger embeddingLogger = context.getLogger(EmbeddingService.class.getName());
 
         assertThat(knowledgeLoggingProperties.isIncludeQueryText()).isFalse();
         assertThat(environment.getProperty("knowledge.logging.include-query-text", Boolean.class)).isFalse();
@@ -51,9 +57,9 @@ class ConfigYamlLoggingPropertiesTest {
         assertThat(environment.getProperty("logging.level.com.huawei.opsfactory.knowledge.service.EmbeddingService")).isEqualTo("WARN");
         assertThat(environment.getProperty("logging.level.com.huawei.opsfactory.knowledge.service.SearchService")).isEqualTo("INFO");
 
-        assertThat(configuration.getRootLogger().getLevel()).isEqualTo(Level.INFO);
-        assertThat(configuration.getLoggerConfig(KnowledgeServiceFacade.class.getName()).getLevel()).isEqualTo(Level.INFO);
-        assertThat(configuration.getLoggerConfig(EmbeddingService.class.getName()).getLevel()).isEqualTo(Level.WARN);
+        assertThat(rootLogger.getEffectiveLevel()).isEqualTo(Level.INFO);
+        assertThat(facadeLogger.getEffectiveLevel()).isEqualTo(Level.INFO);
+        assertThat(embeddingLogger.getEffectiveLevel()).isEqualTo(Level.WARN);
     }
 
     @Test

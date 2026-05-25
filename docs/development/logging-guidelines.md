@@ -19,12 +19,12 @@
   - Java 中使用 `org.slf4j.Logger`
   - Java 中使用 `org.slf4j.LoggerFactory`
 - 新代码不要直接依赖具体后端 API
-  - 不要在新代码中直接使用 `org.apache.logging.log4j.LogManager`
+  - 不要在新代码中直接使用 `ch.qos.logback.classic.Logger`
   - 不要在新代码中直接绑定 Logback 专有 API
 
 说明：
 
-- 运行时可以继续使用 `Log4j2` 作为 backend
+- 运行时可以继续使用 `Logback` 作为 backend
 - 代码层先收敛到 `SLF4J`，后续更换 backend 时成本更低
 - `gateway-service` 与 `knowledge-service` 当前代码层日志 API 已统一到 `SLF4J`
 
@@ -268,7 +268,7 @@ access log 至少应包含：
 - 配置加载测试
   - 校验配置文件中的 `logging.level.*` 与业务日志开关已被 Spring 加载
 - 运行时生效测试
-  - 校验 logger level 已实际作用到 Log4j2 运行时，而不是只出现在 `Environment`
+  - 校验 logger level 已实际作用到 Logback 运行时，而不是只出现在 `Environment`
 - 输出行为测试
   - 校验 `DEBUG` 是否被过滤
   - 校验 `INFO` 是否按预期输出

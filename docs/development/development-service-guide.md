@@ -48,7 +48,7 @@
     │   └── resources/
     │       ├── application.yml                  # Spring Boot 配置
     │       ├── application-test.yaml            # 测试 profile
-    │       └── log4j2-spring.xml                # 日志配置
+    │       └── logback-spring.xml                # 日志配置
     └── test/
         └── java/com/huawei/opsfactory/<servicename>/
             └── ...                              # 测试类
@@ -118,10 +118,10 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- 日志：统一使用 Log4j2 -->
+        <!-- 日志：统一使用 Logback -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-log4j2</artifactId>
+            <artifactId>spring-boot-starter-logging</artifactId>
         </dependency>
         <!-- 测试 -->
         <dependency>
@@ -228,7 +228,7 @@ spring:
     import: optional:file:${<SERVICE_NAME>_CONFIG_PATH:./config.yaml}
 
 logging:
-  config: classpath:log4j2-spring.xml
+  config: classpath:logback-spring.xml
 
 management:
   endpoints:
@@ -262,8 +262,8 @@ spring:
 ### 5.1 统一日志 API
 
 - 所有日志使用 **SLF4J API**（`org.slf4j.Logger` + `org.slf4j.LoggerFactory`）
-- 禁止直接依赖 Log4j2 或 Logback 专有 API
-- 运行时使用 Log4j2 作为 backend（通过 `spring-boot-starter-log4j2`）
+- 禁止直接依赖 Logback 专有 API
+- 运行时使用 Logback 作为 backend（通过 `spring-boot-starter-logging`）
 
 ### 5.2 MDC 上下文
 
@@ -350,7 +350,7 @@ public class RequestLoggingFilter implements WebFilter {
 - access log 通过 `logging.accessLogEnabled` 开关控制
 - access log 格式统一为 `HTTP {method} {path} completed status={status} durationMs={duration}`
 
-### 5.4 log4j2-spring.xml 模板
+### 5.4 logback-spring.xml 模板
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -735,12 +735,12 @@ cd web-app && npm run build               # 构建验证
 
 - [ ] Application 主类带 `@SpringBootApplication` + `@EnableConfigurationProperties`
 - [ ] Properties 类使用 `@ConfigurationProperties(prefix = "<service-name>")`
-- [ ] `application.yml` 端口、config import、log4j2、actuator 配置完整
+- [ ] `application.yml` 端口、config import、logback、actuator 配置完整
 - [ ] `application-test.yaml` 随机端口 + 最小配置
 
 ### 日志与规范
 
-- [ ] `log4j2-spring.xml` 符合第 5.4 节模板
+- [ ] `logback-spring.xml` 符合第 5.4 节模板
 - [ ] `RequestLoggingFilter` 实现完整（MDC、access log、requestId 回传）
 - [ ] 日志级别使用符合第 5.5 节规则，无敏感数据泄漏
 

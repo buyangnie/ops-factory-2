@@ -100,7 +100,7 @@ function Start-GatewayService {
 
     $JAR = "$ROOT_DIR\gateway\gateway-service\target\gateway-service.jar"
     $LIB_DIR = "$ROOT_DIR\gateway\gateway-service\target\lib"
-    $LOG4J_CONFIG = "$ROOT_DIR\gateway\gateway-service\target\resources\log4j2.xml"
+    $LOGBACK_CONFIG = "$ROOT_DIR\gateway\gateway-service\target\resources\logback-spring.xml"
 
     if (-not (Test-Path $JAR)) {
         Write-Status "ERROR" "JAR not found: $JAR"
@@ -142,8 +142,8 @@ function Start-GatewayService {
         "-Dgateway.remote-execution.max-timeout=120"
     )
 
-    if (Test-Path $LOG4J_CONFIG) {
-        $javaOpts += "-Dlogging.config=file:$LOG4J_CONFIG"
+    if (Test-Path $LOGBACK_CONFIG) {
+        $javaOpts += "-Dlogging.config=file:$LOGBACK_CONFIG"
     }
 
     $javaArgs = ($javaOpts -join " ") + " -jar `"$JAR`""

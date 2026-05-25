@@ -63,7 +63,7 @@ gateway/config.yaml
 gateway/logs/gateway.log
 ```
 
-当前设计下，`gateway.log` 是唯一主业务日志文件，由应用内 Log4j2 负责写入与滚动。
+当前设计下，`gateway.log` 是唯一主业务日志文件，由应用内 Logback 负责写入与滚动。
 
 后台启动时还可能看到辅助输出捕获文件：
 
@@ -76,7 +76,7 @@ gateway/logs/gateway-stdout-stderr.log
 代码层说明：
 
 - `gateway-service` 当前代码层统一使用 `SLF4J API`
-- 运行时后端仍为 `Log4j2`
+- 运行时后端仍为 `Logback`
 - 后续新增或修改日志代码时，应继续遵守该约束
 
 ## 3. 基础检查

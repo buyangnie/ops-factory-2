@@ -5,10 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.huawei.opsfactory.knowledge.service.EmbeddingService;
 import com.huawei.opsfactory.knowledge.service.KnowledgeServiceFacade;
 import com.huawei.opsfactory.knowledge.support.TestLogAppender;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.ConsoleAppender;
+import ch.qos.logback.core.rolling.RollingFileAppender;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,22 +28,24 @@ class LoggingConfigurationTest {
     private EmbeddingService embeddingService;
 
     @Test
-    void shouldLoadLog4j2ConfigurationAndApplyConfiguredLevels() {
-        LoggerContext context = (LoggerContext) LogManager.getContext(false);
-        Configuration configuration = context.getConfiguration();
+    void shouldLoadLogbackConfigurationAndApplyConfiguredLevels() {
+        LoggerContext context = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
+        Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
+        Logger facadeLogger = context.getLogger(KnowledgeServiceFacade.class.getName());
+        Logger embeddingLogger = context.getLogger(EmbeddingService.class.getName());
 
-        assertThat((Object) configuration.getAppender("File")).isNotNull();
-        assertThat((Object) configuration.getAppender("Console")).isNotNull();
-        assertThat(configuration.getRootLogger().getLevel()).isEqualTo(Level.ERROR);
-        assertThat(configuration.getLoggerConfig(KnowledgeServiceFacade.class.getName()).getLevel()).isEqualTo(Level.INFO);
-        assertThat(configuration.getLoggerConfig(EmbeddingService.class.getName()).getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(rootLogger.getAppender("Console")).isNotNull();
+        assertThat(rootLogger.getAppender("File")).isNotNull();
+        assertThat(rootLogger.getEffectiveLevel()).isEqualTo(Level.ERROR);
+        assertThat(facadeLogger.getEffectiveLevel()).isEqualTo(Level.INFO);
+        assertThat(embeddingLogger.getEffectiveLevel()).isEqualTo(Level.DEBUG);
 
         try (
             TestLogAppender embeddingAppender = TestLogAppender.attachTo(EmbeddingService.class);
             TestLogAppender outsideAppender = TestLogAppender.attachTo("outside.test")
         ) {
             embeddingService.embedQuery("ITSM deployment");
-            org.apache.logging.log4j.Logger outsideLogger = LogManager.getLogger("outside.test");
+            org.slf4j.Logger outsideLogger = org.slf4j.LoggerFactory.getLogger("outside.test");
             outsideLogger.debug("outside debug");
             outsideLogger.error("outside error");
 

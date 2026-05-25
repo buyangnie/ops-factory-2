@@ -4,12 +4,12 @@
 
 package com.huawei.opsfactory.gateway.logging;
 
-import org.apache.logging.log4j.ThreadContext;
+import org.slf4j.MDC;
 
 import java.util.function.Supplier;
 
 /**
- * Utility that temporarily sets and restores Log4j ThreadContext entries for request logging.
+ * Utility that temporarily sets and restores SLF4J MDC entries for request logging.
  *
  * @author x00000000
  * @since 2026-05-09
@@ -38,9 +38,9 @@ public final class GatewayLogContext {
      * @param action runs an action with the given request, user, and session context set in the MDC
      */
     public static void run(String requestId, String userId, String sessionId, Runnable action) {
-        String previousRequestId = ThreadContext.get("requestId");
-        String previousUserId = ThreadContext.get("userId");
-        String previousSessionId = ThreadContext.get("sessionId");
+        String previousRequestId = MDC.get("requestId");
+        String previousUserId = MDC.get("userId");
+        String previousSessionId = MDC.get("sessionId");
         try {
             putIfText("requestId", requestId);
             putIfText("userId", userId);
@@ -75,9 +75,9 @@ public final class GatewayLogContext {
      * @return the calls a supplier with the given request, user, and session context set in the MDC
      */
     public static <T> T call(String requestId, String userId, String sessionId, Supplier<T> action) {
-        String previousRequestId = ThreadContext.get("requestId");
-        String previousUserId = ThreadContext.get("userId");
-        String previousSessionId = ThreadContext.get("sessionId");
+        String previousRequestId = MDC.get("requestId");
+        String previousUserId = MDC.get("userId");
+        String previousSessionId = MDC.get("sessionId");
         try {
             putIfText("requestId", requestId);
             putIfText("userId", userId);
@@ -92,17 +92,17 @@ public final class GatewayLogContext {
 
     private static void putIfText(String key, String value) {
         if (value == null || value.isBlank()) {
-            ThreadContext.remove(key);
+            MDC.remove(key);
         } else {
-            ThreadContext.put(key, value);
+            MDC.put(key, value);
         }
     }
 
     private static void restore(String key, String previousValue) {
         if (previousValue == null || previousValue.isBlank()) {
-            ThreadContext.remove(key);
+            MDC.remove(key);
         } else {
-            ThreadContext.put(key, previousValue);
+            MDC.put(key, previousValue);
         }
     }
 }

@@ -44,7 +44,7 @@ http://127.0.0.1:8092/actuator/health
 knowledge-service/config.yaml
 ```
 
-`application.yaml` 只负责引导 Spring Boot 和启用 `log4j2`，真正的可调运行参数应优先从 `config.yaml` 进入。
+`application.yaml` 只负责引导 Spring Boot 和启用 `logback`，真正的可调运行参数应优先从 `config.yaml` 进入。
 
 重点配置包括：
 

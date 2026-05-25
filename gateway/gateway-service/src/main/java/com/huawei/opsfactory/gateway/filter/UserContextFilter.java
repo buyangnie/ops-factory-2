@@ -9,9 +9,9 @@ import com.huawei.opsfactory.gateway.process.PrewarmService;
 
 import reactor.core.publisher.Mono;
 
-import org.apache.logging.log4j.ThreadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -92,7 +92,7 @@ public class UserContextFilter implements WebFilter {
         }
 
         exchange.getAttributes().put(USER_ID_ATTR, userId);
-        ThreadContext.put("userId", userId);
+        MDC.put("userId", userId);
 
         // Trigger pre-warm for authenticated users, except diagnostics that must not mutate runtime state.
         if (!isTraceEndpoint(path)) {

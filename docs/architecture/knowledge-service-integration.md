@@ -134,11 +134,11 @@ logging:
 
 ### 3.1.1 日志与排查配置
 
-`knowledge-service` 当前使用 `SLF4J API + Log4j2 backend`。
+`knowledge-service` 当前使用 `SLF4J API + Logback backend`。
 
 默认行为：
 
-- 应用日志由 Log4j2 直接写入 `knowledge-service/logs/knowledge-service.log`
+- 应用日志由 Logback 直接写入 `knowledge-service/logs/knowledge-service.log`
 - 脚本后台启动时，标准输出与标准错误单独写入 `knowledge-service/logs/knowledge-service-console.log`
 - 日志格式默认带上：
   - `service`

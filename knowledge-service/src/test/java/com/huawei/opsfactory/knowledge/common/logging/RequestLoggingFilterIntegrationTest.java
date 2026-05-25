@@ -31,8 +31,8 @@ class RequestLoggingFilterIntegrationTest extends KnowledgeApiIntegrationTestSup
             assertThat(requestId).isNotBlank();
             assertThat(appender.events())
                 .anySatisfy(event -> {
-                    String loggedRequestId = Objects.toString(event.getContextData().getValue(LoggingKeys.REQUEST_ID), null);
-                    assertThat(event.getMessage().getFormattedMessage())
+                    String loggedRequestId = event.getMDCPropertyMap().get(LoggingKeys.REQUEST_ID);
+                    assertThat(event.getFormattedMessage())
                         .contains("HTTP GET /knowledge/system/defaults completed status=200");
                     assertThat(loggedRequestId).isEqualTo(requestId);
                 });
@@ -52,7 +52,7 @@ class RequestLoggingFilterIntegrationTest extends KnowledgeApiIntegrationTestSup
             assertThat(result.getResponse().getHeader(LoggingKeys.REQUEST_ID_HEADER)).isEqualTo(requestId);
             assertThat(appender.events())
                 .anySatisfy(event -> {
-                    String loggedRequestId = Objects.toString(event.getContextData().getValue(LoggingKeys.REQUEST_ID), null);
+                    String loggedRequestId = event.getMDCPropertyMap().get(LoggingKeys.REQUEST_ID);
                     assertThat(loggedRequestId).isEqualTo(requestId);
                 });
         }

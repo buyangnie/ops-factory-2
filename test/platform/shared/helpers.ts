@@ -175,12 +175,12 @@ export async function startJavaGateway(extraEnv: Record<string, string> = {}): P
   const jarPath = join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'gateway-service.jar')
   const libDir = join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'lib')
 
-  const log4jCandidates = [
-    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'resources', 'log4j2.xml'),
-    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'test-classes', 'log4j2.xml'),
-    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'src', 'test', 'resources', 'log4j2.xml'),
+  const logbackCandidates = [
+    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'resources', 'logback-spring.xml'),
+    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'test-classes', 'logback-spring.xml'),
+    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'src', 'test', 'resources', 'logback-spring.xml'),
   ]
-  const log4jConfig = log4jCandidates.find(candidate => existsSync(candidate))
+  const logbackConfig = logbackCandidates.find(candidate => existsSync(candidate))
   const javaArgs = [
     `-Dloader.path=${libDir}`,
     `-Dserver.port=${port}`,
@@ -192,8 +192,8 @@ export async function startJavaGateway(extraEnv: Record<string, string> = {}): P
     '-Dgateway.cors-origin=*',
     '-jar', jarPath,
   ]
-  if (log4jConfig) {
-    javaArgs.splice(javaArgs.length - 1, 0, `-Dlogging.config=file:${log4jConfig}`)
+  if (logbackConfig) {
+    javaArgs.splice(javaArgs.length - 1, 0, `-Dlogging.config=file:${logbackConfig}`)
   }
 
   const child = spawn('java', javaArgs, {

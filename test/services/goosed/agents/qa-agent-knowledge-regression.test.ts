@@ -80,10 +80,10 @@ async function startQaJavaGateway(): Promise<GatewayHandle> {
 
   const jarPath = join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'gateway-service.jar')
   const libDir = join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'lib')
-  const log4jConfig = [
-    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'resources', 'log4j2.xml'),
-    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'test-classes', 'log4j2.xml'),
-    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'src', 'test', 'resources', 'log4j2.xml'),
+  const logbackConfig = [
+    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'resources', 'logback-spring.xml'),
+    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'target', 'test-classes', 'logback-spring.xml'),
+    join(PROJECT_ROOT, 'gateway', 'gateway-service', 'src', 'test', 'resources', 'logback-spring.xml'),
   ].find(candidate => existsSync(candidate))
 
   const javaArgs = [
@@ -99,8 +99,8 @@ async function startQaJavaGateway(): Promise<GatewayHandle> {
     '-Dgateway.limits.max-instances-global=100',
     '-jar', jarPath,
   ]
-  if (log4jConfig) {
-    javaArgs.splice(javaArgs.length - 1, 0, `-Dlogging.config=file:${log4jConfig}`)
+  if (logbackConfig) {
+    javaArgs.splice(javaArgs.length - 1, 0, `-Dlogging.config=file:${logbackConfig}`)
   }
 
   const child = spawn('java', javaArgs, {

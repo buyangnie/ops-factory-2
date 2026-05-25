@@ -11,9 +11,9 @@ import static org.junit.Assert.assertTrue;
 import com.huawei.opsfactory.gateway.filter.RequestContextFilter;
 import com.huawei.opsfactory.gateway.support.TestLogAppender;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
-    properties = "spring.config.import=optional:file:src/test/resources/config/test-gateway-config.yaml")
+    properties = {
+        "spring.config.import=optional:file:src/test/resources/config/test-gateway-config.yaml",
+        "logging.level.root=WARN",
+        "logging.level.com.huawei.opsfactory.gateway=DEBUG"
+    })
 
 /**
  * Test coverage for Gateway Config Import.
@@ -60,15 +64,16 @@ public class GatewayConfigImportTest {
     }
 
     /**
-     * Verifies that apply logging levels to log4j runtime.
+     * Verifies that apply logging levels to logback runtime.
      */
     @Test
-    public void shouldApplyLoggingLevelsToLog4jRuntime() {
-        LoggerContext context = LoggerContext.getContext(false);
-        Configuration configuration = context.getConfiguration();
+    public void shouldApplyLoggingLevelsToLogbackRuntime() {
+        LoggerContext context = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
+        Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
+        Logger gatewayLogger = context.getLogger("com.huawei.opsfactory.gateway");
 
-        assertEquals(Level.WARN, configuration.getRootLogger().getLevel());
-        assertEquals(Level.DEBUG, configuration.getLoggerConfig("com.huawei.opsfactory.gateway").getLevel());
+        assertEquals(Level.WARN, rootLogger.getEffectiveLevel());
+        assertEquals(Level.DEBUG, gatewayLogger.getEffectiveLevel());
 
         try (TestLogAppender appender = TestLogAppender.attachTo(RequestContextFilter.class)) {
             org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RequestContextFilter.class);
