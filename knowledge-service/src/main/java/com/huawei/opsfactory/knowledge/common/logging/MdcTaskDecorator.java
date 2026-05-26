@@ -1,8 +1,18 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.common.logging;
 
 import java.util.Map;
 import org.slf4j.MDC;
 import org.springframework.core.task.TaskDecorator;
+
+/**
+ * The MdcTaskDecorator.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 public class MdcTaskDecorator implements TaskDecorator {
 

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.service;
 
 import com.huawei.opsfactory.knowledge.api.chunk.ChunkController;
@@ -41,6 +45,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+
+/**
+ * The KnowledgeServiceFacade.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Service
 public class KnowledgeServiceFacade {

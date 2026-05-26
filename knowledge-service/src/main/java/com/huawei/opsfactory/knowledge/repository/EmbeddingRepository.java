@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -14,6 +18,12 @@ import java.util.stream.Collectors;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+
+/**
+ * The EmbeddingRepository.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Repository
 public class EmbeddingRepository {

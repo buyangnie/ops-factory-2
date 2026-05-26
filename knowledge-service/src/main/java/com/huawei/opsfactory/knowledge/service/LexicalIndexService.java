@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.service;
 
 import com.huawei.opsfactory.knowledge.config.KnowledgeProperties;
@@ -51,6 +55,12 @@ import org.apache.lucene.util.BytesRef;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+
+/**
+ * The LexicalIndexService.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Service
 public class LexicalIndexService {

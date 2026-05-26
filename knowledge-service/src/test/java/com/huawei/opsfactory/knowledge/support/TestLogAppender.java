@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.support;
 
 import java.util.ArrayList;
@@ -5,6 +9,12 @@ import java.util.List;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 
+/**
+ * The TestLogAppender.
+ *
+ * @author x00000000
+ * @since 2026-05-26
+ */
 public final class TestLogAppender extends AppenderBase<ILoggingEvent> implements AutoCloseable {
 
     private final ch.qos.logback.classic.Logger logger;

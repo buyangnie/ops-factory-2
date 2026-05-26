@@ -1,4 +1,14 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.common.logging;
+
+/**
+ * The LoggingKeys.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 public final class LoggingKeys {
 

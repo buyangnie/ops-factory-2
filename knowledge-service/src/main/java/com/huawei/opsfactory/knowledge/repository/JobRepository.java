@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.repository;
 
 import java.sql.ResultSet;
@@ -8,6 +12,12 @@ import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+
+/**
+ * The JobRepository.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Repository
 public class JobRepository {

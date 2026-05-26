@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.service;
 
 import com.huawei.opsfactory.knowledge.common.util.KeywordExtractor;
@@ -6,6 +10,12 @@ import com.huawei.opsfactory.knowledge.config.KnowledgeProperties;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
+
+/**
+ * The ChunkingService.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Service
 public class ChunkingService {

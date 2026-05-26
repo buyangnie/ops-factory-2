@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.common.util;
 
 import java.io.IOException;
@@ -14,6 +18,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+
+/**
+ * The KeywordExtractor.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 public final class KeywordExtractor {
 

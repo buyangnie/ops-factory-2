@@ -1,7 +1,17 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package db.migration.common;
 
 import java.sql.Connection;
 import org.flywaydb.core.api.migration.Context;
+
+/**
+ * The V3__add_job_progress_columns.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 public class V3__add_job_progress_columns extends BaseMetadataMigration {
 

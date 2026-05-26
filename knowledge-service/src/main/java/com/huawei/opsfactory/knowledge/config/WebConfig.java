@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.config;
 
 import org.springframework.context.annotation.Bean;
@@ -9,6 +13,12 @@ import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 import java.util.List;
+
+/**
+ * The WebConfig.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Configuration
 public class WebConfig {

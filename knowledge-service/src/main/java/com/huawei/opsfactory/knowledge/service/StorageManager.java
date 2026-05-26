@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.service;
 
 import com.huawei.opsfactory.knowledge.config.KnowledgeRuntimeProperties;
@@ -9,6 +13,12 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Component;
+
+/**
+ * The StorageManager.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Component
 public class StorageManager {

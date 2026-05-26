@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.common.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -6,6 +10,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+/**
+ * The Jsons.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 public final class Jsons {
 

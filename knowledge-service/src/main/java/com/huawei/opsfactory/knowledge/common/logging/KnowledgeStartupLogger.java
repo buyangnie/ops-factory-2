@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.common.logging;
 
 import com.huawei.opsfactory.knowledge.config.KnowledgeDatabaseProperties;
@@ -10,6 +14,12 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+/**
+ * The KnowledgeStartupLogger.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Component
 public class KnowledgeStartupLogger implements ApplicationRunner {

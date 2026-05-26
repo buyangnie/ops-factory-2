@@ -1,6 +1,16 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package db.migration.common;
 
 import org.flywaydb.core.api.migration.Context;
+
+/**
+ * The V4__drop_legacy_embedding_record.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 public class V4__drop_legacy_embedding_record extends BaseMetadataMigration {
 

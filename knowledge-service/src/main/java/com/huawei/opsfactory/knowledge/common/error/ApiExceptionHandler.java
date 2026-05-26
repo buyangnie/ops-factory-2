@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.common.error;
 
 import java.util.Map;
@@ -9,6 +13,12 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+
+/**
+ * The ApiExceptionHandler.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @RestControllerAdvice
 public class ApiExceptionHandler {

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.service;
 
 import java.io.IOException;
@@ -23,6 +27,12 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.parser.Parser;
 import org.springframework.stereotype.Service;
 import org.xml.sax.SAXException;
+
+/**
+ * The TikaConversionService.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Service
 public class TikaConversionService {

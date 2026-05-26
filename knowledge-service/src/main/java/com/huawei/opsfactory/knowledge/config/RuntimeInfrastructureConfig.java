@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.config;
 
 import com.huawei.opsfactory.knowledge.common.logging.MdcTaskDecorator;
@@ -17,6 +21,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.StringUtils;
+
+/**
+ * The RuntimeInfrastructureConfig.
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Configuration
 @EnableConfigurationProperties({KnowledgeRuntimeProperties.class, KnowledgeDatabaseProperties.class})

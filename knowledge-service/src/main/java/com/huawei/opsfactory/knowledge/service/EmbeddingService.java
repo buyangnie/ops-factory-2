@@ -1,15 +1,28 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+
 package com.huawei.opsfactory.knowledge.service;
+
+import com.huawei.opsfactory.knowledge.config.KnowledgeProperties;
+import com.huawei.opsfactory.knowledge.repository.EmbeddingRepository;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.huawei.opsfactory.knowledge.config.KnowledgeProperties;
-import com.huawei.opsfactory.knowledge.repository.EmbeddingRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,10 +33,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
+/**
+ * The EmbeddingService.
+ *
+ * @author x00000000
+ * @since 2026-05-26
+ */
 
 @Service
 public class EmbeddingService {
@@ -31,26 +47,28 @@ public class EmbeddingService {
     private static final Logger log = LoggerFactory.getLogger(EmbeddingService.class);
 
     private static final Pattern WORD_PATTERN = Pattern.compile("[\\p{L}\\p{N}]+");
+
     private static final Pattern HAN_PATTERN = Pattern.compile("\\p{IsHan}+");
+
     private static final String DEFAULT_PLACEHOLDER_KEY = "sk-or-v1-xxx";
+
     private static final int MAX_LOCAL_DIMENSIONS = 1024;
 
     private final KnowledgeProperties properties;
+
     private final EmbeddingRepository embeddingRepository;
+
     private final ObjectMapper objectMapper;
+
     private final HttpClient httpClient;
 
-    public EmbeddingService(
-        KnowledgeProperties properties,
-        EmbeddingRepository embeddingRepository,
-        ObjectMapper objectMapper
-    ) {
+    public EmbeddingService(KnowledgeProperties properties, EmbeddingRepository embeddingRepository,
+        ObjectMapper objectMapper) {
         this.properties = properties;
         this.embeddingRepository = embeddingRepository;
         this.objectMapper = objectMapper;
-        this.httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofMillis(properties.getEmbedding().getTimeoutMs()))
-            .build();
+        this.httpClient =
+            HttpClient.newBuilder().connectTimeout(Duration.ofMillis(properties.getEmbedding().getTimeoutMs())).build();
     }
 
     public Map<String, List<Double>> ensureChunkEmbeddings(Collection<SearchService.SearchableChunk> chunks) {
@@ -58,29 +76,24 @@ public class EmbeddingService {
             return Map.of();
         }
 
-        Map<String, SearchService.SearchableChunk> chunkMap = chunks.stream()
-            .collect(LinkedHashMap::new, (map, chunk) -> map.put(chunk.id(), chunk), Map::putAll);
+        Map<String, SearchService.SearchableChunk> chunkMap =
+            chunks.stream().collect(LinkedHashMap::new, (map, chunk) -> map.put(chunk.id(), chunk), Map::putAll);
         Map<String, String> contentHashByChunkId = new LinkedHashMap<>();
-        chunkMap.forEach((chunkId, chunk) -> contentHashByChunkId.put(chunkId, embeddingHash(buildChunkEmbeddingText(chunk))));
+        chunkMap.forEach(
+            (chunkId, chunk) -> contentHashByChunkId.put(chunkId, embeddingHash(buildChunkEmbeddingText(chunk))));
 
         int expectedDimension = expectedEmbeddingDimension();
         String model = properties.getEmbedding().getModel();
-        Map<String, EmbeddingRepository.EmbeddingRecord> existing = embeddingRepository.findByContentHashes(
-            model,
-            expectedDimension,
-            contentHashByChunkId.values()
-        );
+        Map<String, EmbeddingRepository.EmbeddingRecord> existing =
+            embeddingRepository.findByContentHashes(model, expectedDimension, contentHashByChunkId.values());
         Map<String, List<Double>> resolved = new LinkedHashMap<>();
         List<SearchService.SearchableChunk> missing = new ArrayList<>();
 
         chunkMap.forEach((chunkId, chunk) -> {
             String expectedHash = contentHashByChunkId.get(chunkId);
             EmbeddingRepository.EmbeddingRecord record = existing.get(expectedHash);
-            if (record != null
-                && expectedHash.equals(record.contentHash())
-                && model.equals(record.model())
-                && expectedDimension == record.dimension()
-            ) {
+            if (record != null && expectedHash.equals(record.contentHash()) && model.equals(record.model())
+                && expectedDimension == record.dimension()) {
                 resolved.put(chunkId, record.vector());
             } else {
                 missing.add(chunk);
@@ -88,14 +101,8 @@ public class EmbeddingService {
         });
 
         if (log.isDebugEnabled()) {
-            log.debug(
-                "Resolving chunk embeddings model={} dimension={} chunkCount={} cacheHits={} cacheMisses={}",
-                model,
-                expectedDimension,
-                chunkMap.size(),
-                resolved.size(),
-                missing.size()
-            );
+            log.debug("Resolving chunk embeddings model={} dimension={} chunkCount={} cacheHits={} cacheMisses={}",
+                model, expectedDimension, chunkMap.size(), resolved.size(), missing.size());
         }
 
         if (!missing.isEmpty()) {
@@ -104,12 +111,7 @@ public class EmbeddingService {
             for (int index = 0; index < missing.size(); index++) {
                 SearchService.SearchableChunk chunk = missing.get(index);
                 List<Double> vector = vectors.get(index);
-                embeddingRepository.upsert(
-                    contentHashByChunkId.get(chunk.id()),
-                    model,
-                    expectedDimension,
-                    vector
-                );
+                embeddingRepository.upsert(contentHashByChunkId.get(chunk.id()), model, expectedDimension, vector);
                 resolved.put(chunk.id(), vector);
             }
         }
@@ -148,14 +150,11 @@ public class EmbeddingService {
 
         try {
             return remoteEmbeddings(inputs);
-        } catch (Exception ex) {
+        } catch (IOException | InterruptedException ex) {
             log.warn(
                 "Remote embedding failed, falling back to local embeddings model={} endpoint={} batchSize={} reason={}",
-                properties.getEmbedding().getModel(),
-                resolveEmbeddingsEndpoint(properties.getEmbedding().getBaseUrl()),
-                inputs.size(),
-                ex.getMessage()
-            );
+                properties.getEmbedding().getModel(), maskEndpoint(properties.getEmbedding().getBaseUrl()),
+                inputs.size(), ex.getMessage());
             log.debug("Remote embedding failure details", ex);
             return inputs.stream().map(this::localEmbedding).toList();
         }
@@ -164,18 +163,13 @@ public class EmbeddingService {
     private boolean isRemoteEmbeddingEnabled() {
         String apiKey = properties.getEmbedding().getApiKey();
         String baseUrl = properties.getEmbedding().getBaseUrl();
-        return StringUtils.hasText(apiKey)
-            && !DEFAULT_PLACEHOLDER_KEY.equals(apiKey)
-            && StringUtils.hasText(baseUrl);
+        return StringUtils.hasText(apiKey) && !DEFAULT_PLACEHOLDER_KEY.equals(apiKey) && StringUtils.hasText(baseUrl);
     }
 
-    private List<List<Double>> remoteEmbeddings(List<String> inputs) throws Exception {
+    private List<List<Double>> remoteEmbeddings(List<String> inputs) throws IOException, InterruptedException {
         URI endpoint = URI.create(resolveEmbeddingsEndpoint(properties.getEmbedding().getBaseUrl()));
-        Map<String, Object> body = Map.of(
-            "model", properties.getEmbedding().getModel(),
-            "dimensions", expectedEmbeddingDimension(),
-            "input", inputs
-        );
+        Map<String, Object> body = Map.of("model", properties.getEmbedding().getModel(), "dimensions",
+            expectedEmbeddingDimension(), "input", inputs);
         HttpRequest request = HttpRequest.newBuilder(endpoint)
             .header("Authorization", "Bearer " + properties.getEmbedding().getApiKey())
             .header("Content-Type", "application/json")
@@ -185,7 +179,8 @@ public class EmbeddingService {
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IllegalStateException("Embedding request failed with status " + response.statusCode() + ": " + response.body());
+            throw new IllegalStateException(
+                "Embedding request failed with status " + response.statusCode() + ": " + response.body());
         }
 
         JsonNode json = objectMapper.readTree(response.body());
@@ -213,6 +208,14 @@ public class EmbeddingService {
             return normalized;
         }
         return normalized + "/embeddings";
+    }
+
+    private String maskEndpoint(String url) {
+        try {
+            return URI.create(url).getHost();
+        } catch (Exception e) {
+            return "***";
+        }
     }
 
     private List<Double> localEmbedding(String input) {
@@ -275,8 +278,9 @@ public class EmbeddingService {
     private String embeddingHash(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest((value == null ? "" : value).getBytes(StandardCharsets.UTF_8)));
-        } catch (Exception e) {
+            return HexFormat.of()
+                .formatHex(digest.digest((value == null ? "" : value).getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Failed to hash embedding payload", e);
         }
     }

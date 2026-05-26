@@ -156,6 +156,22 @@
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>2.44.0</version>
+                <configuration>
+                    <java>
+                        <eclipse>
+                            <file>${project.basedir}/../idea-coding-standards-guide/docs/development/configs/CodeFormatterFromEclipse.xml</file>
+                        </eclipse>
+                        <importOrder>
+                            <file>${project.basedir}/../idea-coding-standards-guide/docs/development/configs/eclipse.importorder</file>
+                        </importOrder>
+                        <removeUnusedImports />
+                    </java>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
