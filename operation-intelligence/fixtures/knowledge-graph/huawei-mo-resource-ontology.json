@@ -1,0 +1,559 @@
+{
+  "ontologyId": "huawei-mo-resource-v1",
+  "name": "Huawei MO Resource Ontology",
+  "version": "1.0",
+  "sourceSystem": "mo-export",
+  "metadata": {
+    "description": "Ontology extracted from Huawei MO resource export CSV, with deployment and runtime relation layers.",
+    "sourceFile": "/Users/zlj/Downloads/AllMoExport_20260511095813862.csv",
+    "rawRecordCount": 506,
+    "rawEntityTypeCount": 200
+  },
+  "entityTypes": [
+    {
+      "type": "ManagementSystem",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "EnvironmentOrPlatform",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "BusinessSystem",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "PlatformService",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "ServiceCluster",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "ServiceInstance",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "ApplicationComponent",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "AppUnit",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "ComputeGroup",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "ComputeNode",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "KubernetesCluster",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "Pod",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "Container",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    },
+    {
+      "type": "Host",
+      "requiredProperties": [
+        "hostIp"
+      ],
+      "optionalProperties": [
+        "hostName"
+      ]
+    },
+    {
+      "type": "PhysicalOrNetworkResource",
+      "requiredProperties": [
+        "dn",
+        "rawType"
+      ],
+      "optionalProperties": [
+        "rawTypeId",
+        "parentDn",
+        "parentName",
+        "ipAddress",
+        "ipAddresses",
+        "hostIp",
+        "hostName",
+        "version",
+        "connectionStatus",
+        "isLeaf",
+        "sequenceNo",
+        "solutionId",
+        "prometheusScrape",
+        "prometheusPort",
+        "prometheusPath",
+        "prometheusScheme",
+        "prometheusExporterType"
+      ]
+    }
+  ],
+  "relationTypes": [
+    {
+      "type": "contains",
+      "layer": "deployment",
+      "from": [
+        "*"
+      ],
+      "to": [
+        "*"
+      ]
+    },
+    {
+      "type": "belongs_to_system",
+      "layer": "deployment",
+      "from": [
+        "ServiceCluster",
+        "PlatformService"
+      ],
+      "to": [
+        "BusinessSystem"
+      ]
+    },
+    {
+      "type": "instance_of",
+      "layer": "deployment",
+      "from": [
+        "ServiceInstance"
+      ],
+      "to": [
+        "ServiceCluster"
+      ]
+    },
+    {
+      "type": "deployed_in_instance",
+      "layer": "deployment",
+      "from": [
+        "ApplicationComponent",
+        "AppUnit"
+      ],
+      "to": [
+        "ServiceInstance"
+      ]
+    },
+    {
+      "type": "member_of",
+      "layer": "deployment",
+      "from": [
+        "ComputeNode"
+      ],
+      "to": [
+        "ComputeGroup"
+      ]
+    },
+    {
+      "type": "scheduled_on",
+      "layer": "deployment",
+      "from": [
+        "Pod"
+      ],
+      "to": [
+        "ComputeNode"
+      ]
+    },
+    {
+      "type": "runs_in",
+      "layer": "deployment",
+      "from": [
+        "Container"
+      ],
+      "to": [
+        "Pod",
+        "ComputeNode"
+      ]
+    },
+    {
+      "type": "runs_on_host",
+      "layer": "deployment",
+      "from": [
+        "ApplicationComponent",
+        "AppUnit",
+        "Container",
+        "PlatformService",
+        "ServiceInstance"
+      ],
+      "to": [
+        "Host"
+      ]
+    },
+    {
+      "type": "located_in",
+      "layer": "deployment",
+      "from": [
+        "PhysicalOrNetworkResource"
+      ],
+      "to": [
+        "EnvironmentOrPlatform",
+        "PhysicalOrNetworkResource"
+      ]
+    },
+    {
+      "type": "calls",
+      "layer": "runtime",
+      "from": [
+        "ApplicationComponent",
+        "ServiceInstance",
+        "PlatformService"
+      ],
+      "to": [
+        "ApplicationComponent",
+        "ServiceInstance",
+        "PlatformService"
+      ]
+    },
+    {
+      "type": "async_calls",
+      "layer": "runtime",
+      "from": [
+        "ApplicationComponent",
+        "ServiceInstance",
+        "PlatformService"
+      ],
+      "to": [
+        "ApplicationComponent",
+        "ServiceInstance",
+        "PlatformService"
+      ]
+    },
+    {
+      "type": "publishes_to",
+      "layer": "runtime",
+      "from": [
+        "ApplicationComponent",
+        "ServiceInstance"
+      ],
+      "to": [
+        "PlatformService"
+      ]
+    },
+    {
+      "type": "consumes_from",
+      "layer": "runtime",
+      "from": [
+        "ApplicationComponent",
+        "ServiceInstance"
+      ],
+      "to": [
+        "PlatformService"
+      ]
+    },
+    {
+      "type": "reads_from",
+      "layer": "runtime",
+      "from": [
+        "ApplicationComponent",
+        "ServiceInstance"
+      ],
+      "to": [
+        "PlatformService"
+      ]
+    },
+    {
+      "type": "writes_to",
+      "layer": "runtime",
+      "from": [
+        "ApplicationComponent",
+        "ServiceInstance"
+      ],
+      "to": [
+        "PlatformService"
+      ]
+    }
+  ]
+}

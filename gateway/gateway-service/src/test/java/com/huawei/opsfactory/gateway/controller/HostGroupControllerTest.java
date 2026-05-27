@@ -83,9 +83,7 @@ public class HostGroupControllerTest {
         when(hostGroupService.listGroups())
             .thenReturn(List.of(makeGroup("g1", "PROD", null, true), makeGroup("g2", "TEST", null, false)));
 
-        mockMvc.perform(get("/gateway/host-groups/")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/host-groups/").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.groups").isArray())
             .andExpect(jsonPath("$.groups.length()").value(2));
@@ -102,8 +100,8 @@ public class HostGroupControllerTest {
         when(hostGroupService.listGroups()).thenReturn(new ArrayList<>(List.of(g1, g2)));
         when(hostGroupService.getDisabledGroupIds(any())).thenReturn(Set.of("g1"));
 
-        mockMvc.perform(get("/gateway/host-groups/?enabledOnly=true")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/host-groups/?enabledOnly=true").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.groups").isArray())
@@ -123,8 +121,8 @@ public class HostGroupControllerTest {
         when(hostGroupService.listGroups()).thenReturn(new ArrayList<>(List.of(g1, g1Sub, g2)));
         when(hostGroupService.getDisabledGroupIds(any())).thenReturn(Set.of("g1", "g1-sub"));
 
-        mockMvc.perform(get("/gateway/host-groups/?enabledOnly=true")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/host-groups/?enabledOnly=true").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.groups.length()").value(1))
@@ -147,9 +145,7 @@ public class HostGroupControllerTest {
             return result;
         });
 
-        mockMvc.perform(get("/gateway/host-groups/tree")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/host-groups/tree").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.tree").isArray());
     }
@@ -172,8 +168,8 @@ public class HostGroupControllerTest {
             return result;
         });
 
-        mockMvc.perform(get("/gateway/host-groups/tree?enabledOnly=true")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/host-groups/tree?enabledOnly=true").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.tree.length()").value(1));
@@ -199,10 +195,8 @@ public class HostGroupControllerTest {
             return result;
         });
 
-        mockMvc.perform(get("/gateway/host-groups/tree?enabledOnly=true")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
-            .andExpect(status().isOk());
+        mockMvc.perform(get("/gateway/host-groups/tree?enabledOnly=true").header("x-secret-key", "test")
+            .header("x-user-id", "admin")).andExpect(status().isOk());
     }
 
     // ── updateGroup (enabled toggle) ────────────────────────────
@@ -215,8 +209,8 @@ public class HostGroupControllerTest {
         Map<String, Object> updated = makeGroup("g1", "PROD", null, false);
         when(hostGroupService.updateGroup(eq("g1"), any())).thenReturn(updated);
 
-        mockMvc.perform(put("/gateway/host-groups/g1")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(put("/gateway/host-groups/g1").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"enabled\": false}"))
@@ -233,8 +227,8 @@ public class HostGroupControllerTest {
         Map<String, Object> updated = makeGroup("g1", "PROD", null, true);
         when(hostGroupService.updateGroup(eq("g1"), any())).thenReturn(updated);
 
-        mockMvc.perform(put("/gateway/host-groups/g1")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(put("/gateway/host-groups/g1").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"enabled\": true}"))
@@ -251,12 +245,10 @@ public class HostGroupControllerTest {
         when(hostGroupService.updateGroup(eq("nonexistent"), any()))
             .thenThrow(new IllegalArgumentException("Host group not found: nonexistent"));
 
-        mockMvc.perform(put("/gateway/host-groups/nonexistent")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"enabled\": false}"))
-            .andExpect(status().isNotFound());
+        mockMvc.perform(put("/gateway/host-groups/nonexistent").header("x-secret-key", "test")
+            .header("x-user-id", "admin")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"enabled\": false}")).andExpect(status().isNotFound());
     }
 
     // ── Auth ────────────────────────────────────────────────────
@@ -266,9 +258,7 @@ public class HostGroupControllerTest {
      */
     @Test
     public void testListGroups_unauthorized_noKey() throws Exception {
-        mockMvc.perform(get("/gateway/host-groups/")
-                .header("x-user-id", "admin"))
-            .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/gateway/host-groups/").header("x-user-id", "admin")).andExpect(status().isUnauthorized());
     }
 
     /**
@@ -278,9 +268,7 @@ public class HostGroupControllerTest {
     public void testListGroups_succeeds_forAnyUser() throws Exception {
         when(hostGroupService.listGroups()).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/host-groups/")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user"))
+        mockMvc.perform(get("/gateway/host-groups/").header("x-secret-key", "test").header("x-user-id", "regular-user"))
             .andExpect(status().isOk());
     }
 

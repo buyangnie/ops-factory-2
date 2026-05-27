@@ -27,11 +27,15 @@ import java.util.List;
 class JsonFileStoreTest {
 
     private static final DateTimeFormatter TS_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
     // Use a recent timestamp that loadRange can match against file names
     private static final long BASE_TS = System.currentTimeMillis() - 60000;
+
     @TempDir
     Path tempDir;
+
     private JsonFileStore<IndicatorRawData> store;
+
     private Path storeDir;
 
     @BeforeEach

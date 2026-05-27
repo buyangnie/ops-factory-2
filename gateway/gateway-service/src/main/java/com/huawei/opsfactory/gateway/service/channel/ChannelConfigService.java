@@ -19,6 +19,8 @@ import com.huawei.opsfactory.gateway.service.channel.model.ChannelVerificationRe
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -37,8 +39,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
-
-import jakarta.annotation.PostConstruct;
 
 /**
  * Central service for channel CRUD, configuration persistence, runtime state merging, and event recording.

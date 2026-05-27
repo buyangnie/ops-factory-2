@@ -9,6 +9,8 @@ import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,8 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import jakarta.annotation.PostConstruct;
 
 /**
  * Manages Standard Operating Procedure documents with command whitelist validation and name uniqueness checks.
@@ -262,7 +262,8 @@ public class SopService {
             }
             List<String> rejected = commandWhitelistService.validateCommand(cmdObj.toString());
             if (!rejected.isEmpty()) {
-                throw new IllegalArgumentException("Node " + (i + 1) + " contains non-whitelisted commands: " + String.join(", ", rejected));
+                throw new IllegalArgumentException(
+                    "Node " + (i + 1) + " contains non-whitelisted commands: " + String.join(", ", rejected));
             }
         }
     }

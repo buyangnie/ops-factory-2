@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import { access, constants, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import YAML from 'yaml'
+import yaml from 'js-yaml'
 
 const PROJECT_ROOT = resolve(import.meta.dirname, '..', '..', '..', '..')
 const OI_DIR = join(PROJECT_ROOT, 'operation-intelligence')
@@ -48,7 +48,7 @@ describe('operation-intelligence basic smoke checks', () => {
 
   it('config.yaml.example has required top-level keys', async () => {
     const content = await readFile(join(OI_DIR, 'config.yaml.example'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
 
     expect(config.server.port).toBe(8096)
     expect(config['operation-intelligence']).toBeDefined()
@@ -58,7 +58,7 @@ describe('operation-intelligence basic smoke checks', () => {
 
   it('config.yaml.example declares QoS section with expected defaults', async () => {
     const content = await readFile(join(OI_DIR, 'config.yaml.example'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
     const qos = config['operation-intelligence'].qos
 
     expect(qos.enabled).toBe(true)
@@ -69,7 +69,7 @@ describe('operation-intelligence basic smoke checks', () => {
 
   it('config.yaml.example retention defaults are valid positive numbers', async () => {
     const content = await readFile(join(OI_DIR, 'config.yaml.example'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
     const qos = config['operation-intelligence'].qos
 
     expect(qos['raw-data-retention-days']).toBeGreaterThan(0)
@@ -79,7 +79,7 @@ describe('operation-intelligence basic smoke checks', () => {
 
   it('config.yaml.example weights sum to 1.0', async () => {
     const content = await readFile(join(OI_DIR, 'config.yaml.example'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
     const { availability, performance, resource } = config['operation-intelligence'].qos.weights
 
     expect(availability + performance + resource).toBeCloseTo(1.0, 6)
@@ -87,7 +87,7 @@ describe('operation-intelligence basic smoke checks', () => {
 
   it('config.yaml.example secret-key is empty by default', async () => {
     const content = await readFile(join(OI_DIR, 'config.yaml.example'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
 
     expect(config['operation-intelligence']['secret-key']).toBe('')
   })

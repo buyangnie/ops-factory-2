@@ -18,7 +18,7 @@ import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import net from 'node:net'
-import YAML from 'yaml'
+import yaml from 'js-yaml'
 import { sendSessionReplyAndWait, sleep, type GatewayHandle } from '../../../platform/shared/helpers.js'
 
 const AGENT_ID = 'qa-agent'
@@ -31,7 +31,7 @@ const MCP_DIR = join(PROJECT_ROOT, 'gateway', 'agents', 'qa-agent', 'config', 'm
 let gw: GatewayHandle
 
 function readQaAgentConfig(): Record<string, any> {
-  return YAML.parse(readFileSync(AGENT_CONFIG_PATH, 'utf8')) as Record<string, any>
+  return yaml.load(readFileSync(AGENT_CONFIG_PATH, 'utf8')) as Record<string, any>
 }
 
 function readConfiguredKnowledgeSourceId(): string {

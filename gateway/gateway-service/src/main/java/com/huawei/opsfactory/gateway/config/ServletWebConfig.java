@@ -7,8 +7,6 @@ package com.huawei.opsfactory.gateway.config;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -57,15 +55,14 @@ public class ServletWebConfig {
         if (configured == null || configured.isBlank() || "*".equals(configured.trim())) {
             config.addAllowedOriginPattern("*");
         } else {
-            List<String> allowedOrigins = Arrays.stream(configured.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
+            List<String> allowedOrigins =
+                Arrays.stream(configured.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
             config.setAllowedOrigins(allowedOrigins);
         }
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("x-secret-key", "x-user-id", "x-request-id", "content-type", "authorization"));
+        config.setAllowedHeaders(
+            Arrays.asList("x-secret-key", "x-user-id", "x-request-id", "content-type", "authorization"));
         config.setExposedHeaders(Arrays.asList("*"));
         config.setMaxAge(3600L);
 
@@ -74,8 +71,8 @@ public class ServletWebConfig {
 
         return new CorsFilter(source) {
             @Override
-            protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-                    throws ServletException, IOException {
+            protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                FilterChain filterChain) throws ServletException, IOException {
                 String requestOrigin = request.getHeader(HttpHeaders.ORIGIN);
                 String allowOrigin = resolveAllowOrigin(configured, requestOrigin);
 
@@ -86,7 +83,7 @@ public class ServletWebConfig {
 
                 response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET, POST, PUT, DELETE, OPTIONS");
                 response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
-                        "x-secret-key, x-user-id, x-request-id, content-type, authorization");
+                    "x-secret-key, x-user-id, x-request-id, content-type, authorization");
                 response.setHeader(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "*");
                 response.setHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE, "3600");
 
@@ -112,10 +109,8 @@ public class ServletWebConfig {
             return requestOrigin;
         }
 
-        List<String> exactOrigins = Arrays.stream(configured.split(","))
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .toList();
+        List<String> exactOrigins =
+            Arrays.stream(configured.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
         return exactOrigins.contains(requestOrigin) ? requestOrigin : null;
     }
 }

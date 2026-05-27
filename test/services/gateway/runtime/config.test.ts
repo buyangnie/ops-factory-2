@@ -5,7 +5,7 @@ import {
 } from 'node:fs/promises'
 import net from 'node:net'
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
-import YAML from 'yaml'
+import yaml from 'js-yaml'
 import { sleep } from '../../../platform/shared/helpers.js'
 
 const PROJECT_ROOT = resolve(import.meta.dirname, '..', '..', '..', '..')
@@ -140,7 +140,7 @@ describe('orchestrator script docs', () => {
 describe('skill-market service configuration', () => {
   it('skill-market config exposes expected defaults', async () => {
     const content = await readFile(join(SKILL_MARKET_DIR, 'config.yaml.example'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
 
     expect(config.server.port).toBe(8095)
     expect(config['skill-market'].runtime['base-dir']).toBe('./data')
@@ -151,7 +151,7 @@ describe('skill-market service configuration', () => {
 
   it('gateway config declares skill-market client settings', async () => {
     const content = await readFile(join(GATEWAY_DIR, 'config.yaml.example'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
 
     expect(config.gateway['skill-market']['base-url']).toBe('http://127.0.0.1:8095')
     expect(config.gateway['skill-market']['request-timeout-ms']).toBe(10000)
@@ -160,7 +160,7 @@ describe('skill-market service configuration', () => {
 
   it('control-center registers skill-market as a managed service', async () => {
     const content = await readFile(join(PROJECT_ROOT, 'control-center', 'config.yaml.example'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
     const service = config['control-center'].services.find((item: { id: string }) => item.id === 'skill-market')
 
     expect(service).toBeTruthy()

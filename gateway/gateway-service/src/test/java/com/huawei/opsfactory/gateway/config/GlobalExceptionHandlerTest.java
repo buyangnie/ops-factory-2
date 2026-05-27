@@ -13,10 +13,8 @@ import org.junit.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.util.Map;
 
@@ -59,7 +57,8 @@ public class GlobalExceptionHandlerTest {
      */
     @Test
     public void testHandleInputException_otherError() {
-        HttpMessageNotReadableException ex = new HttpMessageNotReadableException("Missing parameter 'name'", null, null);
+        HttpMessageNotReadableException ex =
+            new HttpMessageNotReadableException("Missing parameter 'name'", null, null);
 
         ResponseEntity<Map<String, Object>> response = handler.handleInputException(ex);
 
@@ -130,7 +129,8 @@ public class GlobalExceptionHandlerTest {
      */
     @Test
     public void testHandleNoResourceFoundException() {
-        NoResourceFoundException ex = new NoResourceFoundException(org.springframework.http.HttpMethod.GET, "/missing/path");
+        NoResourceFoundException ex =
+            new NoResourceFoundException(org.springframework.http.HttpMethod.GET, "/missing/path");
 
         ResponseEntity<Map<String, Object>> response = handler.handleNoResourceFound(ex);
 

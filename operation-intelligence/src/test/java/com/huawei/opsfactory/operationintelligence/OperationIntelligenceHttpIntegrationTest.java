@@ -4,14 +4,11 @@
 
 package com.huawei.opsfactory.operationintelligence;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OperationIntelligenceHttpIntegrationTest {
 
     private static final String SECRET_KEY = "test";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Autowired
     private MockMvc mockMvc;

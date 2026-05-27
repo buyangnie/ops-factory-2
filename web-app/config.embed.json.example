@@ -8,6 +8,22 @@
     "skillMarketServiceUrl": "",
     "operationIntelligenceServiceUrl": "",
     "operationIntelligenceSecretKey": "test",
+    "operationIntelligenceKnowledgeGraph": {
+        "collapsedRelationRules": [
+            {
+                "relationType": "contains",
+                "targetEntityTypes": ["Host"],
+                "threshold": 1
+            }
+        ],
+        "resourceTreeHierarchyRules": [
+            {
+                "relationType": "contains",
+                "mode": "hierarchy",
+                "threshold": 1
+            }
+        ]
+    },
     "logging": {
         "level": "info",
         "consoleEnabled": true,

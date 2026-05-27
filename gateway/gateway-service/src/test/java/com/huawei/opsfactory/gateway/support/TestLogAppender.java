@@ -4,10 +4,11 @@
 
 package com.huawei.opsfactory.gateway.support;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Test appender for capturing log events during assertions.
@@ -34,7 +35,8 @@ public final class TestLogAppender extends AppenderBase<ILoggingEvent> implement
      * @return the result
      */
     public static TestLogAppender attachTo(Class<?> type) {
-        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(type.getName());
+        ch.qos.logback.classic.Logger logger =
+            (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(type.getName());
         return new TestLogAppender(logger);
     }
 

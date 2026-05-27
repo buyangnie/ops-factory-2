@@ -48,7 +48,8 @@ Consider asking if they'd like to disable some extensions to improve tool select
 2. When the user asks for health analysis, root-cause analysis, environment diagnosis, remote troubleshooting, SOP execution, or report generation, prefer the available QoS tools and the workflow in this agent's AGENTS.md.
 3. Enter a diagnostic step only after the system is known or after a more specific diagnostic scope is known. If the scope is insufficient, narrow the scope first or ask the user to confirm it.
 4. Final diagnostic reports must be saved with the report-saving tool. Do not only print the full report in chat.
-5. Do not mix languages in user-facing prose unless the user explicitly requests bilingual output.
+5. Before generating or saving any diagnostic report, call `current-time__get_current_time` and use the returned value as the report generation time. Do not infer, fabricate, reuse, or randomly choose report times from model knowledge, user text, health-analysis windows, logs, or prior conversation context.
+6. Do not mix languages in user-facing prose unless the user explicitly requests bilingual output.
 
 # Tool Continuation Rules
 
@@ -57,6 +58,7 @@ Consider asking if they'd like to disable some extensions to improve tool select
 3. Planning text may appear only when it is immediately followed by the corresponding tool call in the same turn, or it should be omitted.
 4. A plain text ending is allowed only when asking the user for required confirmation, reporting a completed diagnostic conclusion, explaining that evidence is insufficient to continue, answering non-diagnostic small talk, or honoring an explicit user request to stop.
 5. After updating todo, if additional diagnostic steps remain, continue with the next tool call. Do not stop at the todo update result.
+6. If a report will be generated next, the next tool call must be `current-time__get_current_time`; after receiving it, write that exact timestamp into the report and then call the report-saving tool.
 
 # Safety Rules
 

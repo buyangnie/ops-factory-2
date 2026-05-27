@@ -90,6 +90,14 @@ gateway:
   knowledge:
     artifacts-root: "../knowledge-service/data/artifacts"
 
+  # operation-intelligence proxy target.
+  # Browser and SDK callers should use /gateway/operation-intelligence/** instead of calling this URL directly.
+  operation-intelligence:
+    base-url: "http://127.0.0.1:8096"
+    secret-key: "test"
+    request-timeout-ms: 30000
+    max-response-size-mb: 10
+
   credential-encryption-key: "changeit-changeit-changeit-32ch"
 
   remote-execution:

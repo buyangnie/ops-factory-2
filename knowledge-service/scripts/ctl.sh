@@ -8,7 +8,7 @@ ROOT_DIR="$(dirname "${SERVICE_DIR}")"
 yaml_val() {
     local key="$1" file="${SERVICE_DIR}/config.yaml"
     [ -f "${file}" ] || return 0
-    node -e "const y=require('yaml');const f=require('fs').readFileSync('${file}','utf-8');const c=y.parse(f);const keys='${key}'.split('.');let v=c;for(const k of keys){v=v?.[k]};if(v!=null)process.stdout.write(String(v))" 2>/dev/null || true
+    node -e "const y=require('js-yaml');const f=require('fs').readFileSync('${file}','utf-8');const c=y.load(f);const keys='${key}'.split('.');let v=c;for(const k of keys){v=v?.[k]};if(v!=null)process.stdout.write(String(v))" 2>/dev/null || true
 }
 
 KNOWLEDGE_PORT="${KNOWLEDGE_PORT:-$(yaml_val server.port)}"

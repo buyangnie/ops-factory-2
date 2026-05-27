@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import { access, constants, readFile, writeFile, mkdir, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import YAML from 'yaml'
+import yaml from 'js-yaml'
 
 const PROJECT_ROOT = resolve(import.meta.dirname, '..', '..', '..', '..')
 const OI_DIR = join(PROJECT_ROOT, 'operation-intelligence')
@@ -52,8 +52,8 @@ describe('operation-intelligence config files', () => {
   })
 
   it('config.yaml.example is a valid subset of config.yaml keys', async () => {
-    const example = YAML.parse(await readFile(join(OI_DIR, 'config.yaml.example'), 'utf-8'))
-    const main = YAML.parse(await readFile(join(OI_DIR, 'config.yaml'), 'utf-8'))
+    const example = yaml.load(await readFile(join(OI_DIR, 'config.yaml.example'), 'utf-8'))
+    const main = yaml.load(await readFile(join(OI_DIR, 'config.yaml'), 'utf-8'))
 
     expect(main.server).toBeDefined()
     expect(main['operation-intelligence']).toBeDefined()
@@ -75,7 +75,7 @@ describe('operation-intelligence ctl.sh config parsing', () => {
 
     // Verify the same logic that ctl.sh uses (node + yaml module)
     const content = await readFile(tmpConfig, 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
     const port = config.server?.port
     const secretKey = config['operation-intelligence']?.['secret-key']
     const corsOrigin = config['operation-intelligence']?.['cors-origin']
@@ -93,7 +93,7 @@ describe('operation-intelligence ctl.sh config parsing', () => {
       yaml_val() {
         local key="$1" file="${tmpConfig}"
         [ -f "\${file}" ] || return 0
-        node -e "const y=require('yaml');const f=require('fs').readFileSync('\${file}','utf-8');const c=y.parse(f);const keys='\${key}'.split('.');let v=c;for(const k of keys){v=v?.[k]};if(v!=null)process.stdout.write(String(v))" 2>/dev/null || true
+        node -e "const y=require('js-yaml');const f=require('fs').readFileSync('\${file}','utf-8');const c=y.load(f);const keys='\${key}'.split('.');let v=c;for(const k of keys){v=v?.[k]};if(v!=null)process.stdout.write(String(v))" 2>/dev/null || true
       }
       OI_PORT="\${OI_PORT:-\$(yaml_val server.port)}"
       OI_PORT="\${OI_PORT:-8096}"
@@ -117,7 +117,7 @@ describe('operation-intelligence ctl.sh config parsing', () => {
       yaml_val() {
         local key="$1" file="${TMP_DIR}/nonexistent.yaml"
         [ -f "\${file}" ] || return 0
-        node -e "const y=require('yaml');const f=require('fs').readFileSync('\${file}','utf-8');const c=y.parse(f);const keys='\${key}'.split('.');let v=c;for(const k of keys){v=v?.[k]};if(v!=null)process.stdout.write(String(v))" 2>/dev/null || true
+        node -e "const y=require('js-yaml');const f=require('fs').readFileSync('\${file}','utf-8');const c=y.load(f);const keys='\${key}'.split('.');let v=c;for(const k of keys){v=v?.[k]};if(v!=null)process.stdout.write(String(v))" 2>/dev/null || true
       }
       result="$(yaml_val server.port)"
       echo "result=[\${result}]"
@@ -131,14 +131,14 @@ describe('operation-intelligence ctl.sh config parsing', () => {
 describe('operation-intelligence DV environment config', () => {
   it('config.yaml.example dv-environments defaults to empty list', async () => {
     const content = await readFile(join(OI_DIR, 'config.yaml.example'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
 
     expect(config['operation-intelligence'].qos['dv-environments']).toEqual([])
   })
 
   it('config.yaml dv-environments entries have required fields', async () => {
     const content = await readFile(join(OI_DIR, 'config.yaml'), 'utf-8')
-    const config = YAML.parse(content)
+    const config = yaml.load(content)
     const envs = config['operation-intelligence'].qos['dv-environments']
 
     if (Array.isArray(envs) && envs.length > 0) {
@@ -165,10 +165,10 @@ describe('operation-intelligence application.yml', () => {
   })
 
   it('default server port matches config.yaml', async () => {
-    const appYml = YAML.parse(
+    const appYml = yaml.load(
       await readFile(join(OI_DIR, 'src', 'main', 'resources', 'application.yml'), 'utf-8'),
     )
-    const configYaml = YAML.parse(
+    const configYaml = yaml.load(
       await readFile(join(OI_DIR, 'config.yaml'), 'utf-8'),
     )
     expect(appYml.server.port).toBe(configYaml.server.port)

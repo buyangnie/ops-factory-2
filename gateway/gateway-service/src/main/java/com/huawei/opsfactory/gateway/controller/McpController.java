@@ -4,8 +4,6 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
-import com.huawei.opsfactory.gateway.common.constants.GatewayConstants;
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.process.InstanceManager;
@@ -13,8 +11,8 @@ import com.huawei.opsfactory.gateway.proxy.GoosedProxy;
 import com.huawei.opsfactory.gateway.service.AgentConfigService;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -54,7 +52,7 @@ public class McpController {
      * Creates the mcp controller instance.
      */
     public McpController(InstanceManager instanceManager, GoosedProxy goosedProxy,
-            AgentConfigService agentConfigService) {
+        AgentConfigService agentConfigService) {
         this.instanceManager = instanceManager;
         this.goosedProxy = goosedProxy;
         this.agentConfigService = agentConfigService;
@@ -68,11 +66,13 @@ public class McpController {
      * @return the result
      */
     @GetMapping
-    public ResponseEntity<String> getMcpExtensions(@PathVariable("agentId") String agentId, HttpServletRequest request) {
+    public ResponseEntity<String> getMcpExtensions(@PathVariable("agentId") String agentId,
+        HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-        String result = goosedProxy.fetchJson(instance.getPort(), HttpMethod.GET,
-            "/config/extensions", null, 30, instance.getSecretKey()).block();
+        String result = goosedProxy
+            .fetchJson(instance.getPort(), HttpMethod.GET, "/config/extensions", null, 30, instance.getSecretKey())
+            .block();
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(result);
     }
 
@@ -80,47 +80,50 @@ public class McpController {
      * Creates a new MCP extension on the agent's system instance and recycles running instances.
      *
      * @param agentId agent identifier
-     * @param body    request body
+     * @param body request body
      * @param request current HTTP request
      * @return the created MCP extension
      */
     @PostMapping
     public String createMcpExtension(@PathVariable("agentId") String agentId, @RequestBody String body,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-        return goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST,
-            "/config/extensions", body, 30, instance.getSecretKey()).block();
+        return goosedProxy
+            .fetchJson(instance.getPort(), HttpMethod.POST, "/config/extensions", body, 30, instance.getSecretKey())
+            .block();
     }
 
     /**
      * Deletes an MCP extension by name and recycles running instances.
      *
      * @param agentId agent identifier
-     * @param name    name value
+     * @param name name value
      * @param request current HTTP request
      * @return the deletion result
      */
     @DeleteMapping("/{name}")
     public String deleteMcpExtension(@PathVariable("agentId") String agentId, @PathVariable("name") String name,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-        return goosedProxy.fetchJson(instance.getPort(), HttpMethod.DELETE,
-            "/config/extensions/" + name, null, 30, instance.getSecretKey()).block();
+        return goosedProxy
+            .fetchJson(instance.getPort(), HttpMethod.DELETE, "/config/extensions/" + name, null, 30,
+                instance.getSecretKey())
+            .block();
     }
 
     /**
      * Gets the settings for a specific MCP extension.
      *
      * @param agentId agent identifier
-     * @param name    name value
+     * @param name name value
      * @param request current HTTP request
      * @return the settings for a specific MCP extension
      */
     @GetMapping("/{name}/settings")
     public ResponseEntity<Map<String, Object>> getMcpSettings(@PathVariable("agentId") String agentId,
-            @PathVariable("name") String name, HttpServletRequest request) {
+        @PathVariable("name") String name, HttpServletRequest request) {
         try {
             Map<String, Object> settings = agentConfigService.readMcpSettings(agentId, name);
             if (hasConfigBackedSettings(name)) {
@@ -149,15 +152,14 @@ public class McpController {
      * Updates the settings for a specific MCP extension.
      *
      * @param agentId agent identifier
-     * @param name    name value
-     * @param body    request body
+     * @param name name value
+     * @param body request body
      * @param request current HTTP request
      * @return the update result
      */
     @PutMapping("/{name}/settings")
     public ResponseEntity<Map<String, Object>> putMcpSettings(@PathVariable("agentId") String agentId,
-            @PathVariable("name") String name, @RequestBody Map<String, Object> body,
-            HttpServletRequest request) {
+        @PathVariable("name") String name, @RequestBody Map<String, Object> body, HttpServletRequest request) {
         try {
             agentConfigService.writeMcpSettings(agentId, name, body);
             return ResponseEntity.ok(body);

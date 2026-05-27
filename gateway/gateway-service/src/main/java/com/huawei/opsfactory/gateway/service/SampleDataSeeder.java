@@ -6,11 +6,11 @@ package com.huawei.opsfactory.gateway.service;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import jakarta.annotation.PostConstruct;
 
 /**
  * Placeholder seeder — sample data is now injected via E2E test.

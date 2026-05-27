@@ -4,12 +4,10 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
 import com.huawei.opsfactory.gateway.service.CommandWhitelistService;
 import com.huawei.opsfactory.gateway.service.RemoteExecutionService;
 
-import jakarta.servlet.http.HttpServletRequest;
-
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,7 +36,7 @@ public class RemoteExecController {
      * Creates the remote exec controller instance.
      */
     public RemoteExecController(RemoteExecutionService remoteExecutionService,
-            CommandWhitelistService commandWhitelistService) {
+        CommandWhitelistService commandWhitelistService) {
         this.remoteExecutionService = remoteExecutionService;
         this.commandWhitelistService = commandWhitelistService;
     }

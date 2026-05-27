@@ -15,6 +15,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -41,8 +43,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
-import jakarta.annotation.PostConstruct;
-
 /**
  * Manages agent configuration, registry, skills, memory files, and MCP settings.
  *
@@ -63,9 +63,9 @@ public class AgentConfigService {
 
     private static final Pattern PROVIDER_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9._-]+$");
 
-    private static final List<String> MODEL_CONFIG_KEYS = List.of("GOOSE_PROVIDER", "GOOSE_MODEL", "GOOSE_MODE",
-        "GOOSE_CONTEXT_LIMIT", "GOOSE_MAX_TOKENS", "GOOSE_TEMPERATURE", "GOOSE_CONTEXT_STRATEGY",
-        "GOOSE_AUTO_COMPACT_THRESHOLD", "GOOSE_MAX_TURNS");
+    private static final List<String> MODEL_CONFIG_KEYS =
+        List.of("GOOSE_PROVIDER", "GOOSE_MODEL", "GOOSE_MODE", "GOOSE_CONTEXT_LIMIT", "GOOSE_MAX_TOKENS",
+            "GOOSE_TEMPERATURE", "GOOSE_CONTEXT_STRATEGY", "GOOSE_AUTO_COMPACT_THRESHOLD", "GOOSE_MAX_TURNS");
 
     private final GatewayProperties properties;
 
@@ -411,7 +411,8 @@ public class AgentConfigService {
         }
     }
 
-    private Map<String, Object> doCreateCustomProvider(String agentId, Map<String, Object> provider) throws IOException {
+    private Map<String, Object> doCreateCustomProvider(String agentId, Map<String, Object> provider)
+        throws IOException {
         String name = trimToNull(asString(provider.get("name")));
         if (name == null) {
             throw new IllegalArgumentException("Provider name is required");
@@ -429,7 +430,8 @@ public class AgentConfigService {
         Map<String, Object> normalized = normalizeProvider(provider, name);
         Files.writeString(providerPath, OBJECT_MAPPER.writeValueAsString(normalized) + System.lineSeparator(),
             StandardCharsets.UTF_8);
-        writeProviderSecret(agentId, String.valueOf(normalized.get("api_key_env")), trimToNull(asString(provider.get("api_key"))));
+        writeProviderSecret(agentId, String.valueOf(normalized.get("api_key_env")),
+            trimToNull(asString(provider.get("api_key"))));
         normalized.put("fileName", providerPath.getFileName().toString());
         return normalized;
     }
@@ -480,7 +482,8 @@ public class AgentConfigService {
 
         Files.writeString(providerPath, OBJECT_MAPPER.writeValueAsString(updated) + System.lineSeparator(),
             StandardCharsets.UTF_8);
-        writeProviderSecret(agentId, String.valueOf(updated.get("api_key_env")), trimToNull(asString(provider.get("api_key"))));
+        writeProviderSecret(agentId, String.valueOf(updated.get("api_key_env")),
+            trimToNull(asString(provider.get("api_key"))));
         updated.put("fileName", providerPath.getFileName().toString());
         return updated;
     }

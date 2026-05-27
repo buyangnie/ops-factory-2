@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: operation-intelligence
+  codec:
+    max-in-memory-size: 10MB
   config:
     import: optional:file:${OI_CONFIG_PATH:./config.yaml}
 

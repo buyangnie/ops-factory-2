@@ -9,6 +9,8 @@ import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +31,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import jakarta.annotation.PostConstruct;
 
 /**
  * Provides CRUD operations, topology queries, and host-id synchronization for business services.

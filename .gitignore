@@ -99,8 +99,13 @@ gateway/agents/*/data/sessions/
 # Playwright
 /.playwright-cli/
 /test-results/
+test-output/
+/output/
 test/test-results/
 test/playwright-report/
 
 # Langfuse volumes (managed by Docker)
 langfuse/pgdata/
+
+.claude/
+*/.dbg/

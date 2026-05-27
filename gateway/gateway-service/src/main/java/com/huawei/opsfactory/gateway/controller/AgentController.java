@@ -4,13 +4,13 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
 import com.huawei.opsfactory.gateway.common.model.AgentRegistryEntry;
 import com.huawei.opsfactory.gateway.process.InstanceManager;
 import com.huawei.opsfactory.gateway.service.AgentConfigService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -47,7 +47,7 @@ public class AgentController {
      * Creates the agent controller instance.
      *
      * @param agentConfigService service for loading and persisting agent configurations
-     * @param instanceManager    manager for controlling running agent instances
+     * @param instanceManager manager for controlling running agent instances
      */
     public AgentController(AgentConfigService agentConfigService, InstanceManager instanceManager) {
         this.agentConfigService = agentConfigService;
@@ -104,14 +104,14 @@ public class AgentController {
     /**
      * Creates a new agent with the given ID and name.
      *
-     * @param body    request body containing {@code "id"} and {@code "name"} fields
+     * @param body request body containing {@code "id"} and {@code "name"} fields
      * @param request current HTTP request
      * @return response with the created agent details on success, or an error body on failure
      * @throws ResponseStatusException if the agent configuration files cannot be written to disk
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createAgent(@RequestBody Map<String, String> body,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         String id = body.get("id");
         String name = body.get("name");
         if (id == null || id.isBlank()) {
@@ -122,8 +122,7 @@ public class AgentController {
         }
         try {
             Map<String, Object> agent = agentConfigService.createAgent(id.strip(), name.strip());
-            return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("success", true, "agent", agent));
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("success", true, "agent", agent));
         } catch (IllegalArgumentException e) {
             Map<String, Object> errorBody = new LinkedHashMap<>();
             errorBody.put("success", false);
@@ -137,14 +136,13 @@ public class AgentController {
     /**
      * Deletes an agent by ID and stops all its running instances.
      *
-     * @param id      agent identifier from the URL path
+     * @param id agent identifier from the URL path
      * @param request current HTTP request
      * @return response indicating success or a bad-request error body
      * @throws ResponseStatusException if the agent configuration files cannot be removed from disk
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteAgent(@PathVariable("id") String id,
-            HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> deleteAgent(@PathVariable("id") String id, HttpServletRequest request) {
         try {
             instanceManager.stopAllForAgent(id);
             agentConfigService.deleteAgent(id);
@@ -162,7 +160,7 @@ public class AgentController {
     /**
      * Lists all skills configured for the specified agent.
      *
-     * @param id      agent identifier from the URL path
+     * @param id agent identifier from the URL path
      * @param request current HTTP request
      * @return map containing a list of skill descriptors keyed by {@code "skills"}
      */
@@ -174,14 +172,13 @@ public class AgentController {
     /**
      * Gets the full configuration for the specified agent.
      *
-     * @param id      agent identifier from the URL path
+     * @param id agent identifier from the URL path
      * @param request current HTTP request
      * @return response containing the agent id, name, provider, model, working directory,
      *         and agents.md content; or 404 if the agent is not found
      */
     @GetMapping("/{id}/config")
-    public ResponseEntity<Map<String, Object>> getConfig(@PathVariable("id") String id,
-            HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> getConfig(@PathVariable("id") String id, HttpServletRequest request) {
         AgentRegistryEntry entry = agentConfigService.findAgent(id);
         if (entry == null) {
             return ResponseEntity.notFound().build();
@@ -203,8 +200,8 @@ public class AgentController {
     /**
      * Updates the agents.md configuration for the specified agent.
      *
-     * @param id      agent identifier from the URL path
-     * @param body    request body containing the {@code "agentsMd"} field to write
+     * @param id agent identifier from the URL path
+     * @param body request body containing the {@code "agentsMd"} field to write
      * @param request current HTTP request
      * @return response indicating success, a bad-request body if the agent is not found,
      *         or an internal-error status if the file write fails
@@ -212,7 +209,7 @@ public class AgentController {
      */
     @PutMapping("/{id}/config")
     public ResponseEntity<Map<String, Object>> updateConfig(@PathVariable("id") String id,
-            @RequestBody Map<String, String> body, HttpServletRequest request) {
+        @RequestBody Map<String, String> body, HttpServletRequest request) {
         AgentRegistryEntry entry = agentConfigService.findAgent(id);
         if (entry == null) {
             Map<String, Object> errorBody = new LinkedHashMap<>();
@@ -234,14 +231,14 @@ public class AgentController {
     /**
      * Updates the model configuration for the specified agent.
      *
-     * @param id      agent identifier from the URL path
-     * @param body    request body containing model configuration keys
+     * @param id agent identifier from the URL path
+     * @param body request body containing model configuration keys
      * @param request current HTTP request
      * @return response indicating success or an error body
      */
     @PutMapping("/{id}/model-config")
     public ResponseEntity<Map<String, Object>> updateModelConfig(@PathVariable("id") String id,
-            @RequestBody Map<String, String> body, HttpServletRequest request) {
+        @RequestBody Map<String, String> body, HttpServletRequest request) {
         AgentRegistryEntry entry = agentConfigService.findAgent(id);
         if (entry == null) {
             return badAgent(id);
@@ -262,22 +259,21 @@ public class AgentController {
     /**
      * Creates a custom provider for the specified agent.
      *
-     * @param id      agent identifier from the URL path
-     * @param body    request body containing the provider definition
+     * @param id agent identifier from the URL path
+     * @param body request body containing the provider definition
      * @param request current HTTP request
      * @return response with the created provider on success, or an error body on failure
      */
     @PostMapping("/{id}/providers")
     public ResponseEntity<Map<String, Object>> createProvider(@PathVariable("id") String id,
-            @RequestBody Map<String, Object> body, HttpServletRequest request) {
+        @RequestBody Map<String, Object> body, HttpServletRequest request) {
         AgentRegistryEntry entry = agentConfigService.findAgent(id);
         if (entry == null) {
             return badAgent(id);
         }
         try {
             Map<String, Object> provider = agentConfigService.createCustomProvider(id, body);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("success", true, "provider", provider));
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("success", true, "provider", provider));
         } catch (IllegalArgumentException e) {
             Map<String, Object> errorBody = new LinkedHashMap<>();
             errorBody.put("success", false);
@@ -291,16 +287,16 @@ public class AgentController {
     /**
      * Updates a custom provider for the specified agent.
      *
-     * @param id           agent identifier from the URL path
+     * @param id agent identifier from the URL path
      * @param providerName provider name from the URL path
-     * @param body         request body containing the updated provider fields
-     * @param request      current HTTP request
+     * @param body request body containing the updated provider fields
+     * @param request current HTTP request
      * @return response with the updated provider on success, or an error body on failure
      */
     @PutMapping("/{id}/providers/{providerName}")
     public ResponseEntity<Map<String, Object>> updateProvider(@PathVariable("id") String id,
-            @PathVariable("providerName") String providerName, @RequestBody Map<String, Object> body,
-            HttpServletRequest request) {
+        @PathVariable("providerName") String providerName, @RequestBody Map<String, Object> body,
+        HttpServletRequest request) {
         AgentRegistryEntry entry = agentConfigService.findAgent(id);
         if (entry == null) {
             return badAgent(id);
@@ -321,13 +317,12 @@ public class AgentController {
     /**
      * Lists all memory files for the specified agent.
      *
-     * @param id      agent identifier from the URL path
+     * @param id agent identifier from the URL path
      * @param request current HTTP request
      * @return response containing a list of memory file descriptors keyed by {@code "files"}
      */
     @GetMapping("/{id}/memory")
-    public ResponseEntity<Map<String, Object>> listMemory(@PathVariable String id,
-            HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> listMemory(@PathVariable String id, HttpServletRequest request) {
         List<Map<String, String>> files = agentConfigService.listMemoryFiles(id);
         return ResponseEntity.ok(Map.of("files", files));
     }
@@ -335,15 +330,15 @@ public class AgentController {
     /**
      * Gets the content of a specific memory category for the specified agent.
      *
-     * @param id       agent identifier from the URL path
+     * @param id agent identifier from the URL path
      * @param category memory category name extracted from the URL path
-     * @param request  current HTTP request
+     * @param request current HTTP request
      * @return response with the category name and file content, a 400 for invalid
      *         category names, or 404 if the memory file does not exist
      */
     @GetMapping("/{id}/memory/{category}")
     public ResponseEntity<Map<String, Object>> getMemoryFile(@PathVariable("id") String id,
-            @PathVariable("category") String category, HttpServletRequest request) {
+        @PathVariable("category") String category, HttpServletRequest request) {
         if (!isValidCategory(category)) {
             return badCategory();
         }
@@ -357,17 +352,16 @@ public class AgentController {
     /**
      * Writes content to a specific memory category for the specified agent.
      *
-     * @param id       agent identifier from the URL path
+     * @param id agent identifier from the URL path
      * @param category memory category name extracted from the URL path
-     * @param body     request body containing the {@code "content"} field to write
-     * @param request  current HTTP request
+     * @param body request body containing the {@code "content"} field to write
+     * @param request current HTTP request
      * @return response indicating success, a 400 for invalid category names,
      *         or a bad-request body if the write fails due to invalid arguments
      */
     @PutMapping("/{id}/memory/{category}")
     public ResponseEntity<Map<String, Object>> putMemoryFile(@PathVariable("id") String id,
-            @PathVariable("category") String category, @RequestBody Map<String, String> body,
-            HttpServletRequest request) {
+        @PathVariable("category") String category, @RequestBody Map<String, String> body, HttpServletRequest request) {
         if (!isValidCategory(category)) {
             return badCategory();
         }
@@ -382,15 +376,15 @@ public class AgentController {
     /**
      * Deletes a specific memory category for the specified agent.
      *
-     * @param id       agent identifier from the URL path
+     * @param id agent identifier from the URL path
      * @param category memory category name extracted from the URL path
-     * @param request  current HTTP request
+     * @param request current HTTP request
      * @return response indicating success, a 400 for invalid category names,
      *         or a bad-request body if the deletion fails due to invalid arguments
      */
     @DeleteMapping("/{id}/memory/{category}")
     public ResponseEntity<Map<String, Object>> deleteMemoryFile(@PathVariable("id") String id,
-            @PathVariable("category") String category, HttpServletRequest request) {
+        @PathVariable("category") String category, HttpServletRequest request) {
         if (!isValidCategory(category)) {
             return badCategory();
         }
@@ -410,7 +404,6 @@ public class AgentController {
     }
 
     private ResponseEntity<Map<String, Object>> badCategory() {
-        return ResponseEntity.badRequest()
-            .body(Map.of("success", false, "error", "Invalid category name"));
+        return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Invalid category name"));
     }
 }

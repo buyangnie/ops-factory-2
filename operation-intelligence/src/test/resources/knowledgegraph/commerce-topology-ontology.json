@@ -1,0 +1,86 @@
+{
+  "ontologyId": "commerce-topology-v1",
+  "name": "Commerce Solution Network Topology Ontology",
+  "version": "1.0",
+  "sourceSystem": "allmo-export",
+  "metadata": {
+    "description": "Commerce solution (540d4035-e461-4c95-acb3-0f1f187c374d) network topology from AllMoExport",
+    "exportFile": "AllMoExport_20260511095813862.csv",
+    "solutionId": "540d4035-e461-4c95-acb3-0f1f187c374d"
+  },
+  "entityTypes": [
+    {
+      "type": "Business",
+      "requiredProperties": ["businessId", "businessName"],
+      "optionalProperties": ["description", "solutionId"]
+    },
+    {
+      "type": "MicroService",
+      "requiredProperties": ["serviceKey", "serviceName"],
+      "optionalProperties": ["description", "category"]
+    },
+    {
+      "type": "MiddlewareCluster",
+      "requiredProperties": ["serviceKey", "serviceName"],
+      "optionalProperties": ["neType", "neName", "version", "parentDn", "dn", "category"]
+    },
+    {
+      "type": "ApplicationServiceCluster",
+      "requiredProperties": ["serviceKey", "serviceName"],
+      "optionalProperties": ["neType", "neName", "version", "parentDn", "dn", "category"]
+    },
+    {
+      "type": "K8sCluster",
+      "requiredProperties": ["clusterId", "clusterName"],
+      "optionalProperties": ["masterIp", "vmGroup"]
+    },
+    {
+      "type": "WorkerNode",
+      "requiredProperties": ["nodeId", "hostIp"],
+      "optionalProperties": ["nodeName", "vmGroup"]
+    },
+    {
+      "type": "Pod",
+      "requiredProperties": ["podName", "podIp"],
+      "optionalProperties": ["hostIp", "hostName", "parentDn", "dn"]
+    }
+  ],
+  "relationTypes": [
+    {
+      "type": "contains_service",
+      "layer": "business",
+      "from": ["Business"],
+      "to": ["MicroService"]
+    },
+    {
+      "type": "runs_on_cluster",
+      "layer": "deployment",
+      "from": ["MicroService"],
+      "to": ["ApplicationServiceCluster", "MiddlewareCluster"]
+    },
+{
+      "type": "calls",
+      "layer": "runtime",
+      "from": ["MicroService"],
+      "to": ["MicroService"]
+    },
+    {
+      "type": "manages",
+      "layer": "infrastructure",
+      "from": ["K8sCluster"],
+      "to": ["WorkerNode"]
+    },
+    {
+      "type": "runs_on_node",
+      "layer": "deployment",
+      "from": ["Pod"],
+      "to": ["WorkerNode"]
+    },
+    {
+      "type": "cluster_has_pod",
+      "layer": "deployment",
+      "from": ["MiddlewareCluster", "ApplicationServiceCluster"],
+      "to": ["Pod"]
+    }
+  ]
+}

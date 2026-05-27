@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -63,6 +62,8 @@ public class GatewayProperties {
     private SkillMarket skillMarket = new SkillMarket();
 
     private Knowledge knowledge = new Knowledge();
+
+    private OperationIntelligence operationIntelligence = new OperationIntelligence();
 
     // ---- Getters / Setters ----
 
@@ -418,6 +419,24 @@ public class GatewayProperties {
     }
 
     /**
+     * Returns the operation intelligence proxy configuration.
+     *
+     * @return the operation intelligence proxy configuration
+     */
+    public OperationIntelligence getOperationIntelligence() {
+        return operationIntelligence;
+    }
+
+    /**
+     * Sets the operation intelligence proxy configuration.
+     *
+     * @param operationIntelligence the operation intelligence proxy configuration
+     */
+    public void setOperationIntelligence(OperationIntelligence operationIntelligence) {
+        this.operationIntelligence = operationIntelligence;
+    }
+
+    /**
      * Resolves the absolute path to the gateway configuration file.
      *
      * @return the result
@@ -491,6 +510,13 @@ public class GatewayProperties {
     }
 
     // ---- Nested config classes ----
+
+    /** {@inheritDoc} */
+    @Override
+    public String toString() {
+        return "GatewayProperties{" + "secretKey='***'" + ", corsOrigin='" + corsOrigin + '\'' + ", gooseTls="
+            + gooseTls + ", gooseScheme='" + gooseScheme() + '\'' + ", goosedBin='" + goosedBin + '\'' + '}';
+    }
 
     public static class Paths {
         private String projectRoot = "..";
@@ -1115,6 +1141,12 @@ public class GatewayProperties {
         }
     }
 
+    /**
+     * FileBrowser
+     *
+     * @author x00000000
+     * @since 2026-05-27
+     */
     public static class FileBrowser {
         private List<FileScanRoot> scanRoots = List.of(new FileScanRoot("workingDir", "${userAgentDir}", false),
             new FileScanRoot("output", "${userAgentDir}/output", false));
@@ -1138,6 +1170,12 @@ public class GatewayProperties {
         }
     }
 
+    /**
+     * FileScanRoot
+     *
+     * @author x00000000
+     * @since 2026-05-27
+     */
     public static class FileScanRoot {
         private String id = "";
 
@@ -1153,9 +1191,19 @@ public class GatewayProperties {
 
         private long scanTimeoutMs = 2000;
 
+        /**
+         * Creates a file scan root with default values.
+         */
         public FileScanRoot() {
         }
 
+        /**
+         * Creates a file scan root.
+         *
+         * @param id the scan root identifier
+         * @param path the scan root path
+         * @param recursive whether to scan recursively
+         */
         public FileScanRoot(String id, String path, boolean recursive) {
             this.id = id;
             this.path = path;
@@ -1289,6 +1337,12 @@ public class GatewayProperties {
         }
     }
 
+    /**
+     * SkillMarket
+     *
+     * @author x00000000
+     * @since 2026-05-27
+     */
     public static class SkillMarket {
         private String baseUrl = "http://127.0.0.1:8095";
 
@@ -1351,6 +1405,12 @@ public class GatewayProperties {
         }
     }
 
+    /**
+     * Knowledge
+     *
+     * @author x00000000
+     * @since 2026-05-27
+     */
     public static class Knowledge {
         private String artifactsRoot = "../knowledge-service/data/artifacts";
 
@@ -1373,9 +1433,97 @@ public class GatewayProperties {
         }
     }
 
-    @Override
-    public String toString() {
-        return "GatewayProperties{" + "secretKey='***'" + ", corsOrigin='" + corsOrigin + '\'' + ", gooseTls="
-            + gooseTls + ", gooseScheme='" + gooseScheme() + '\'' + ", goosedBin='" + goosedBin + '\'' + '}';
+    /**
+     * Operation intelligence proxy configuration.
+     *
+     * @author zlj
+     * @since 2026-05-27
+     */
+    public static class OperationIntelligence {
+        private String baseUrl = "http://localhost:8096";
+
+        private String secretKey = "";
+
+        private int requestTimeoutMs = 30000;
+
+        private int maxResponseSizeMb = 10;
+
+        /**
+         * Gets the base url.
+         *
+         * @return the base url
+         */
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        /**
+         * Sets the base url.
+         *
+         * @param baseUrl the base url
+         */
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        /**
+         * Gets the secret key.
+         *
+         * @return the secret key
+         */
+        public String getSecretKey() {
+            return secretKey;
+        }
+
+        /**
+         * Sets the secret key.
+         *
+         * @param secretKey the secret key
+         */
+        public void setSecretKey(String secretKey) {
+            this.secretKey = secretKey;
+        }
+
+        /**
+         * Gets the request timeout ms.
+         *
+         * @return the request timeout ms
+         */
+        public int getRequestTimeoutMs() {
+            return requestTimeoutMs;
+        }
+
+        /**
+         * Sets the request timeout ms.
+         *
+         * @param requestTimeoutMs the requestTimeoutMs
+         */
+        public void setRequestTimeoutMs(int requestTimeoutMs) {
+            this.requestTimeoutMs = requestTimeoutMs;
+        }
+
+        /**
+         * Gets the max response size mb.
+         *
+         * @return the max response size mb
+         */
+        public int getMaxResponseSizeMb() {
+            return maxResponseSizeMb;
+        }
+
+        /**
+         * Sets the max response size mb.
+         *
+         * @param maxResponseSizeMb the max response size mb
+         */
+        public void setMaxResponseSizeMb(int maxResponseSizeMb) {
+            this.maxResponseSizeMb = maxResponseSizeMb;
+        }
+
+        @Override
+        public String toString() {
+            return "OperationIntelligence{" + "baseUrl='" + baseUrl + '\'' + ", secretKey='***'" + ", requestTimeoutMs="
+                + requestTimeoutMs + ", maxResponseSizeMb=" + maxResponseSizeMb + '}';
+        }
     }
 }

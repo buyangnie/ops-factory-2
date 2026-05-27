@@ -17,17 +17,17 @@
   "dependencies": {
     "@goosed/sdk": "file:../typescript-sdk",
     "archiver": "7.0.1",
-    "echarts": "6.0.0",
+    "echarts": "5.6.0",
     "echarts-for-react": "3.0.4",
     "highlight.js": "11.11.1",
     "i18next": "25.8.17",
     "lucide-react": "0.523.0",
-    "mermaid": "10.9.5",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "react-i18next": "15.7.4",
-    "react-markdown": "9.0.1",
-    "react-router-dom": "6.20.0",
+    "mermaid": "^11.10.1",
+    "react": "19.2.4",
+    "react-router-dom": "6.30.3",
+    "react-dom": "19.2.4",
+    "react-i18next": "15.1.2",
+    "react-markdown": "10.1.0",
     "remark-gfm": "4.0.0"
   },
   "devDependencies": {
@@ -35,13 +35,12 @@
     "@testing-library/react": "16.3.2",
     "@types/jest": "29.5.8",
     "@types/node": "25.6.2",
-    "@types/react": "18.2.43",
-    "@types/react-dom": "18.2.17",
+    "@types/react": "19.2.4",
+    "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "4.3.1",
     "jsdom": "27.1.0",
     "typescript": "5.3.2",
     "vite": "5.0.7",
-    "vitest": "4.0.18",
-    "yaml": "2.8.0"
+    "vitest": "4.0.18"
   }
 }

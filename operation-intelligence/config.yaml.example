@@ -4,6 +4,8 @@
 spring:
   profiles:
     active: ${OI_SPRING_PROFILE:}      # env override: OI_SPRING_PROFILE (set to 'prod' in production)
+  codec:
+    max-in-memory-size: 10MB             # allow large knowledge graph JSON imports
 
 server:
   port: 8096                            # env override: OI_PORT
@@ -38,6 +40,12 @@ operation-intelligence:
     #    crt-content: ""                       # Base64 encoded certificate
     #    crt-file-name: "client.jks"
     #    strict-ssl: false                       # reject insecure SSL fallback (default: true)
+
+  knowledge-graph:
+    enabled: true                                # enable MVP knowledge graph import/query APIs
+    data-dir: "knowledge-graph"                  # relative to operation-intelligence.data-root
+    max-hops: 4                                  # maximum supported subgraph query hops
+    snapshot-retention: 3                        # keep the latest N successful snapshots per environment
 
   call-chain:
     enabled: true

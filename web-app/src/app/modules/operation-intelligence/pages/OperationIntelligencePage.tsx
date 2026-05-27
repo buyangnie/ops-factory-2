@@ -19,7 +19,11 @@ import '../styles/operation-intelligence.css'
 
 type DetailTab = 'availability' | 'performance' | 'alarm'
 
-export default function OperationIntelligencePage() {
+interface OperationIntelligencePageProps {
+    embedded?: boolean
+}
+
+export default function OperationIntelligencePage({ embedded = false }: OperationIntelligencePageProps) {
     const { t } = useTranslation()
     const { userId } = useUser()
     const [envCode, setEnvCode] = useState<string>('')
@@ -69,11 +73,15 @@ export default function OperationIntelligencePage() {
     ]
 
     return (
-        <div className="page-container sidebar-top-page page-shell-wide operation-intelligence-page">
-            <PageHeader
-                title={t('operationIntelligence.title')}
-                subtitle={t('operationIntelligence.subtitle')}
-            />
+        <div className={embedded
+            ? 'operation-intelligence-page operation-intelligence-page-embedded'
+            : 'page-container sidebar-top-page page-shell-wide operation-intelligence-page'}>
+            {!embedded ? (
+                <PageHeader
+                    title={t('operationIntelligence.title')}
+                    subtitle={t('operationIntelligence.subtitle')}
+                />
+            ) : null}
 
             <div className="operation-intelligence-filter-toolbar">
                 <OperationIntelligenceFilters

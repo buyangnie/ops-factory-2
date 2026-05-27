@@ -15,9 +15,9 @@ import com.huawei.opsfactory.gateway.process.PrewarmService;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.mock.web.MockFilterChain;
 
 /**
  * Test coverage for User Context Filter.

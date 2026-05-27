@@ -13,6 +13,9 @@ import com.huawei.opsfactory.gateway.service.AgentConfigService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -46,8 +49,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
@@ -229,8 +230,7 @@ public class InstanceManager {
             if (listJson == null || !listJson.contains("\"jobs\"")) {
                 return existingIds;
             }
-            Map<String, Object> parsed =
-                MAPPER.readValue(listJson, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> parsed = MAPPER.readValue(listJson, new TypeReference<Map<String, Object>>() {});
             Object jobs = parsed.get("jobs");
             if (!(jobs instanceof List<?> jobList)) {
                 return existingIds;

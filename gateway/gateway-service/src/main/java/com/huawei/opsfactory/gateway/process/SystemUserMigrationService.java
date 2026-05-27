@@ -6,6 +6,8 @@ package com.huawei.opsfactory.gateway.process;
 
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -17,8 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.stream.Stream;
-
-import jakarta.annotation.PostConstruct;
 
 /**
  * Migrates the legacy system user directory from "sys" to the current canonical system user name on startup.

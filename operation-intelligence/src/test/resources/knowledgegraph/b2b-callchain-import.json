@@ -1,0 +1,286 @@
+{
+  "formatVersion": "1.0",
+  "envCode": "prod",
+  "schemaVersion": "1.0",
+  "sourceSystem": "service-call-mining",
+  "importMode": "UPSERT",
+  "snapshotId": "kg-prod-b2b-callchain-20260324-001",
+  "generatedAt": "2026-03-24T20:29:53+08:00",
+  "metadata": {
+    "queryTimeRange": {
+      "startTime": "2026-03-24T19:08:10+08:00",
+      "endTime": "2026-03-24T20:29:53+08:00"
+    },
+    "menuId": "604015020",
+    "menuName": "B2B业务",
+    "totalFlowCount": 50,
+    "sampleFlowIds": ["flow_001", "flow_004"]
+  },
+  "entities": [
+    {
+      "id": "biz-prod-604015020",
+      "type": "BusinessCapability",
+      "name": "B2B业务",
+      "displayName": "B2B业务",
+      "status": "Slow",
+      "properties": {
+        "menuId": "604015020",
+        "menuName": "B2B业务",
+        "flows": [
+          {
+            "flowId": "flow_001",
+            "callCount": 16,
+            "callRatio": 0.32,
+            "successCount": 10,
+            "successRate": 0.625,
+            "avgCostMs": 5,
+            "minCostMs": 2,
+            "maxCostMs": 10,
+            "nodes": [
+              {
+                "seqNo": "1",
+                "url": "/common/v1/sysparam/querysysparams",
+                "cluster": ["RSP"],
+                "avgCostMs": 3,
+                "minCostMs": 2,
+                "maxCostMs": 5,
+                "ipStats": [
+                  {"ip": "10.152.4.94", "successCount": 2, "callCount": 2, "successRate": 1.0},
+                  {"ip": "10.152.4.95", "successCount": 5, "callCount": 5, "successRate": 1.0},
+                  {"ip": "10.59.32.23", "successCount": 4, "callCount": 4, "successRate": 1.0},
+                  {"ip": "10.59.32.24", "successCount": 1, "callCount": 1, "successRate": 1.0},
+                  {"ip": "10.59.32.26", "successCount": 4, "callCount": 4, "successRate": 1.0}
+                ]
+              },
+              {
+                "seqNo": "1.1",
+                "serviceName": "bes.business.common.SysParamBS",
+                "operationName": "querySysParams",
+                "cluster": ["RSP"],
+                "avgCostMs": 0,
+                "minCostMs": 0,
+                "maxCostMs": 1,
+                "ipStats": [
+                  {"ip": "10.152.4.94", "successCount": 2, "callCount": 2, "successRate": 1.0},
+                  {"ip": "10.152.4.95", "successCount": 5, "callCount": 5, "successRate": 1.0},
+                  {"ip": "10.59.32.23", "successCount": 4, "callCount": 4, "successRate": 1.0},
+                  {"ip": "10.59.32.24", "successCount": 1, "callCount": 1, "successRate": 1.0},
+                  {"ip": "10.59.32.26", "successCount": 4, "callCount": 4, "successRate": 1.0}
+                ]
+              }
+            ]
+          },
+          {
+            "flowId": "flow_004",
+            "callCount": 4,
+            "callRatio": 0.08,
+            "successCount": 2,
+            "successRate": 0.5,
+            "avgCostMs": 12,
+            "minCostMs": 10,
+            "maxCostMs": 14,
+            "nodes": [
+              {
+                "seqNo": "1",
+                "url": "/common/v1/datadict/querydatadicts",
+                "cluster": ["RSP"],
+                "avgCostMs": 4,
+                "minCostMs": 3,
+                "maxCostMs": 4,
+                "ipStats": [
+                  {"ip": "10.152.4.95", "successCount": 2, "callCount": 2, "successRate": 1.0},
+                  {"ip": "10.59.32.23", "successCount": 2, "callCount": 2, "successRate": 1.0}
+                ]
+              },
+              {
+                "seqNo": "1.1",
+                "serviceName": "bes.business.common.DataDictBS",
+                "operationName": "queryDataDicts",
+                "cluster": ["RSP"],
+                "avgCostMs": 2,
+                "minCostMs": 2,
+                "maxCostMs": 3,
+                "ipStats": [
+                  {"ip": "10.152.4.95", "successCount": 2, "callCount": 2, "successRate": 1.0},
+                  {"ip": "10.59.32.23", "successCount": 2, "callCount": 2, "successRate": 1.0}
+                ]
+              },
+              {
+                "seqNo": "1.1.2",
+                "serviceName": "bes.common.base.datadict.DataDictQueryService",
+                "operationName": "queryDataDict",
+                "cluster": ["RSP"],
+                "avgCostMs": 0,
+                "minCostMs": 0,
+                "maxCostMs": 0,
+                "ipStats": [
+                  {"ip": "10.152.4.95", "successCount": 2, "callCount": 2, "successRate": 1.0},
+                  {"ip": "10.59.32.23", "successCount": 2, "callCount": 2, "successRate": 1.0}
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "source": {
+        "system": "service-call-mining",
+        "externalId": "604015020"
+      }
+    },
+    {
+      "id": "svc-prod-bes-business-common-sysparambs",
+      "type": "Service",
+      "name": "bes.business.common.SysParamBS",
+      "displayName": "bes.business.common.SysParamBS",
+      "status": "Normal",
+      "properties": {
+        "serviceName": "bes.business.common.SysParamBS",
+        "serviceCode": "bes.business.common.SysParamBS",
+        "operations": [
+          {
+            "operationName": "querySysParams",
+            "flowId": "flow_001",
+            "seqNo": "1.1",
+            "callCount": 16,
+            "successRate": 1.0,
+            "avgCostMs": 0,
+            "minCostMs": 0,
+            "maxCostMs": 1,
+            "ips": ["10.152.4.94", "10.152.4.95", "10.59.32.23", "10.59.32.24", "10.59.32.26"]
+          }
+        ]
+      },
+      "source": {
+        "system": "service-call-mining",
+        "externalId": "bes.business.common.SysParamBS"
+      }
+    },
+    {
+      "id": "svc-prod-bes-business-common-datadictbs",
+      "type": "Service",
+      "name": "bes.business.common.DataDictBS",
+      "displayName": "bes.business.common.DataDictBS",
+      "status": "Normal",
+      "properties": {
+        "serviceName": "bes.business.common.DataDictBS",
+        "serviceCode": "bes.business.common.DataDictBS",
+        "operations": [
+          {
+            "operationName": "queryDataDicts",
+            "flowId": "flow_004",
+            "seqNo": "1.1",
+            "callCount": 4,
+            "successRate": 1.0,
+            "avgCostMs": 2,
+            "minCostMs": 2,
+            "maxCostMs": 3,
+            "ips": ["10.152.4.95", "10.59.32.23"]
+          }
+        ]
+      },
+      "source": {
+        "system": "service-call-mining",
+        "externalId": "bes.business.common.DataDictBS"
+      }
+    },
+    {
+      "id": "cluster-prod-rsp",
+      "type": "Cluster",
+      "name": "RSP",
+      "displayName": "RSP",
+      "status": "Normal",
+      "properties": {
+        "clusterName": "RSP",
+        "clusterType": "unknown"
+      },
+      "source": {
+        "system": "service-call-mining",
+        "externalId": "RSP"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "rel-svc-prod-sysparambs-deployed-in-rsp",
+      "type": "deployed_in",
+      "from": "svc-prod-bes-business-common-sysparambs",
+      "to": "cluster-prod-rsp",
+      "properties": {
+        "clusters": ["RSP"],
+        "flowIds": ["flow_001"]
+      },
+      "source": {
+        "system": "service-call-mining",
+        "externalId": "bes.business.common.SysParamBS@RSP"
+      }
+    },
+    {
+      "id": "rel-svc-prod-datadictbs-deployed-in-rsp",
+      "type": "deployed_in",
+      "from": "svc-prod-bes-business-common-datadictbs",
+      "to": "cluster-prod-rsp",
+      "properties": {
+        "clusters": ["RSP"],
+        "flowIds": ["flow_004"]
+      },
+      "source": {
+        "system": "service-call-mining",
+        "externalId": "bes.business.common.DataDictBS@RSP"
+      }
+    }
+  ],
+  "observations": [
+    {
+      "id": "obs-b2b-flow-001-success-rate-20260324T202953",
+      "entityId": "biz-prod-604015020",
+      "observedAt": "2026-03-24T20:29:53+08:00",
+      "category": "metric",
+      "name": "business_flow_success_rate",
+      "severity": "warning",
+      "value": 0.625,
+      "unit": "ratio",
+      "properties": {
+        "flowId": "flow_001",
+        "callCount": 16,
+        "successCount": 10,
+        "avgCostMs": 5,
+        "minCostMs": 2,
+        "maxCostMs": 10,
+        "timeRange": {
+          "startTime": "2026-03-24T19:08:10+08:00",
+          "endTime": "2026-03-24T20:29:53+08:00"
+        }
+      },
+      "source": {
+        "system": "service-call-mining",
+        "externalId": "flow_001"
+      }
+    },
+    {
+      "id": "obs-b2b-flow-004-success-rate-20260324T202953",
+      "entityId": "biz-prod-604015020",
+      "observedAt": "2026-03-24T20:29:53+08:00",
+      "category": "metric",
+      "name": "business_flow_success_rate",
+      "severity": "warning",
+      "value": 0.5,
+      "unit": "ratio",
+      "properties": {
+        "flowId": "flow_004",
+        "callCount": 4,
+        "successCount": 2,
+        "avgCostMs": 12,
+        "minCostMs": 10,
+        "maxCostMs": 14,
+        "timeRange": {
+          "startTime": "2026-03-24T19:08:10+08:00",
+          "endTime": "2026-03-24T20:29:53+08:00"
+        }
+      },
+      "source": {
+        "system": "service-call-mining",
+        "externalId": "flow_004"
+      }
+    }
+  ]
+}

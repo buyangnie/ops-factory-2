@@ -35,12 +35,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @RunWith(SpringRunner.class)
 @WebMvcTest(SessionTraceController.class)
 @Import({GatewayProperties.class, AuthWebFilter.class, UserContextFilter.class})
-/**
- * Session Trace Controller Test.
- *
- * @author x00000000
- * @since 2026-05-27
- */
 public class SessionTraceControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -59,8 +53,8 @@ public class SessionTraceControllerTest {
         when(traceService.startTrace("admin", "qa-agent", "20260429_2")).thenReturn(new TraceJobSnapshot("job-1",
             "running", "admin", "qa-agent", "20260429_2", null, "trace collection running"));
 
-        mockMvc.perform(post("/gateway/agents/qa-agent/sessions/20260429_2/trace")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/agents/qa-agent/sessions/20260429_2/trace").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.jobId").value("job-1"))
@@ -76,13 +70,10 @@ public class SessionTraceControllerTest {
      */
     @Test
     public void testStartTrace_succeeds_forAnyUser() throws Exception {
-        when(traceService.startTrace("regular-user", "qa-agent", "20260429_2"))
-            .thenReturn(new TraceJobSnapshot("job-2", "running", "regular-user", "qa-agent", "20260429_2",
-                null, "trace collection running"));
+        when(traceService.startTrace("regular-user", "qa-agent", "20260429_2")).thenReturn(new TraceJobSnapshot("job-2",
+            "running", "regular-user", "qa-agent", "20260429_2", null, "trace collection running"));
 
-        mockMvc.perform(post("/gateway/agents/qa-agent/sessions/20260429_2/trace")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user"))
-            .andExpect(status().isOk());
+        mockMvc.perform(post("/gateway/agents/qa-agent/sessions/20260429_2/trace").header("x-secret-key", "test")
+            .header("x-user-id", "regular-user")).andExpect(status().isOk());
     }
 }

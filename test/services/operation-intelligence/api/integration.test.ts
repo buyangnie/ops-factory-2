@@ -11,7 +11,7 @@
 import { ChildProcess, spawn } from 'node:child_process'
 import { resolve, join } from 'node:path'
 import { writeFileSync, unlinkSync, mkdirSync, existsSync, rmSync } from 'node:fs'
-import { stringify } from 'yaml'
+import yaml from 'js-yaml'
 import { tmpdir } from 'node:os'
 import net from 'node:net'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
@@ -73,7 +73,7 @@ async function startOiService(): Promise<OiHandle> {
       logging: { 'access-log-enabled': false },
     },
   }
-  writeFileSync(testConfigPath, stringify(testConfig), 'utf-8')
+  writeFileSync(testConfigPath, yaml.dump(testConfig), 'utf-8')
 
   // Verify JAR exists (build externally first: cd operation-intelligence && mvn -DskipTests package)
   const jarPath = join(OI_DIR, 'target', 'operation-intelligence.jar')
@@ -538,7 +538,7 @@ describe('Production environment - error detail suppression', () => {
         logging: { 'access-log-enabled': false },
       },
     }
-    writeFileSync(testConfigPath, stringify(testConfig), 'utf-8')
+    writeFileSync(testConfigPath, yaml.dump(testConfig), 'utf-8')
 
     const jarPath = join(OI_DIR, 'target', 'operation-intelligence.jar')
     if (!existsSync(jarPath)) {

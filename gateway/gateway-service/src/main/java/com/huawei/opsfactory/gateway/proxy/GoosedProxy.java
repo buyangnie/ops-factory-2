@@ -83,9 +83,8 @@ public class GoosedProxy {
         HttpClient httpClient = HttpClient.newConnection().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000);
 
         if (properties.isGooseTls()) {
-            log.warn(
-                "INSECURE TLS CONFIGURATION: Using InsecureTrustManager for goosed proxy. "
-                    + "This is acceptable only for internal localhost communication.");
+            log.warn("INSECURE TLS CONFIGURATION: Using InsecureTrustManager for goosed proxy. "
+                + "This is acceptable only for internal localhost communication.");
             try {
                 SslContext sslContext =
                     SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build();
@@ -470,8 +469,8 @@ public class GoosedProxy {
      * @param sessionId session identifier
      * @return SseEmitter for streaming events
      */
-    public SseEmitter proxySessionEventsToEmitter(int port, String path, String secretKey,
-        String lastEventId, String agentId, String userId, String sessionId) {
+    public SseEmitter proxySessionEventsToEmitter(int port, String path, String secretKey, String lastEventId,
+        String agentId, String userId, String sessionId) {
         SseEmitter emitter = new SseEmitter(30 * 60 * 1000L); // 30 minutes timeout
         String target = goosedBaseUrl(port) + path;
         log.info("[GOOSED-PROXY] sse-connect port={} path={} agentId={} userId={} sessionId={} lastEventId={}", port,
@@ -497,18 +496,14 @@ public class GoosedProxy {
                     err.getMessage());
                 emitter.completeWithError(err);
             })
-            .subscribe(
-                event -> {
-                    try {
-                        emitter.send(SseEmitter.event().data(event));
-                    } catch (IOException e) {
-                        log.warn("[GOOSED-PROXY] sse-send-error agentId={} sessionId={}", agentId, sessionId);
-                        emitter.completeWithError(e);
-                    }
-                },
-                emitter::completeWithError,
-                emitter::complete
-            );
+            .subscribe(event -> {
+                try {
+                    emitter.send(SseEmitter.event().data(event));
+                } catch (IOException e) {
+                    log.warn("[GOOSED-PROXY] sse-send-error agentId={} sessionId={}", agentId, sessionId);
+                    emitter.completeWithError(e);
+                }
+            }, emitter::completeWithError, emitter::complete);
 
         return emitter;
     }
@@ -531,8 +526,7 @@ public class GoosedProxy {
             "Agent temporarily unavailable: " + e.getMessage());
     }
 
-    private ResponseStatusException toUpstreamResponseException(int rawStatusCode, HttpHeaders headers,
-        String body) {
+    private ResponseStatusException toUpstreamResponseException(int rawStatusCode, HttpHeaders headers, String body) {
         HttpStatus status = HttpStatus.resolve(rawStatusCode);
         String statusText = status != null ? status.getReasonPhrase() : "HTTP " + rawStatusCode;
         String message;

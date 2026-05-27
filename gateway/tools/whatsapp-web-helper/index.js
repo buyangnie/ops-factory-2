@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import P from "pino";
 import QRCode from "qrcode";
 import {
   DisconnectReason,
@@ -114,7 +113,7 @@ async function runLogin(args) {
     qrCodeDataUrl: null,
   });
 
-  const logger = P({ level: "silent" });
+  const logger = { level: 'silent', info: () => {}, error: () => {}, debug: () => {}, trace: () => {}, child: () => logger };
   let sock = null;
   let saveCredsRef = null;
   let connectedSelfPhone = selfPhone;

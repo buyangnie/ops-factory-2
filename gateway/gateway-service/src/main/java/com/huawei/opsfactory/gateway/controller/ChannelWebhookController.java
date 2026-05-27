@@ -4,15 +4,13 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
-import com.huawei.opsfactory.gateway.service.channel.ChannelAdapter;
 import com.huawei.opsfactory.gateway.service.channel.ChannelAdapterRegistry;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,10 +19,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Public endpoint for receiving and verifying external channel webhook callbacks.
@@ -53,7 +47,7 @@ public class ChannelWebhookController {
      * Verifies a WhatsApp webhook challenge request.
      *
      * @param channelId channel identifier for routing to the correct adapter
-     * @param request  current HTTP request containing verification parameters
+     * @param request current HTTP request containing verification parameters
      * @return ResponseEntity with the challenge response string
      */
     @GetMapping(value = "/whatsapp/{channelId}", produces = MediaType.TEXT_PLAIN_VALUE)
@@ -67,8 +61,8 @@ public class ChannelWebhookController {
      * Receives and processes an incoming WhatsApp webhook event.
      *
      * @param channelId channel identifier for routing to the correct adapter
-     * @param body      raw JSON webhook payload
-     * @param request   current HTTP request
+     * @param body raw JSON webhook payload
+     * @param request current HTTP request
      * @return ResponseEntity with acknowledgment status
      */
     @PostMapping(value = "/whatsapp/{channelId}", consumes = MediaType.APPLICATION_JSON_VALUE,

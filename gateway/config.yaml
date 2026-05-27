@@ -1,8 +1,8 @@
 server:
   port: 3000
   address: 0.0.0.0
-  ssl: {enabled: false, key-store: 'file:.gateway-keystore.p12', key-store-password: changeit,
-    key-store-type: PKCS12}
+  ssl: { enabled: false, key-store: 'file:.gateway-keystore.p12', key-store-password: changeit,
+         key-store-type: PKCS12 }
 gateway:
   secret-key: test
   cors-origin: '*'
@@ -13,7 +13,7 @@ gateway:
   sse: { first-byte-timeout-sec: 120, idle-timeout-sec: 300, max-duration-sec: 600 }
   upload: { max-file-size-mb: 50, max-image-size-mb: 20 }
   limits: { max-instances-per-user: 20, max-instances-global: 200 }
-  prewarm: { enabled: true, default-agent-id: universal-agent }
+  prewarm: { enabled: false, default-agent-id: universal-agent }
   office-preview: { enabled: true, onlyoffice-url: 'http://127.0.0.1:8080', file-base-url: 'http://host.docker.internal:3000' }
   file-capsules:
     allowed-extensions: [ doc, docx, xls, xlsx, ppt, pptx, csv, txt, json, md, markdown,
@@ -23,6 +23,7 @@ gateway:
       - { id: workingDir, path: '${userAgentDir}', recursive: true, exclude-dirs: [ data, state, config, node_modules, .goose, .cache, __pycache__ ], max-depth: 6, max-files: 1000, scan-timeout-ms: 2000 }
   skill-market: { base-url: 'http://127.0.0.1:8095', request-timeout-ms: 10000, max-package-size-mb: 200 }
   knowledge: { artifacts-root: ../knowledge-service/data/artifacts }
+  operation-intelligence: { base-url: 'http://127.0.0.1:8096', secret-key: 'test', request-timeout-ms: 30000, max-response-size-mb: 10 }
   credential-encryption-key: changeit-changeit-changeit-32ch
   remote-execution: { default-timeout: 30, max-timeout: 120 }
   logging: { access-log-enabled: true, include-upstream-error-body: false, include-sse-chunk-preview: false,
@@ -31,7 +32,7 @@ logging:
   level: { root: INFO, com.huawei.opsfactory.gateway: INFO, com.huawei.opsfactory.gateway.controller.ReplyController: DEBUG,
            org.springframework: WARN, reactor: WARN, io.netty: WARN }
 residentInstances:
-  enabled: true
+  enabled: false
   entries:
     - userId: admin
       agentIds: [ '*' ]

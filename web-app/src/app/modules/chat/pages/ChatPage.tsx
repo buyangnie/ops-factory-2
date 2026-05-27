@@ -206,7 +206,7 @@ export default function Chat() {
             }
         }
         fetchModelInfo()
-    }, [client, isConnected])
+    }, [activeAgentId, activeSessionId, client, isConnected])
 
     const createSessionWithAgent = useCallback(async (agentId: string, options: { initialMessage?: string; initialSelectedSkill?: SelectedSkill } = {}) => {
         if (createSessionInFlightRef.current?.agentId === agentId) {

@@ -4,6 +4,8 @@
 
 package com.huawei.opsfactory.operationintelligence.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -15,28 +17,24 @@ import java.util.List;
  * Operation Intelligence Properties.
  *
  * @author x00000000
- * @since 2026-05-11
- */
-@ConfigurationProperties(prefix = "operation-intelligence")
-/**
- * Operation Intelligence Properties.
- *
- * @author x00000000
  * @since 2026-05-27
  */
+@ConfigurationProperties(prefix = "operation-intelligence")
 public class OperationIntelligenceProperties {
 
     private static final Logger log = LoggerFactory.getLogger(OperationIntelligenceProperties.class);
 
     private static final String CONFIG_PATH_KEY = "OI_CONFIG_PATH";
 
-    private String secretKey = "test";
+    private String secretKey = "";
 
     private String corsOrigin = "*";
 
     private String dataRoot = "";
 
     private Qos qos = new Qos();
+
+    private KnowledgeGraph knowledgeGraph = new KnowledgeGraph();
 
     private CallChain callChain = new CallChain();
 
@@ -115,6 +113,24 @@ public class OperationIntelligenceProperties {
     }
 
     /**
+     * Gets the knowledge graph.
+     *
+     * @return the result
+     */
+    public KnowledgeGraph getKnowledgeGraph() {
+        return knowledgeGraph;
+    }
+
+    /**
+     * Sets the knowledge graph.
+     *
+     * @param knowledgeGraph the knowledgeGraph
+     */
+    public void setKnowledgeGraph(KnowledgeGraph knowledgeGraph) {
+        this.knowledgeGraph = knowledgeGraph;
+    }
+
+    /**
      * Gets the logging.
      *
      * @return the result
@@ -167,6 +183,24 @@ public class OperationIntelligenceProperties {
     }
 
     /**
+     * Resolves the knowledge graph data root under the configured data directory.
+     *
+     * @return the result
+     */
+    public Path resolveKnowledgeGraphDataRoot() {
+        Path dataRootPath = resolveDataRoot();
+        Path configured = Path.of(knowledgeGraph.getDataDir());
+        if (configured.isAbsolute()) {
+            throw new IllegalStateException("knowledgeGraph.dataDir must be a relative path");
+        }
+        Path resolved = dataRootPath.resolve(configured).normalize();
+        if (!resolved.startsWith(dataRootPath)) {
+            throw new IllegalStateException("knowledgeGraph.dataDir must stay within data root");
+        }
+        return resolved;
+    }
+
+    /**
      * Gets the config path.
      *
      * @return the result
@@ -213,7 +247,10 @@ public class OperationIntelligenceProperties {
     }
 
     /**
-     * QoS configuration properties for data collection and metrics.
+     * QoS scoring configuration.
+     *
+     * @author x00000000
+     * @since 2026-05-27
      */
     public static class Qos {
         private boolean enabled = true;
@@ -396,7 +433,7 @@ public class OperationIntelligenceProperties {
             this.dvEnvironments = dvEnvironments;
         }
 
-/**
+        /**
          * Weights.
          *
          * @author x00000000
@@ -464,7 +501,7 @@ public class OperationIntelligenceProperties {
             }
         }
 
-/**
+        /**
          * Thresholds.
          *
          * @author x00000000
@@ -532,7 +569,7 @@ public class OperationIntelligenceProperties {
             }
         }
 
-/**
+        /**
          * Dv Environment.
          *
          * @author x00000000
@@ -674,7 +711,7 @@ public class OperationIntelligenceProperties {
              *
              * @return the result
              */
-            @com.fasterxml.jackson.annotation.JsonIgnore
+            @JsonIgnore
             public String getUtmPassword() {
                 return utmPassword;
             }
@@ -764,8 +801,9 @@ public class OperationIntelligenceProperties {
 
     /**
      * Logging configuration properties.
-         * @author x00000000
-         * @since 2026-05-27
+     *
+     * @author x00000000
+     * @since 2026-05-27
      */
     public static class Logging {
         private boolean accessLogEnabled = true;
@@ -791,18 +829,27 @@ public class OperationIntelligenceProperties {
 
     /**
      * Call chain configuration properties for tracing and log analysis.
-         * @author x00000000
-         * @since 2026-05-27
+     *
+     * @author x00000000
+     * @since 2026-05-27
      */
     public static class CallChain {
         private boolean enabled = true;
+
         private int querySize = 100;
+
         private int queryLimit = 10000;
+
         private long requestTimeoutMs = 60000;
+
         private long maxTimeRangeMs = 1800000;
+
         private long rotationIntervalMs = 3600000;
+
         private long normalizeDataRetentionDays = 90;
+
         private double minCallRatio = 3.0;
+
         private TimeSplit timeSplit = new TimeSplit();
 
         /**
@@ -967,7 +1014,7 @@ public class OperationIntelligenceProperties {
             this.timeSplit = timeSplit;
         }
 
-/**
+        /**
          * Time Split.
          *
          * @author x00000000
@@ -975,6 +1022,7 @@ public class OperationIntelligenceProperties {
          */
         public static class TimeSplit {
             private long initialMinutes = 15;
+
             private List<Long> degradeMinutes = List.of(10L, 5L);
 
             /**
@@ -1012,6 +1060,89 @@ public class OperationIntelligenceProperties {
             public void setDegradeMinutes(List<Long> degradeMinutes) {
                 this.degradeMinutes = degradeMinutes;
             }
+        }
+    }
+
+    /** Knowledge graph configuration. */
+    public static class KnowledgeGraph {
+        private boolean enabled = true;
+
+        private String dataDir = "knowledge-graph";
+
+        private int maxHops = 4;
+
+        private int snapshotRetention = 3;
+
+        /**
+         * Checks whether the enabled.
+         *
+         * @return the result
+         */
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        /**
+         * Sets the enabled.
+         *
+         * @param enabled the enabled
+         */
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        /**
+         * Gets the data dir.
+         *
+         * @return the result
+         */
+        public String getDataDir() {
+            return dataDir;
+        }
+
+        /**
+         * Sets the data dir.
+         *
+         * @param dataDir the dataDir
+         */
+        public void setDataDir(String dataDir) {
+            this.dataDir = dataDir;
+        }
+
+        /**
+         * Gets the max hops.
+         *
+         * @return the result
+         */
+        public int getMaxHops() {
+            return maxHops;
+        }
+
+        /**
+         * Sets the max hops.
+         *
+         * @param maxHops the maxHops
+         */
+        public void setMaxHops(int maxHops) {
+            this.maxHops = maxHops;
+        }
+
+        /**
+         * Gets the snapshot retention.
+         *
+         * @return the result
+         */
+        public int getSnapshotRetention() {
+            return snapshotRetention;
+        }
+
+        /**
+         * Sets the snapshot retention.
+         *
+         * @param snapshotRetention the snapshotRetention
+         */
+        public void setSnapshotRetention(int snapshotRetention) {
+            this.snapshotRetention = snapshotRetention;
         }
     }
 }

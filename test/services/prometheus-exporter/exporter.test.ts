@@ -4,7 +4,7 @@ import { ChildProcess, spawn, execFileSync } from 'node:child_process'
 import { resolve, join } from 'node:path'
 import { writeFileSync, unlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { stringify } from 'yaml'
+import yaml from 'js-yaml'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { sleep } from '../../platform/shared/helpers.js'
 
@@ -124,7 +124,7 @@ async function startExporter(gatewayPort: number): Promise<ExporterHandle> {
     gatewaySecretKey: SECRET_KEY,
     collectTimeoutMs: 3000,
   }
-  writeFileSync(testConfigPath, stringify(testConfig), 'utf-8')
+  writeFileSync(testConfigPath, yaml.dump(testConfig), 'utf-8')
 
   const child = spawn('java', ['-Dserver.port=' + String(port), '-jar', 'target/prometheus-exporter.jar'], {
     cwd: EXPORTER_DIR,

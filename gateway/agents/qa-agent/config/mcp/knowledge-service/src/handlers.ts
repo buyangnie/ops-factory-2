@@ -4,7 +4,7 @@
 
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import YAML from 'yaml'
+import yaml from 'js-yaml'
 import { LOG_FILE_PATH, logError, logInfo } from './logger.js'
 
 const KNOWLEDGE_SERVICE_URL = process.env.KNOWLEDGE_SERVICE_URL || 'http://127.0.0.1:8092'
@@ -88,7 +88,7 @@ export const tools = [
 async function readSettings(): Promise<KnowledgeSettings> {
   try {
     const content = await readFile(CONFIG_FILE_PATH, 'utf-8')
-    const parsed = YAML.parse(content)
+    const parsed = yaml.load(content) as Record<string, any>
     const sourceId = parsed?.extensions?.['knowledge-service']?.['x-opsfactory']?.knowledgeScope?.sourceId
     return {
       sourceId: typeof sourceId === 'string' && sourceId.trim() ? sourceId.trim() : null,

@@ -7,7 +7,7 @@ import { readFile, realpath, stat } from 'node:fs/promises'
 import { promisify } from 'node:util'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import YAML from 'yaml'
+import yaml from 'js-yaml'
 import { logError, logInfo } from './logger.js'
 
 const execFile = promisify(execFileCallback)
@@ -170,7 +170,7 @@ function normalizeGlob(value: unknown): string | null {
 }
 
 export function extractConfiguredRootDir(content: string): string | null {
-  const parsed = YAML.parse(content)
+  const parsed = yaml.load(content) as Record<string, any>
   const rootDir = parsed?.extensions?.['knowledge-cli']?.['x-opsfactory']?.scope?.rootDir
   if (typeof rootDir === 'string' && rootDir.trim()) {
     return rootDir.trim()

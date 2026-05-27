@@ -28,7 +28,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -360,8 +359,7 @@ public class ReplyControllerRealProxyTest {
             when(hookPipeline.executeRequest(any(HookContext.class)))
                 .thenAnswer(inv -> Mono.just(((HookContext) inv.getArgument(0)).getBody()));
             when(agentConfigService.getUserAgentDir("alice", "test-agent")).thenReturn(Path.of("."));
-            when(fileService.listCapsuleRelevantFiles(any()))
-                .thenThrow(new IllegalStateException("disk busy"));
+            when(fileService.listCapsuleRelevantFiles(any())).thenThrow(new IllegalStateException("disk busy"));
 
             GatewayProperties properties = new GatewayProperties();
             properties.setGooseTls(false);

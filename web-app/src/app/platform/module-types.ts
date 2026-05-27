@@ -17,6 +17,7 @@ export type IconKey =
     | 'agents'
     | 'skillMarket'
     | 'knowledge'
+    | 'knowledgeGraph'
     | 'scheduler'
     | 'monitoring'
     | 'hostResource'

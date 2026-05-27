@@ -79,15 +79,15 @@ public class AuthWebFilter implements jakarta.servlet.Filter {
     /**
      * Filters incoming HTTP requests by validating the secret key.
      *
-     * @param servletRequest  the servlet request
+     * @param servletRequest the servlet request
      * @param servletResponse the servlet response
-     * @param filterChain     the filter chain
-     * @throws IOException      if an I/O error occurs
+     * @param filterChain the filter chain
+     * @throws IOException if an I/O error occurs
      * @throws ServletException if a servlet error occurs
      */
     @Override
     public void doFilter(jakarta.servlet.ServletRequest servletRequest, jakarta.servlet.ServletResponse servletResponse,
-            FilterChain filterChain) throws IOException, ServletException {
+        FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 

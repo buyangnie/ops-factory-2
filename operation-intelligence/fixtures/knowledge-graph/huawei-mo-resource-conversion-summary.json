@@ -1,0 +1,36 @@
+{
+  "ontologyFile": "/Users/zlj/Documents/ZLJ/works/code/ops-factory/operation-intelligence/fixtures/knowledge-graph/huawei-mo-resource-ontology.json",
+  "entitySnapshotFile": "/Users/zlj/Documents/ZLJ/works/code/ops-factory/operation-intelligence/fixtures/knowledge-graph/huawei-mo-resource-prod-entities.json",
+  "rawRecordCount": 506,
+  "rawEntityTypeCount": 200,
+  "normalizedEntityTypeCounts": {
+    "AppUnit": 15,
+    "ApplicationComponent": 156,
+    "BusinessSystem": 6,
+    "ComputeGroup": 14,
+    "ComputeNode": 31,
+    "Container": 58,
+    "EnvironmentOrPlatform": 2,
+    "KubernetesCluster": 1,
+    "ManagementSystem": 1,
+    "PhysicalOrNetworkResource": 3,
+    "PlatformService": 46,
+    "Pod": 48,
+    "ServiceCluster": 77,
+    "ServiceInstance": 48
+  },
+  "hostEntityCount": 17,
+  "totalEntityCount": 523,
+  "relationTypeCounts": {
+    "belongs_to_system": 98,
+    "contains": 45,
+    "deployed_in_instance": 164,
+    "instance_of": 34,
+    "located_in": 3,
+    "member_of": 31,
+    "runs_in": 58,
+    "runs_on_host": 240,
+    "scheduled_on": 48
+  },
+  "totalRelationCount": 721
+}

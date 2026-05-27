@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import YAML from 'yaml'
+import yaml from 'js-yaml'
 
 type RouteMap = Record<string, unknown>
 
@@ -45,7 +45,7 @@ const {
 
 async function readConfiguredSourceId(): Promise<string | null> {
   const content = await readFile(new URL('../../../config.yaml', import.meta.url), 'utf-8')
-  const parsed = YAML.parse(content)
+  const parsed = yaml.load(content) as Record<string, any>
   return parsed?.extensions?.['knowledge-service']?.['x-opsfactory']?.knowledgeScope?.sourceId ?? null
 }
 

@@ -9,6 +9,8 @@ import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -24,8 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import jakarta.annotation.PostConstruct;
 
 /**
  * Manages business type definitions persisted as JSON files under the gateway data directory.

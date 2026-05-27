@@ -90,12 +90,11 @@ ${mermaidCode}
         </div>
     </div>
     <script type="module">
-        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 
         try {
             // "Beautiful" configuration mimicking modern aesthetics
             mermaid.initialize({
-                startOnLoad: true,
                 theme: 'base',
                 securityLevel: 'loose',
                 themeVariables: {
@@ -114,6 +113,7 @@ ${mermaidCode}
                     curve: 'basis' // Smoother curves
                 }
             });
+            mermaid.run();
         } catch (e) {
             const errDiv = document.getElementById('error-container');
             errDiv.style.display = 'block';

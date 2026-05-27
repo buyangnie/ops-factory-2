@@ -1,11 +1,23 @@
-import OperationIntelligencePage from './pages/OperationIntelligencePage'
+import OperationIntelligenceWorkspacePage from './pages/OperationIntelligenceWorkspacePage'
+import KnowledgeGraphPage from './pages/KnowledgeGraphPage'
 import type { AppModule } from '../../platform/module-types'
 
 const operationIntelligenceModule: AppModule = {
     id: 'operation-intelligence',
     owner: 'platform',
     routes: [
-        { id: 'operation-intelligence.index', path: '/operation-intelligence', component: OperationIntelligencePage, access: 'authenticated' },
+        {
+            id: 'operation-intelligence.index',
+            path: '/operation-intelligence',
+            component: OperationIntelligenceWorkspacePage,
+            access: 'authenticated',
+        },
+        {
+            id: 'operation-intelligence.knowledge-graph',
+            path: '/operation-intelligence/knowledge-graph',
+            component: KnowledgeGraphPage,
+            access: 'authenticated',
+        },
     ],
     navItems: [
         {
@@ -16,6 +28,7 @@ const operationIntelligenceModule: AppModule = {
             titleKey: 'sidebar.operationIntelligence',
             icon: 'operationIntelligence',
             routeId: 'operation-intelligence.index',
+            end: true,
         },
     ],
 }

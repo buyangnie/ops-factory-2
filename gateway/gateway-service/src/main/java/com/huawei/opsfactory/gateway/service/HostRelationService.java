@@ -9,6 +9,8 @@ import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import jakarta.annotation.PostConstruct;
 
 /**
  * @deprecated Use {@link ClusterRelationService} instead. Host-level relations are replaced by cluster-level relations.
@@ -141,8 +141,8 @@ public class HostRelationService {
         return ids;
     }
 
-    private boolean matchesRelationFilters(Map<String, Object> rel, String hostId,
-            List<String> targetHostIds, String sourceType, String sourceId) {
+    private boolean matchesRelationFilters(Map<String, Object> rel, String hostId, List<String> targetHostIds,
+        String sourceType, String sourceId) {
         if (hostId != null && !hostId.isEmpty()) {
             String relSourceId = (String) rel.get("sourceHostId");
             String relTargetId = (String) rel.get("targetHostId");
@@ -395,7 +395,7 @@ public class HostRelationService {
     }
 
     private void processRelationsForGraph(Map<String, Map<String, Object>> hostMap,
-            List<Map<String, Object>> matchedEdges) {
+        List<Map<String, Object>> matchedEdges) {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(relationsDir, "*.json")) {
             for (Path file : stream) {
                 if (!Files.isRegularFile(file)) {
@@ -442,7 +442,7 @@ public class HostRelationService {
     }
 
     private List<Map<String, Object>> buildGraphNodes(Map<String, Map<String, Object>> hostMap,
-            Map<String, Map<String, Object>> clusterMap) {
+        Map<String, Map<String, Object>> clusterMap) {
         List<Map<String, Object>> nodes = new ArrayList<>();
         for (Map<String, Object> h : hostMap.values()) {
             nodes.add(buildHostNode(h, clusterMap));

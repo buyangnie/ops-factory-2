@@ -39,23 +39,27 @@ export function GoosedProvider({ children }: { children: ReactNode }) {
         lastUserId.current = userId
     }
 
+    const effectiveUserId = userId || 'admin'
+
     const getClient = useCallback((agentId: string): GoosedClient => {
-        const cacheKey = `${agentId}:${userId || ''}`
+        const cacheKey = `${agentId}:${effectiveUserId}`
         if (!clientCache.current[cacheKey]) {
             clientCache.current[cacheKey] = new GoosedClient({
                 baseUrl: `${runtime.GATEWAY_URL}/agents/${agentId}`,
                 secretKey: runtime.GATEWAY_SECRET_KEY,
                 timeout: 3 * 60 * 1000, // 3 minutes — gateway SSE timeouts handle earlier detection
-                userId: userId || undefined,
+                userId: effectiveUserId,
             })
         }
         return clientCache.current[cacheKey]
-    }, [userId])
+    }, [effectiveUserId])
 
     const fetchAgents = useCallback(async () => {
         try {
-            const headers: Record<string, string> = { 'x-secret-key': runtime.GATEWAY_SECRET_KEY }
-            if (userId) headers['x-user-id'] = userId
+            const headers: Record<string, string> = {
+                'x-secret-key': runtime.GATEWAY_SECRET_KEY,
+                'x-user-id': effectiveUserId,
+            }
             const res = await trackedFetch(`${runtime.GATEWAY_URL}/agents`, {
                 category: 'data',
                 name: 'data.load',
@@ -71,7 +75,7 @@ export function GoosedProvider({ children }: { children: ReactNode }) {
             setIsConnected(false)
             setError(getErrorMessage(err))
         }
-    }, [userId])
+    }, [effectiveUserId])
 
     useEffect(() => {
         fetchAgents()

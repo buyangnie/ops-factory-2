@@ -1,0 +1,1478 @@
+{
+  "formatVersion": "1.0",
+  "ontologyId": "commerce-topology-v1",
+  "envCode": "prod",
+  "schemaVersion": "1.0",
+  "sourceSystem": "allmo-export",
+  "importMode": "UPSERT",
+  "snapshotId": "kg-prod-commerce-topology-20260511-001",
+  "generatedAt": "2026-05-11T09:58:13+08:00",
+  "metadata": {
+    "exportFile": "AllMoExport_20260511095813862.csv",
+    "solutionId": "540d4035-e461-4c95-acb3-0f1f187c374d",
+    "solutionName": "bes_pr1",
+    "description": "Commerce solution network topology: Business -> MicroService -> Cluster -> Pod -> WorkerNode -> K8sCluster"
+  },
+  "entities": [
+    {
+      "id": "biz-commerce",
+      "type": "Business",
+      "name": "Commerce",
+      "displayName": "Commerce",
+      "status": "Normal",
+      "properties": {
+        "businessId": "540d4035-e461-4c95-acb3-0f1f187c374d",
+        "businessName": "Commerce",
+        "description": "Commerce solution bes_pr1",
+        "solutionId": "540d4035-e461-4c95-acb3-0f1f187c374d"
+      },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d" }
+    },
+    {
+      "id": "k8s-bes-pr1",
+      "type": "K8sCluster",
+      "name": "bes_pr1",
+      "displayName": "K8s Cluster bes_pr1",
+      "status": "Normal",
+      "properties": {
+        "clusterId": "NE=3e3a",
+        "clusterName": "bes_pr1",
+        "masterIp": "192.171.37.221",
+        "vmGroup": "K8S VM Group0"
+      },
+      "source": { "system": "allmo-export", "externalId": "NE=3e3a" }
+    },
+    {
+      "id": "node-192.171.233.150",
+      "type": "WorkerNode",
+      "name": "worker-192.171.233.150",
+      "displayName": "Worker 192.171.233.150",
+      "status": "Normal",
+      "properties": { "nodeId": "6aaa60aa-6e03-4f0c-9fd8-80d65aa3e6c7", "hostIp": "192.171.233.150", "nodeName": "192.171.233.150", "vmGroup": "K8SVMGroup0" },
+      "source": { "system": "allmo-export", "externalId": "6aaa60aa-6e03-4f0c-9fd8-80d65aa3e6c7" }
+    },
+    {
+      "id": "node-192.171.91.23",
+      "type": "WorkerNode",
+      "name": "worker-192.171.91.23",
+      "displayName": "Worker 192.171.91.23",
+      "status": "Normal",
+      "properties": { "nodeId": "74d6f9f2-5769-427f-a269-063fa1103291", "hostIp": "192.171.91.23", "nodeName": "192.171.91.23", "vmGroup": "K8SVMGroup0" },
+      "source": { "system": "allmo-export", "externalId": "74d6f9f2-5769-427f-a269-063fa1103291" }
+    },
+    {
+      "id": "node-192.171.247.220",
+      "type": "WorkerNode",
+      "name": "worker-192.171.247.220",
+      "displayName": "Worker 192.171.247.220",
+      "status": "Normal",
+      "properties": { "nodeId": "618874cf-0acf-4963-98fd-8e83c2795411", "hostIp": "192.171.247.220", "nodeName": "192.171.247.220", "vmGroup": "K8SVMGroup0" },
+      "source": { "system": "allmo-export", "externalId": "618874cf-0acf-4963-98fd-8e83c2795411" }
+    },
+    {
+      "id": "node-192.171.150.80",
+      "type": "WorkerNode",
+      "name": "worker-192.171.150.80",
+      "displayName": "Worker 192.171.150.80",
+      "status": "Normal",
+      "properties": { "nodeId": "e7efb0f3-6b64-4419-8261-9f4eecebc621", "hostIp": "192.171.150.80", "nodeName": "192.171.150.80", "vmGroup": "K8SVMGroup0" },
+      "source": { "system": "allmo-export", "externalId": "e7efb0f3-6b64-4419-8261-9f4eecebc621" }
+    },
+    {
+      "id": "node-192.171.172.46",
+      "type": "WorkerNode",
+      "name": "worker-192.171.172.46",
+      "displayName": "Worker 192.171.172.46",
+      "status": "Normal",
+      "properties": { "nodeId": "5a2e9749-1f38-4067-b5ac-8a3b71f3b517", "hostIp": "192.171.172.46", "nodeName": "192.171.172.46", "vmGroup": "K8SVMGroup0" },
+      "source": { "system": "allmo-export", "externalId": "5a2e9749-1f38-4067-b5ac-8a3b71f3b517" }
+    },
+    {
+      "id": "node-192.171.112.129",
+      "type": "WorkerNode",
+      "name": "worker-192.171.112.129",
+      "displayName": "Worker 192.171.112.129",
+      "status": "Normal",
+      "properties": { "nodeId": "a166dcc2-23e9-4392-b9ad-cd18faf0b875", "hostIp": "192.171.112.129", "nodeName": "192.171.112.129", "vmGroup": "K8SVMGroup0" },
+      "source": { "system": "allmo-export", "externalId": "a166dcc2-23e9-4392-b9ad-cd18faf0b875" }
+    },
+    {
+      "id": "node-192.171.182.181",
+      "type": "WorkerNode",
+      "name": "worker-192.171.182.181",
+      "displayName": "Worker 192.171.182.181",
+      "status": "Normal",
+      "properties": { "nodeId": "9a43a819-c7e9-486a-b190-b5248e18c1fe", "hostIp": "192.171.182.181", "nodeName": "192.171.182.181", "vmGroup": "K8SVMGroup0" },
+      "source": { "system": "allmo-export", "externalId": "9a43a819-c7e9-486a-b190-b5248e18c1fe" }
+    },
+    {
+      "id": "node-192.171.234.38",
+      "type": "WorkerNode",
+      "name": "worker-192.171.234.38",
+      "displayName": "Worker 192.171.234.38",
+      "status": "Normal",
+      "properties": { "nodeId": "4a2ad06c-af32-4fdd-958b-2be0e6e20513", "hostIp": "192.171.234.38", "nodeName": "192.171.234.38", "vmGroup": "K8SVMGroup0" },
+      "source": { "system": "allmo-export", "externalId": "4a2ad06c-af32-4fdd-958b-2be0e6e20513" }
+    },
+    {
+      "id": "mw-redis-cluster",
+      "type": "MiddlewareCluster",
+      "name": "Redis Cluster",
+      "displayName": "Redis Cluster",
+      "status": "Normal",
+      "properties": { "serviceKey": "RedisDefault", "serviceName": "Redis Cluster", "neType": "RedisCluster", "neName": "bes_RedisDefault", "version": "3.100.0", "category": "cache", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_678_RedisDefault", "podCount": 2 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_678_RedisDefault" }
+    },
+    {
+      "id": "mw-redis-sentinel",
+      "type": "MiddlewareCluster",
+      "name": "Redis Sentinel",
+      "displayName": "Redis Sentinel",
+      "status": "Normal",
+      "properties": { "serviceKey": "RedisSentinel", "serviceName": "Redis Sentinel", "neType": "RedisSentinelCluster", "neName": "bes_RedisSentinel", "version": "3.100.0", "category": "cache", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_681_RedisSentinel", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_681_RedisSentinel" }
+    },
+    {
+      "id": "mw-zookeeper",
+      "type": "MiddlewareCluster",
+      "name": "ZooKeeper",
+      "displayName": "ZooKeeper",
+      "status": "Normal",
+      "properties": { "serviceKey": "ZooKeeper", "serviceName": "ZooKeeper", "neType": "Zookeeper", "neName": "bes_ZooKeeper", "version": "V600R001C51", "category": "coordination", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_552_ZooKeeper", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_552_ZooKeeper" }
+    },
+    {
+      "id": "mw-jetmq",
+      "type": "MiddlewareCluster",
+      "name": "jetMQ",
+      "displayName": "jetMQ",
+      "status": "Normal",
+      "properties": { "serviceKey": "jetmq", "serviceName": "jetMQ", "neType": "jetMQ", "neName": "bes_jetmq", "version": "V600R001C51", "category": "message-queue", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_719_jetmq", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_719_jetmq" }
+    },
+    {
+      "id": "mw-vsearch",
+      "type": "MiddlewareCluster",
+      "name": "VSearch",
+      "displayName": "VSearch",
+      "status": "Normal",
+      "properties": { "serviceKey": "VSEARCH", "serviceName": "VSearch", "neType": "VSearch", "neName": "bes_VSEARCH", "version": "V600R001C51", "category": "search", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_705_VSEARCH", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_705_VSEARCH" }
+    },
+    {
+      "id": "mw-lss",
+      "type": "MiddlewareCluster",
+      "name": "LSS",
+      "displayName": "LSS",
+      "status": "Normal",
+      "properties": { "serviceKey": "LSS", "serviceName": "LSS", "neType": "LSS", "neName": "bes_LSS", "version": "V600R001C51", "category": "log-config", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_699_LSS", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_699_LSS" }
+    },
+    {
+      "id": "mw-dds-frontend",
+      "type": "MiddlewareCluster",
+      "name": "DDS Frontend",
+      "displayName": "DDS Frontend",
+      "status": "Normal",
+      "properties": { "serviceKey": "DDSFRONTEND", "serviceName": "DDS Frontend", "neType": "DDS", "neName": "bes_DDSFRONTEND", "version": "V600R026C00", "category": "distributed-storage", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_716_DDSFRONTEND", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_716_DDSFRONTEND" }
+    },
+    {
+      "id": "mw-dds-backend",
+      "type": "MiddlewareCluster",
+      "name": "DDS Backend",
+      "displayName": "DDS Backend",
+      "status": "Normal",
+      "properties": { "serviceKey": "DDSBACKEND", "serviceName": "DDS Backend", "neType": "DDS", "neName": "bes_DDSBACKEND", "version": "V600R026C00", "category": "distributed-storage", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_716_DDSBACKEND", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_716_DDSBACKEND" }
+    },
+    {
+      "id": "mw-bdi",
+      "type": "MiddlewareCluster",
+      "name": "BDI",
+      "displayName": "BDI",
+      "status": "Normal",
+      "properties": { "serviceKey": "bdi-docker", "serviceName": "BDI", "neType": "BDI", "neName": "bes_bdi-docker", "version": "V600R001C51", "category": "big-data", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_710_bdi-docker", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_710_bdi-docker" }
+    },
+    {
+      "id": "mw-kms",
+      "type": "MiddlewareCluster",
+      "name": "KMS",
+      "displayName": "KMS",
+      "status": "Normal",
+      "properties": { "serviceKey": "KMS", "serviceName": "KMS", "neType": "KMS", "neName": "bes_KMS", "version": "application_version", "category": "key-management", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_727_KMS", "podCount": 0 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_727_KMS" }
+    },
+    {
+      "id": "mw-lodas-portal",
+      "type": "MiddlewareCluster",
+      "name": "LodasService Portal",
+      "displayName": "LodasService Portal",
+      "status": "Normal",
+      "properties": { "serviceKey": "portal", "serviceName": "LodasService Portal", "neType": "LodasService", "neName": "bes_portal", "version": "26.3.0", "category": "platform", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_688_portal", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_688_portal" }
+    },
+    {
+      "id": "mw-lodas-feature",
+      "type": "MiddlewareCluster",
+      "name": "LodasService Feature",
+      "displayName": "LodasService Feature",
+      "status": "Normal",
+      "properties": { "serviceKey": "feature", "serviceName": "LodasService Feature", "neType": "LodasService", "neName": "bes_feature", "version": "26.3.0", "category": "platform", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_688_feature", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_688_feature" }
+    },
+    {
+      "id": "mw-lodas-training",
+      "type": "MiddlewareCluster",
+      "name": "LodasService Training",
+      "displayName": "LodasService Training",
+      "status": "Normal",
+      "properties": { "serviceKey": "training", "serviceName": "LodasService Training", "neType": "LodasService", "neName": "bes_training", "version": "26.3.0", "category": "platform", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_688_training", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_688_training" }
+    },
+    {
+      "id": "mw-lodas-running-master",
+      "type": "MiddlewareCluster",
+      "name": "LodasService RunningMaster",
+      "displayName": "LodasService RunningMaster",
+      "status": "Normal",
+      "properties": { "serviceKey": "runningMaster", "serviceName": "LodasService RunningMaster", "neType": "LodasService", "neName": "bes_runningMaster", "version": "26.3.0", "category": "platform", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_688_runningMaster", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_688_runningMaster" }
+    },
+    {
+      "id": "mw-lodas-running-worker",
+      "type": "MiddlewareCluster",
+      "name": "LodasService RunningWorker",
+      "displayName": "LodasService RunningWorker",
+      "status": "Normal",
+      "properties": { "serviceKey": "runningWorker", "serviceName": "LodasService RunningWorker", "neType": "LodasService", "neName": "bes_runningWorker", "version": "26.3.0", "category": "platform", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_688_runningWorker", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_688_runningWorker" }
+    },
+    {
+      "id": "mw-dbagent",
+      "type": "MiddlewareCluster",
+      "name": "DBAgent",
+      "displayName": "DBAgent",
+      "status": "Normal",
+      "properties": { "serviceKey": "DBAgent", "serviceName": "DBAgent", "neType": "DBAgentCluster", "neName": "bes_DBAgent", "version": "3.100.0", "category": "platform", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_675_DBAgent", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_675_DBAgent" }
+    },
+    {
+      "id": "mw-nslb-shop",
+      "type": "MiddlewareCluster",
+      "name": "NSLB SHOP",
+      "displayName": "NSLB SHOP",
+      "status": "Normal",
+      "properties": { "serviceKey": "NSLBSHOP", "serviceName": "NSLB SHOP", "neType": "NSLB", "neName": "bes_pr1_NSLBSHOP", "version": "1.0", "category": "gateway", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_722_NSLBSHOP", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_722_NSLBSHOP" }
+    },
+    {
+      "id": "mw-nslb-if",
+      "type": "MiddlewareCluster",
+      "name": "NSLB IF",
+      "displayName": "NSLB IF",
+      "status": "Normal",
+      "properties": { "serviceKey": "NSLBIF", "serviceName": "NSLB IF", "neType": "NSLB", "neName": "bes_pr1_NSLBIF", "version": "1.0", "category": "gateway", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_722_NSLBIF", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_722_NSLBIF" }
+    },
+    {
+      "id": "mw-nslb-sftp",
+      "type": "MiddlewareCluster",
+      "name": "NSLB SFTP",
+      "displayName": "NSLB SFTP",
+      "status": "Normal",
+      "properties": { "serviceKey": "LBNSLBSFTP", "serviceName": "NSLB SFTP", "neType": "NSLB", "neName": "bes_pr1_LBNSLBSFTP", "version": "1.0", "category": "gateway", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_722_LBNSLBSFTP", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_722_LBNSLBSFTP" }
+    },
+    {
+      "id": "mw-api-access-in",
+      "type": "MiddlewareCluster",
+      "name": "API Access In",
+      "displayName": "API Access In",
+      "status": "Normal",
+      "properties": { "serviceKey": "API_Access_In", "serviceName": "API Access In", "neType": "AccessIn Cluster", "neName": "bes_API_Access_In", "version": "3.100.0", "category": "gateway", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_738_API_Access_In", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_738_API_Access_In" }
+    },
+    {
+      "id": "mw-api-access-out",
+      "type": "MiddlewareCluster",
+      "name": "API Access Out",
+      "displayName": "API Access Out",
+      "status": "Normal",
+      "properties": { "serviceKey": "API_Access_Out", "serviceName": "API Access Out", "neType": "AccessOut Cluster", "neName": "bes_API_Access_Out", "version": "3.100.0", "category": "gateway", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_741_API_Access_Out", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_741_API_Access_Out" }
+    },
+    {
+      "id": "mw-api-governance",
+      "type": "MiddlewareCluster",
+      "name": "API Governance",
+      "displayName": "API Governance",
+      "status": "Normal",
+      "properties": { "serviceKey": "API_Governance", "serviceName": "API Governance", "neType": "ApiGovernance", "neName": "bes_API_Governance", "version": "3.100.0", "category": "gateway", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_734_API_Governance", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_734_API_Governance" }
+    },
+    {
+      "id": "mw-api-portal",
+      "type": "MiddlewareCluster",
+      "name": "API Portal",
+      "displayName": "API Portal",
+      "status": "Normal",
+      "properties": { "serviceKey": "API_Portal", "serviceName": "API Portal", "neType": "ApiPortal", "neName": "bes_pr1_API_Portal", "version": "3.100.0", "category": "gateway", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_736_API_Portal", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_736_API_Portal" }
+    },
+    {
+      "id": "app-bhb",
+      "type": "ApplicationServiceCluster",
+      "name": "BHB",
+      "displayName": "BHB",
+      "status": "Normal",
+      "properties": { "serviceKey": "BHB", "serviceName": "BHB", "neType": "BHBCluster", "neName": "bes_BHB", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_601_BHB", "podCount": 2 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_601_BHB" }
+    },
+    {
+      "id": "app-bhf",
+      "type": "ApplicationServiceCluster",
+      "name": "BHF",
+      "displayName": "BHF",
+      "status": "Normal",
+      "properties": { "serviceKey": "BHF", "serviceName": "BHF", "neType": "BHFCluster", "neName": "bes_BHF", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_603_BHF", "podCount": 2 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_603_BHF" }
+    },
+    {
+      "id": "app-batch-executor",
+      "type": "ApplicationServiceCluster",
+      "name": "BatchExecutor",
+      "displayName": "BatchExecutor",
+      "status": "Normal",
+      "properties": { "serviceKey": "BatchExecutor", "serviceName": "BatchExecutor", "neType": "BatchExecutorCluster", "neName": "bes_BatchExecutor", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_614_BatchExecutor", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_614_BatchExecutor" }
+    },
+    {
+      "id": "app-emgw",
+      "type": "ApplicationServiceCluster",
+      "name": "EMGW",
+      "displayName": "EMGW",
+      "status": "Normal",
+      "properties": { "serviceKey": "EMGW", "serviceName": "EMGW", "neType": "EMGWCluster", "neName": "bes_EMGW", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_626_EMGW", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_626_EMGW" }
+    },
+    {
+      "id": "app-cle",
+      "type": "ApplicationServiceCluster",
+      "name": "CLE",
+      "displayName": "CLE (IF)",
+      "status": "Normal",
+      "properties": { "serviceKey": "CLE", "serviceName": "CLE", "neType": "IFCluster", "neName": "bes_CLE", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_641_CLE", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_641_CLE" }
+    },
+    {
+      "id": "app-order-scheduler",
+      "type": "ApplicationServiceCluster",
+      "name": "OrderScheduler",
+      "displayName": "OrderScheduler",
+      "status": "Normal",
+      "properties": { "serviceKey": "OrderScheduler", "serviceName": "OrderScheduler", "neType": "OrderSchedulerCluster", "neName": "bes_OrderScheduler", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_654_OrderScheduler", "podCount": 2 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_654_OrderScheduler" }
+    },
+    {
+      "id": "app-marketing-mgmt-exec",
+      "type": "ApplicationServiceCluster",
+      "name": "MarketingMgmtExec",
+      "displayName": "MarketingMgmtExec",
+      "status": "Normal",
+      "properties": { "serviceKey": "MarketingMgmtExec", "serviceName": "MarketingMgmtExec", "neType": "MarketingMgmtExecCluster", "neName": "bes_MarketingMgmtExec", "version": "23.200.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_647_MarketingMgmtExec", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_647_MarketingMgmtExec" }
+    },
+    {
+      "id": "app-loyalty-cal-engine",
+      "type": "ApplicationServiceCluster",
+      "name": "LoyaltyCalEngine",
+      "displayName": "LoyaltyCalEngine",
+      "status": "Normal",
+      "properties": { "serviceKey": "LoyaltyCalEngine", "serviceName": "LoyaltyCalEngine", "neType": "LoyaltyCalEngineCluster", "neName": "bes_LoyaltyCalEngine", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_645_LoyaltyCalEngine", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_645_LoyaltyCalEngine" }
+    },
+    {
+      "id": "app-pro-exe-and-tag",
+      "type": "ApplicationServiceCluster",
+      "name": "ProExeandTag",
+      "displayName": "ProExeandTag",
+      "status": "Normal",
+      "properties": { "serviceKey": "ProExeandTag", "serviceName": "ProExeandTag", "neType": "ProExeandTagCluster", "neName": "bes_ProExeandTag", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_660_ProExeandTag", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_660_ProExeandTag" }
+    },
+    {
+      "id": "app-retail-shop-portal",
+      "type": "ApplicationServiceCluster",
+      "name": "RetailShopPortal",
+      "displayName": "RetailShopPortal",
+      "status": "Normal",
+      "properties": { "serviceKey": "RetailShopPortal", "serviceName": "RetailShopPortal", "neType": "RetailShopPortalCluster", "neName": "bes_RetailShopPortal", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_666_RetailShopPortal", "podCount": 2 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_666_RetailShopPortal" }
+    },
+    {
+      "id": "app-search-center",
+      "type": "ApplicationServiceCluster",
+      "name": "SearchCenter",
+      "displayName": "SearchCenter",
+      "status": "Normal",
+      "properties": { "serviceKey": "SearchCenter", "serviceName": "SearchCenter", "neType": "SearchCenterCluster", "neName": "bes_SearchCenter", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_668_SearchCenter", "podCount": 2 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_668_SearchCenter" }
+    },
+    {
+      "id": "app-mgmt-portal",
+      "type": "ApplicationServiceCluster",
+      "name": "MgmtPortal",
+      "displayName": "MgmtPortal",
+      "status": "Normal",
+      "properties": { "serviceKey": "MgmtPortal", "serviceName": "MgmtPortal", "neType": "MgmtPortalCluster", "neName": "bes_MgmtPortal", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_649_MgmtPortal", "podCount": 2 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_649_MgmtPortal" }
+    },
+    {
+      "id": "app-fileserver",
+      "type": "ApplicationServiceCluster",
+      "name": "FILESERVER",
+      "displayName": "FILESERVER",
+      "status": "Normal",
+      "properties": { "serviceKey": "FILESERVER", "serviceName": "FILESERVER", "neType": "FILESERVER", "neName": "bes_FILESERVER", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_1140_FILESERVER", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_1140_FILESERVER" }
+    },
+    {
+      "id": "app-central-auth",
+      "type": "ApplicationServiceCluster",
+      "name": "CentralAuthService",
+      "displayName": "CentralAuthService",
+      "status": "Normal",
+      "properties": { "serviceKey": "CentralAuthService", "serviceName": "CentralAuthService", "neType": "CommsvcsPlatform", "neName": "bes_pr1_CentralAuthService", "version": "3.100.0", "dn": "540d4035-e461-4c95-acb3-0f1f187c374d_296_CentralAuthService", "podCount": 1 },
+      "source": { "system": "allmo-export", "externalId": "540d4035-e461-4c95-acb3-0f1f187c374d_296_CentralAuthService" }
+    },
+    {
+      "id": "pod-redis-master-0",
+      "type": "Pod",
+      "name": "bes_redis-master-0",
+      "displayName": "Redis Master-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_redis-master-0_172.16.1.111", "podIp": "172.16.1.111", "hostIp": "192.171.233.150", "dn": "Pod://bes.RedisDefault.cec206b4" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.RedisDefault.cec206b4" }
+    },
+    {
+      "id": "pod-redis-slave-0",
+      "type": "Pod",
+      "name": "bes_redis-slave-0",
+      "displayName": "Redis Slave-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_redis-slave-0_172.16.1.201", "podIp": "172.16.1.201", "hostIp": "192.171.91.23", "dn": "Pod://bes.RedisDefault.ca5baba2" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.RedisDefault.ca5baba2" }
+    },
+    {
+      "id": "pod-redis-sentinel-0",
+      "type": "Pod",
+      "name": "bes_redis-sentinel-0",
+      "displayName": "Redis Sentinel-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_redis-sentinel-0_172.16.1.112", "podIp": "172.16.1.112", "hostIp": "192.171.233.150", "dn": "Pod://bes.RedisSentinel.b4b393a1" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.RedisSentinel.b4b393a1" }
+    },
+    {
+      "id": "pod-zookeeper-0",
+      "type": "Pod",
+      "name": "bes_zookeeper-0",
+      "displayName": "ZooKeeper-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_zookeeper-0_172.16.2.118", "podIp": "172.16.2.118", "hostIp": "192.171.247.220", "dn": "Pod://bes.ZooKeeper.6743c840" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.ZooKeeper.6743c840" }
+    },
+    {
+      "id": "pod-jetmq-0",
+      "type": "Pod",
+      "name": "bes_jetmq-0",
+      "displayName": "jetMQ-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_jetmq-jetmq-0_172.16.2.119", "podIp": "172.16.2.119", "hostIp": "192.171.247.220", "dn": "Pod://bes.jetmq.cf4ab46f" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.jetmq.cf4ab46f" }
+    },
+    {
+      "id": "pod-vsearch-0",
+      "type": "Pod",
+      "name": "bes_vsearch-0",
+      "displayName": "VSearch-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_vsearch-0_172.16.1.115", "podIp": "172.16.1.115", "hostIp": "192.171.233.150", "dn": "Pod://bes.VSEARCH.9a7cb8b0" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.VSEARCH.9a7cb8b0" }
+    },
+    {
+      "id": "pod-lss-0",
+      "type": "Pod",
+      "name": "bes_lss-0",
+      "displayName": "LSS-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_lss-0_192.171.112.129", "podIp": "192.171.112.129", "hostIp": "192.171.112.129", "dn": "Pod://bes.LSS.16251e5b" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.LSS.16251e5b" }
+    },
+    {
+      "id": "pod-dds-frontend-0",
+      "type": "Pod",
+      "name": "bes_ddsfrontend-0",
+      "displayName": "DDS Frontend-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_ddsfrontend-0_172.16.1.113", "podIp": "172.16.1.113", "hostIp": "192.171.233.150", "dn": "Pod://bes.DDSFRONTEND.40a8cae5" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.DDSFRONTEND.40a8cae5" }
+    },
+    {
+      "id": "pod-dds-backend-0",
+      "type": "Pod",
+      "name": "bes_ddsbackend-0",
+      "displayName": "DDS Backend-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_ddsbackend-0_172.16.3.45", "podIp": "172.16.3.45", "hostIp": "192.171.172.46", "dn": "Pod://bes.DDSBACKEND.7ef1d998" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.DDSBACKEND.7ef1d998" }
+    },
+    {
+      "id": "pod-bdi-1",
+      "type": "Pod",
+      "name": "bes_bdi-docker-1",
+      "displayName": "BDI-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_bdi-docker-1_172.16.1.116", "podIp": "172.16.1.116", "hostIp": "192.171.233.150", "dn": "Pod://bes.bdi-docker.9af5a54f" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.bdi-docker.9af5a54f" }
+    },
+    {
+      "id": "pod-dbagent-0",
+      "type": "Pod",
+      "name": "bes_dbagent-0",
+      "displayName": "DBAgent-0",
+      "status": "Normal",
+      "properties": { "podName": "bes_dbagent-0_172.16.1.200", "podIp": "172.16.1.200", "hostIp": "192.171.91.23", "dn": "Pod://bes.DBAgent.3a9eb15e" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.DBAgent.3a9eb15e" }
+    },
+    {
+      "id": "pod-lodas-portal",
+      "type": "Pod",
+      "name": "bes_lodas-portal-service",
+      "displayName": "Lodas Portal",
+      "status": "Normal",
+      "properties": { "podName": "bes_lodas-portal-service_172.16.1.202", "podIp": "172.16.1.202", "hostIp": "192.171.91.23", "dn": "Pod://bes.portal.dd61e8d5" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.portal.dd61e8d5" }
+    },
+    {
+      "id": "pod-lodas-feature",
+      "type": "Pod",
+      "name": "bes_lodas-feature-service",
+      "displayName": "Lodas Feature",
+      "status": "Normal",
+      "properties": { "podName": "bes_lodas-feature-service_172.16.1.134", "podIp": "172.16.1.134", "hostIp": "192.171.150.80", "dn": "Pod://bes.feature.3216a55a" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.feature.3216a55a" }
+    },
+    {
+      "id": "pod-lodas-training",
+      "type": "Pod",
+      "name": "bes_lodas-training-service",
+      "displayName": "Lodas Training",
+      "status": "Normal",
+      "properties": { "podName": "bes_lodas-training-service_172.16.3.47", "podIp": "172.16.3.47", "hostIp": "192.171.172.46", "dn": "Pod://bes.training.18ff8734" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.training.18ff8734" }
+    },
+    {
+      "id": "pod-lodas-running-master",
+      "type": "Pod",
+      "name": "bes_lodas-running-master-service",
+      "displayName": "Lodas RunningMaster",
+      "status": "Normal",
+      "properties": { "podName": "bes_lodas-running-master-service_172.16.1.119", "podIp": "172.16.1.119", "hostIp": "192.171.233.150", "dn": "Pod://bes.runningMaster.3fea4f95" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.runningMaster.3fea4f95" }
+    },
+    {
+      "id": "pod-lodas-running-worker",
+      "type": "Pod",
+      "name": "bes_lodas-running-worker-service",
+      "displayName": "Lodas RunningWorker",
+      "status": "Normal",
+      "properties": { "podName": "bes_lodas-running-worker-service_172.16.1.206", "podIp": "172.16.1.206", "hostIp": "192.171.91.23", "dn": "Pod://bes.runningWorker.53744424" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.runningWorker.53744424" }
+    },
+    {
+      "id": "pod-bhb-1",
+      "type": "Pod",
+      "name": "bes_bhb-bghdp",
+      "displayName": "BHB-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_bhb-bghdp_172.16.1.137", "podIp": "172.16.1.137", "hostIp": "192.171.150.80", "dn": "Pod://bes.BHB.64f92569" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.BHB.64f92569" }
+    },
+    {
+      "id": "pod-bhb-2",
+      "type": "Pod",
+      "name": "bes_bhb-ptq7f",
+      "displayName": "BHB-2",
+      "status": "Normal",
+      "properties": { "podName": "bes_bhb-ptq7f_172.16.3.52", "podIp": "172.16.3.52", "hostIp": "192.171.172.46", "dn": "Pod://bes.BHB.2346c257" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.BHB.2346c257" }
+    },
+    {
+      "id": "pod-bhf-1",
+      "type": "Pod",
+      "name": "bes_bhf-mzxzd",
+      "displayName": "BHF-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_bhf-mzxzd_172.16.2.67", "podIp": "172.16.2.67", "hostIp": "192.171.247.220", "dn": "Pod://bes.BHF.1aa76d11" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.BHF.1aa76d11" }
+    },
+    {
+      "id": "pod-bhf-2",
+      "type": "Pod",
+      "name": "bes_bhf-bmcp5",
+      "displayName": "BHF-2",
+      "status": "Normal",
+      "properties": { "podName": "bes_bhf-bmcp5_172.16.2.245", "podIp": "172.16.2.245", "hostIp": "192.171.112.129", "dn": "Pod://bes.BHF.142a728e" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.BHF.142a728e" }
+    },
+    {
+      "id": "pod-batch-executor-1",
+      "type": "Pod",
+      "name": "bes_btexec-c9cnk",
+      "displayName": "BatchExecutor-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_btexec-c9cnk_172.16.2.126", "podIp": "172.16.2.126", "hostIp": "192.171.247.220", "dn": "Pod://bes.BatchExecutor.7568a537" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.BatchExecutor.7568a537" }
+    },
+    {
+      "id": "pod-emgw-1",
+      "type": "Pod",
+      "name": "bes_emgw-gr5z8",
+      "displayName": "EMGW-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_emgw-gr5z8_172.16.4.17", "podIp": "172.16.4.17", "hostIp": "192.171.182.181", "dn": "Pod://bes.EMGW.9f3471fc" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.EMGW.9f3471fc" }
+    },
+    {
+      "id": "pod-cle-1",
+      "type": "Pod",
+      "name": "bes_cle-57rdp",
+      "displayName": "CLE-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_cle-57rdp_172.16.1.207", "podIp": "172.16.1.207", "hostIp": "192.171.91.23", "dn": "Pod://bes.CLE.22546559" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.CLE.22546559" }
+    },
+    {
+      "id": "pod-order-scheduler-1",
+      "type": "Pod",
+      "name": "bes_sched-8ngdx",
+      "displayName": "OrderScheduler-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_sched-8ngdx_172.16.2.66", "podIp": "172.16.2.66", "hostIp": "192.171.247.220", "dn": "Pod://bes.OrderScheduler.37436a21" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.OrderScheduler.37436a21" }
+    },
+    {
+      "id": "pod-order-scheduler-2",
+      "type": "Pod",
+      "name": "bes_sched-5kpdt",
+      "displayName": "OrderScheduler-2",
+      "status": "Normal",
+      "properties": { "podName": "bes_sched-5kpdt_172.16.1.210", "podIp": "172.16.1.210", "hostIp": "192.171.91.23", "dn": "Pod://bes.OrderScheduler.675e9509" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.OrderScheduler.675e9509" }
+    },
+    {
+      "id": "pod-marketing-exec-1",
+      "type": "Pod",
+      "name": "bes_marketingexec-pg5pj",
+      "displayName": "MarketingMgmtExec-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_marketingexec-pg5pj_172.16.2.246", "podIp": "172.16.2.246", "hostIp": "192.171.112.129", "dn": "Pod://bes.MarketingMgmtExec.fab08e2c" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.MarketingMgmtExec.fab08e2c" }
+    },
+    {
+      "id": "pod-loyalty-cal-1",
+      "type": "Pod",
+      "name": "bes_loyaltycalengine-clvtd",
+      "displayName": "LoyaltyCalEngine-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_loyaltycalengine-clvtd_172.16.1.120", "podIp": "172.16.1.120", "hostIp": "192.171.233.150", "dn": "Pod://bes.LoyaltyCalEngine.af94b6df" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.LoyaltyCalEngine.af94b6df" }
+    },
+    {
+      "id": "pod-pro-exe-1",
+      "type": "Pod",
+      "name": "bes_pret-49b22",
+      "displayName": "ProExeandTag-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_pret-49b22_172.16.1.136", "podIp": "172.16.1.136", "hostIp": "192.171.150.80", "dn": "Pod://bes.ProExeandTag.fc60092c" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.ProExeandTag.fc60092c" }
+    },
+    {
+      "id": "pod-retail-portal-1",
+      "type": "Pod",
+      "name": "bes_rsp-bpt2f",
+      "displayName": "RetailShopPortal-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_rsp-bpt2f_172.16.1.139", "podIp": "172.16.1.139", "hostIp": "192.171.150.80", "dn": "Pod://bes.RetailShopPortal.c39f5a61" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.RetailShopPortal.c39f5a61" }
+    },
+    {
+      "id": "pod-retail-portal-2",
+      "type": "Pod",
+      "name": "bes_rsp-lskrg",
+      "displayName": "RetailShopPortal-2",
+      "status": "Normal",
+      "properties": { "podName": "bes_rsp-lskrg_172.16.1.208", "podIp": "172.16.1.208", "hostIp": "192.171.91.23", "dn": "Pod://bes.RetailShopPortal.ae563444" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.RetailShopPortal.ae563444" }
+    },
+    {
+      "id": "pod-search-center-1",
+      "type": "Pod",
+      "name": "bes_sc-25xxn",
+      "displayName": "SearchCenter-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_sc-25xxn_172.16.1.138", "podIp": "172.16.1.138", "hostIp": "192.171.150.80", "dn": "Pod://bes.SearchCenter.e19053b7" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.SearchCenter.e19053b7" }
+    },
+    {
+      "id": "pod-search-center-2",
+      "type": "Pod",
+      "name": "bes_sc-n4tsz",
+      "displayName": "SearchCenter-2",
+      "status": "Normal",
+      "properties": { "podName": "bes_sc-n4tsz_172.16.2.68", "podIp": "172.16.2.68", "hostIp": "192.171.247.220", "dn": "Pod://bes.SearchCenter.f1a59472" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.SearchCenter.f1a59472" }
+    },
+    {
+      "id": "pod-mgmt-portal-1",
+      "type": "Pod",
+      "name": "bes_mgmt-hqpc2",
+      "displayName": "MgmtPortal-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_mgmt-hqpc2_172.16.1.209", "podIp": "172.16.1.209", "hostIp": "192.171.91.23", "dn": "Pod://bes.MgmtPortal.fb06fe43" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.MgmtPortal.fb06fe43" }
+    },
+    {
+      "id": "pod-mgmt-portal-2",
+      "type": "Pod",
+      "name": "bes_mgmt-sqw8r",
+      "displayName": "MgmtPortal-2",
+      "status": "Normal",
+      "properties": { "podName": "bes_mgmt-sqw8r_172.16.2.247", "podIp": "172.16.2.247", "hostIp": "192.171.112.129", "dn": "Pod://bes.MgmtPortal.9e8f42dc" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.MgmtPortal.9e8f42dc" }
+    },
+    {
+      "id": "pod-fileserver-1",
+      "type": "Pod",
+      "name": "bes_crmfileserver-vn9q6",
+      "displayName": "FILESERVER-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_crmfileserver-vn9q6_172.16.3.108", "podIp": "172.16.3.108", "hostIp": "192.171.234.38", "dn": "Pod://bes.FILESERVER.ca36e3fc" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.FILESERVER.ca36e3fc" }
+    },
+    {
+      "id": "pod-cas-1",
+      "type": "Pod",
+      "name": "bes_cas-deploy-j57mt",
+      "displayName": "CentralAuthService-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_cas-deploy-j57mt_172.16.3.48", "podIp": "172.16.3.48", "hostIp": "192.171.172.46", "dn": "Pod://bes.CentralAuthService.493a939a" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.CentralAuthService.493a939a" }
+    },
+    {
+      "id": "pod-api-access-in-1",
+      "type": "Pod",
+      "name": "bes_apiaccess-in-wj92w",
+      "displayName": "API Access In-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_apiaccess-in-wj92w_172.16.1.118", "podIp": "172.16.1.118", "hostIp": "192.171.233.150", "dn": "Pod://bes.API_Access_In.b1ab71ec" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.API_Access_In.b1ab71ec" }
+    },
+    {
+      "id": "pod-api-access-out-1",
+      "type": "Pod",
+      "name": "bes_apiaccess-out-8llhc",
+      "displayName": "API Access Out-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_apiaccess-out-8llhc_172.16.3.51", "podIp": "172.16.3.51", "hostIp": "192.171.172.46", "dn": "Pod://bes.API_Access_Out.1ef90a1c" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.API_Access_Out.1ef90a1c" }
+    },
+    {
+      "id": "pod-api-governance-1",
+      "type": "Pod",
+      "name": "bes_apigovernance-0",
+      "displayName": "API Governance-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_apigovernance-0_172.16.4.13", "podIp": "172.16.4.13", "hostIp": "192.171.182.181", "dn": "Pod://bes.API_Governance.57c066b9" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.API_Governance.57c066b9" }
+    },
+    {
+      "id": "pod-api-portal-1",
+      "type": "Pod",
+      "name": "bes_apiportal-z5mm8",
+      "displayName": "API Portal-1",
+      "status": "Normal",
+      "properties": { "podName": "bes_apiportal-z5mm8_172.16.2.239", "podIp": "172.16.2.239", "hostIp": "192.171.112.129", "dn": "Pod://bes.API_Portal.090e7042" },
+      "source": { "system": "allmo-export", "externalId": "Pod://bes.API_Portal.090e7042" }
+    },
+    {
+      "id": "pod-nslb-shop-nginx",
+      "type": "Pod",
+      "name": "nslb-nginxshop",
+      "displayName": "NSLB SHOP",
+      "status": "Normal",
+      "properties": { "podName": "nslb-nginxshop-deploy-x92th_192.171.1.123", "podIp": "192.171.1.123", "hostIp": "192.171.1.123", "dn": "1b39ec0b-238b-4e1c-aedc-d81b26ad9b48" },
+      "source": { "system": "allmo-export", "externalId": "1b39ec0b-238b-4e1c-aedc-d81b26ad9b48" }
+    },
+    {
+      "id": "pod-nslb-if-nginx",
+      "type": "Pod",
+      "name": "nslb-nginxif",
+      "displayName": "NSLB IF",
+      "status": "Normal",
+      "properties": { "podName": "nslb-nginxif-deploy-c9r24_192.171.121.9", "podIp": "192.171.121.9", "hostIp": "192.171.121.9", "dn": "a54bbc4d-660a-4753-9c49-c68586ade832" },
+      "source": { "system": "allmo-export", "externalId": "a54bbc4d-660a-4753-9c49-c68586ade832" }
+    },
+    {
+      "id": "pod-nslb-sftp",
+      "type": "Pod",
+      "name": "lbnslbsftp",
+      "displayName": "NSLB SFTP",
+      "status": "Normal",
+      "properties": { "podName": "lbnslbsftp-deploy-qbfld_192.171.121.9", "podIp": "192.171.121.9", "hostIp": "192.171.121.9", "dn": "fe2cb72b-74d9-445e-9691-26501be49e5e" },
+      "source": { "system": "allmo-export", "externalId": "fe2cb72b-74d9-445e-9691-26501be49e5e" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "rel-k8s-manages-node-233.150",
+      "type": "manages",
+      "from": "k8s-bes-pr1",
+      "to": "node-192.171.233.150",
+      "properties": {}
+    },
+    {
+      "id": "rel-k8s-manages-node-91.23",
+      "type": "manages",
+      "from": "k8s-bes-pr1",
+      "to": "node-192.171.91.23",
+      "properties": {}
+    },
+    {
+      "id": "rel-k8s-manages-node-247.220",
+      "type": "manages",
+      "from": "k8s-bes-pr1",
+      "to": "node-192.171.247.220",
+      "properties": {}
+    },
+    {
+      "id": "rel-k8s-manages-node-150.80",
+      "type": "manages",
+      "from": "k8s-bes-pr1",
+      "to": "node-192.171.150.80",
+      "properties": {}
+    },
+    {
+      "id": "rel-k8s-manages-node-172.46",
+      "type": "manages",
+      "from": "k8s-bes-pr1",
+      "to": "node-192.171.172.46",
+      "properties": {}
+    },
+    {
+      "id": "rel-k8s-manages-node-112.129",
+      "type": "manages",
+      "from": "k8s-bes-pr1",
+      "to": "node-192.171.112.129",
+      "properties": {}
+    },
+    {
+      "id": "rel-k8s-manages-node-182.181",
+      "type": "manages",
+      "from": "k8s-bes-pr1",
+      "to": "node-192.171.182.181",
+      "properties": {}
+    },
+    {
+      "id": "rel-k8s-manages-node-234.38",
+      "type": "manages",
+      "from": "k8s-bes-pr1",
+      "to": "node-192.171.234.38",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-redis-has-pod-master",
+      "type": "cluster_has_pod",
+      "from": "mw-redis-cluster",
+      "to": "pod-redis-master-0",
+      "properties": { "role": "master" }
+    },
+    {
+      "id": "rel-mw-redis-has-pod-slave",
+      "type": "cluster_has_pod",
+      "from": "mw-redis-cluster",
+      "to": "pod-redis-slave-0",
+      "properties": { "role": "slave" }
+    },
+    {
+      "id": "rel-mw-redis-sentinel-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-redis-sentinel",
+      "to": "pod-redis-sentinel-0",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-zookeeper-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-zookeeper",
+      "to": "pod-zookeeper-0",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-jetmq-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-jetmq",
+      "to": "pod-jetmq-0",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-vsearch-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-vsearch",
+      "to": "pod-vsearch-0",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-lss-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-lss",
+      "to": "pod-lss-0",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-dds-frontend-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-dds-frontend",
+      "to": "pod-dds-frontend-0",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-dds-backend-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-dds-backend",
+      "to": "pod-dds-backend-0",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-bdi-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-bdi",
+      "to": "pod-bdi-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-lodas-portal-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-lodas-portal",
+      "to": "pod-lodas-portal",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-lodas-feature-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-lodas-feature",
+      "to": "pod-lodas-feature",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-lodas-training-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-lodas-training",
+      "to": "pod-lodas-training",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-lodas-running-master-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-lodas-running-master",
+      "to": "pod-lodas-running-master",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-lodas-running-worker-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-lodas-running-worker",
+      "to": "pod-lodas-running-worker",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-dbagent-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-dbagent",
+      "to": "pod-dbagent-0",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-nslb-shop-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-nslb-shop",
+      "to": "pod-nslb-shop-nginx",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-nslb-if-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-nslb-if",
+      "to": "pod-nslb-if-nginx",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-nslb-sftp-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-nslb-sftp",
+      "to": "pod-nslb-sftp",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-api-access-in-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-api-access-in",
+      "to": "pod-api-access-in-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-api-access-out-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-api-access-out",
+      "to": "pod-api-access-out-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-api-governance-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-api-governance",
+      "to": "pod-api-governance-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-mw-api-portal-has-pod",
+      "type": "cluster_has_pod",
+      "from": "mw-api-portal",
+      "to": "pod-api-portal-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-bhb-has-pod-1",
+      "type": "cluster_has_pod",
+      "from": "app-bhb",
+      "to": "pod-bhb-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-bhb-has-pod-2",
+      "type": "cluster_has_pod",
+      "from": "app-bhb",
+      "to": "pod-bhb-2",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-bhf-has-pod-1",
+      "type": "cluster_has_pod",
+      "from": "app-bhf",
+      "to": "pod-bhf-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-bhf-has-pod-2",
+      "type": "cluster_has_pod",
+      "from": "app-bhf",
+      "to": "pod-bhf-2",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-batch-executor-has-pod",
+      "type": "cluster_has_pod",
+      "from": "app-batch-executor",
+      "to": "pod-batch-executor-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-emgw-has-pod",
+      "type": "cluster_has_pod",
+      "from": "app-emgw",
+      "to": "pod-emgw-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-cle-has-pod",
+      "type": "cluster_has_pod",
+      "from": "app-cle",
+      "to": "pod-cle-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-order-scheduler-has-pod-1",
+      "type": "cluster_has_pod",
+      "from": "app-order-scheduler",
+      "to": "pod-order-scheduler-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-order-scheduler-has-pod-2",
+      "type": "cluster_has_pod",
+      "from": "app-order-scheduler",
+      "to": "pod-order-scheduler-2",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-marketing-exec-has-pod",
+      "type": "cluster_has_pod",
+      "from": "app-marketing-mgmt-exec",
+      "to": "pod-marketing-exec-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-loyalty-cal-has-pod",
+      "type": "cluster_has_pod",
+      "from": "app-loyalty-cal-engine",
+      "to": "pod-loyalty-cal-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-pro-exe-has-pod",
+      "type": "cluster_has_pod",
+      "from": "app-pro-exe-and-tag",
+      "to": "pod-pro-exe-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-retail-portal-has-pod-1",
+      "type": "cluster_has_pod",
+      "from": "app-retail-shop-portal",
+      "to": "pod-retail-portal-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-retail-portal-has-pod-2",
+      "type": "cluster_has_pod",
+      "from": "app-retail-shop-portal",
+      "to": "pod-retail-portal-2",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-search-center-has-pod-1",
+      "type": "cluster_has_pod",
+      "from": "app-search-center",
+      "to": "pod-search-center-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-search-center-has-pod-2",
+      "type": "cluster_has_pod",
+      "from": "app-search-center",
+      "to": "pod-search-center-2",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-mgmt-portal-has-pod-1",
+      "type": "cluster_has_pod",
+      "from": "app-mgmt-portal",
+      "to": "pod-mgmt-portal-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-mgmt-portal-has-pod-2",
+      "type": "cluster_has_pod",
+      "from": "app-mgmt-portal",
+      "to": "pod-mgmt-portal-2",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-fileserver-has-pod",
+      "type": "cluster_has_pod",
+      "from": "app-fileserver",
+      "to": "pod-fileserver-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-app-central-auth-has-pod",
+      "type": "cluster_has_pod",
+      "from": "app-central-auth",
+      "to": "pod-cas-1",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-redis-master-on-node",
+      "type": "runs_on_node",
+      "from": "pod-redis-master-0",
+      "to": "node-192.171.233.150",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-redis-slave-on-node",
+      "type": "runs_on_node",
+      "from": "pod-redis-slave-0",
+      "to": "node-192.171.91.23",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-redis-sentinel-on-node",
+      "type": "runs_on_node",
+      "from": "pod-redis-sentinel-0",
+      "to": "node-192.171.233.150",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-zookeeper-on-node",
+      "type": "runs_on_node",
+      "from": "pod-zookeeper-0",
+      "to": "node-192.171.247.220",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-jetmq-on-node",
+      "type": "runs_on_node",
+      "from": "pod-jetmq-0",
+      "to": "node-192.171.247.220",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-vsearch-on-node",
+      "type": "runs_on_node",
+      "from": "pod-vsearch-0",
+      "to": "node-192.171.233.150",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-lss-on-node",
+      "type": "runs_on_node",
+      "from": "pod-lss-0",
+      "to": "node-192.171.112.129",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-dds-frontend-on-node",
+      "type": "runs_on_node",
+      "from": "pod-dds-frontend-0",
+      "to": "node-192.171.233.150",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-dds-backend-on-node",
+      "type": "runs_on_node",
+      "from": "pod-dds-backend-0",
+      "to": "node-192.171.172.46",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-bdi-on-node",
+      "type": "runs_on_node",
+      "from": "pod-bdi-1",
+      "to": "node-192.171.233.150",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-dbagent-on-node",
+      "type": "runs_on_node",
+      "from": "pod-dbagent-0",
+      "to": "node-192.171.91.23",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-lodas-portal-on-node",
+      "type": "runs_on_node",
+      "from": "pod-lodas-portal",
+      "to": "node-192.171.91.23",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-lodas-feature-on-node",
+      "type": "runs_on_node",
+      "from": "pod-lodas-feature",
+      "to": "node-192.171.150.80",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-lodas-training-on-node",
+      "type": "runs_on_node",
+      "from": "pod-lodas-training",
+      "to": "node-192.171.172.46",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-lodas-running-master-on-node",
+      "type": "runs_on_node",
+      "from": "pod-lodas-running-master",
+      "to": "node-192.171.233.150",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-lodas-running-worker-on-node",
+      "type": "runs_on_node",
+      "from": "pod-lodas-running-worker",
+      "to": "node-192.171.91.23",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-bhb-1-on-node",
+      "type": "runs_on_node",
+      "from": "pod-bhb-1",
+      "to": "node-192.171.150.80",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-bhb-2-on-node",
+      "type": "runs_on_node",
+      "from": "pod-bhb-2",
+      "to": "node-192.171.172.46",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-bhf-1-on-node",
+      "type": "runs_on_node",
+      "from": "pod-bhf-1",
+      "to": "node-192.171.247.220",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-bhf-2-on-node",
+      "type": "runs_on_node",
+      "from": "pod-bhf-2",
+      "to": "node-192.171.112.129",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-batch-executor-on-node",
+      "type": "runs_on_node",
+      "from": "pod-batch-executor-1",
+      "to": "node-192.171.247.220",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-emgw-on-node",
+      "type": "runs_on_node",
+      "from": "pod-emgw-1",
+      "to": "node-192.171.182.181",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-cle-on-node",
+      "type": "runs_on_node",
+      "from": "pod-cle-1",
+      "to": "node-192.171.91.23",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-order-scheduler-1-on-node",
+      "type": "runs_on_node",
+      "from": "pod-order-scheduler-1",
+      "to": "node-192.171.247.220",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-order-scheduler-2-on-node",
+      "type": "runs_on_node",
+      "from": "pod-order-scheduler-2",
+      "to": "node-192.171.91.23",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-marketing-exec-on-node",
+      "type": "runs_on_node",
+      "from": "pod-marketing-exec-1",
+      "to": "node-192.171.112.129",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-loyalty-cal-on-node",
+      "type": "runs_on_node",
+      "from": "pod-loyalty-cal-1",
+      "to": "node-192.171.233.150",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-pro-exe-on-node",
+      "type": "runs_on_node",
+      "from": "pod-pro-exe-1",
+      "to": "node-192.171.150.80",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-retail-portal-1-on-node",
+      "type": "runs_on_node",
+      "from": "pod-retail-portal-1",
+      "to": "node-192.171.150.80",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-retail-portal-2-on-node",
+      "type": "runs_on_node",
+      "from": "pod-retail-portal-2",
+      "to": "node-192.171.91.23",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-search-center-1-on-node",
+      "type": "runs_on_node",
+      "from": "pod-search-center-1",
+      "to": "node-192.171.150.80",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-search-center-2-on-node",
+      "type": "runs_on_node",
+      "from": "pod-search-center-2",
+      "to": "node-192.171.247.220",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-mgmt-portal-1-on-node",
+      "type": "runs_on_node",
+      "from": "pod-mgmt-portal-1",
+      "to": "node-192.171.91.23",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-mgmt-portal-2-on-node",
+      "type": "runs_on_node",
+      "from": "pod-mgmt-portal-2",
+      "to": "node-192.171.112.129",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-fileserver-on-node",
+      "type": "runs_on_node",
+      "from": "pod-fileserver-1",
+      "to": "node-192.171.234.38",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-cas-on-node",
+      "type": "runs_on_node",
+      "from": "pod-cas-1",
+      "to": "node-192.171.172.46",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-api-access-in-on-node",
+      "type": "runs_on_node",
+      "from": "pod-api-access-in-1",
+      "to": "node-192.171.233.150",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-api-access-out-on-node",
+      "type": "runs_on_node",
+      "from": "pod-api-access-out-1",
+      "to": "node-192.171.172.46",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-api-governance-on-node",
+      "type": "runs_on_node",
+      "from": "pod-api-governance-1",
+      "to": "node-192.171.182.181",
+      "properties": {}
+    },
+    {
+      "id": "rel-pod-api-portal-on-node",
+      "type": "runs_on_node",
+      "from": "pod-api-portal-1",
+      "to": "node-192.171.112.129",
+      "properties": {}
+    }
+  ],
+  "observations": []
+}

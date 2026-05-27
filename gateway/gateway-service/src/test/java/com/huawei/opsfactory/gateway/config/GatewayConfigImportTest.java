@@ -14,6 +14,7 @@ import com.huawei.opsfactory.gateway.support.TestLogAppender;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +24,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
-    properties = {
-        "spring.config.import=optional:file:src/test/resources/config/test-gateway-config.yaml",
-        "logging.level.root=WARN",
-        "logging.level.com.huawei.opsfactory.gateway=DEBUG"
-    })
+    properties = {"spring.config.import=optional:file:src/test/resources/config/test-gateway-config.yaml",
+        "logging.level.root=WARN", "logging.level.com.huawei.opsfactory.gateway=DEBUG"})
 
 /**
  * Test coverage for Gateway Config Import.

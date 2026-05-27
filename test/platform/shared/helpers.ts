@@ -4,7 +4,7 @@
 import { ChildProcess, spawn } from 'node:child_process'
 import { resolve, join } from 'node:path'
 import { writeFileSync, unlinkSync, existsSync } from 'node:fs'
-import { stringify } from 'yaml'
+import yaml from 'js-yaml'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import net from 'node:net'
@@ -80,7 +80,7 @@ export async function startGateway(): Promise<GatewayHandle> {
       checkIntervalMs: 5000,
     },
   }
-  writeFileSync(testConfigPath, stringify(testConfig), 'utf-8')
+  writeFileSync(testConfigPath, yaml.dump(testConfig), 'utf-8')
 
   const child = spawn('npx', ['tsx', 'src/index.ts'], {
     cwd: GATEWAY_DIR,
@@ -338,7 +338,7 @@ export async function startControlCenter(gatewayPort: number, fixedPort?: number
       },
     },
   }
-  writeFileSync(testConfigPath, stringify(testConfig), 'utf-8')
+  writeFileSync(testConfigPath, yaml.dump(testConfig), 'utf-8')
 
   const child = spawn('java', [`-Dserver.port=${port}`, '-jar', jarPath], {
     cwd: CONTROL_CENTER_DIR,

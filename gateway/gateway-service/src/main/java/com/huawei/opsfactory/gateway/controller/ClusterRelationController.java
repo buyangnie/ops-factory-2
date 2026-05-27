@@ -3,11 +3,12 @@
  */
 
 package com.huawei.opsfactory.gateway.controller;
-import org.apache.servicecomb.provider.rest.common.RestSchema;
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.huawei.opsfactory.gateway.service.ClusterRelationService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -54,8 +55,8 @@ public class ClusterRelationController {
      * @return Mono emitting a map with "relations" list
      */
     @GetMapping
-    public Map<String, Object> listRelations(
-        @RequestParam(value = "clusterId", required = false) String clusterId, HttpServletRequest request) {
+    public Map<String, Object> listRelations(@RequestParam(value = "clusterId", required = false) String clusterId,
+        HttpServletRequest request) {
         List<Map<String, Object>> relations = clusterRelationService.listRelations(clusterId);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("relations", relations);
@@ -96,8 +97,7 @@ public class ClusterRelationController {
      * @return Mono emitting a map with neighbor host data
      */
     @GetMapping("/hosts/{hostId}/neighbors")
-    public Map<String, Object> getHostNeighbors(@PathVariable("hostId") String hostId,
-        HttpServletRequest request) {
+    public Map<String, Object> getHostNeighbors(@PathVariable("hostId") String hostId, HttpServletRequest request) {
         return clusterRelationService.getHostNeighborsByCluster(hostId);
     }
 

@@ -25,7 +25,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -450,12 +449,9 @@ public class HostService {
      * @param body request body containing updated host fields
      * @return the updated host map with credential masked
      */
-    private static final java.util.Set<String> MUTABLE_FIELDS = java.util.Set.of(
-        "name", "hostname", "ip", "port", "os", "location",
-        "username", "authType", "business", "clusterId",
-        "purpose", "tags", "description", "customAttributes",
-        "businessIp", "role"
-    );
+    private static final java.util.Set<String> MUTABLE_FIELDS =
+        java.util.Set.of("name", "hostname", "ip", "port", "os", "location", "username", "authType", "business",
+            "clusterId", "purpose", "tags", "description", "customAttributes", "businessIp", "role");
 
     public Map<String, Object> updateHost(String id, Map<String, Object> body) {
         Path file = hostsDir.resolve(id + ".json");

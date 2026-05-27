@@ -4,7 +4,6 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
 import com.huawei.opsfactory.gateway.service.BusinessServiceService;
 import com.huawei.opsfactory.gateway.service.ClusterService;
 import com.huawei.opsfactory.gateway.service.HostGroupService;
@@ -12,6 +11,7 @@ import com.huawei.opsfactory.gateway.service.HostService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -51,7 +51,7 @@ public class HostGroupController {
      * Creates the host group controller instance.
      */
     public HostGroupController(HostGroupService hostGroupService, ClusterService clusterService,
-            BusinessServiceService businessServiceService, HostService hostService) {
+        BusinessServiceService businessServiceService, HostService hostService) {
         this.hostGroupService = hostGroupService;
         this.clusterService = clusterService;
         this.businessServiceService = businessServiceService;
@@ -62,13 +62,13 @@ public class HostGroupController {
      * Lists host groups, optionally filtered by enabled status.
      *
      * @param enabledOnly enabled-only filter flag
-     * @param request     server HTTP request
+     * @param request server HTTP request
      * @return the result
      */
     @GetMapping
     public Map<String, Object> listGroups(
-            @RequestParam(value = "enabledOnly", required = false, defaultValue = "false") boolean enabledOnly,
-            HttpServletRequest request) {
+        @RequestParam(value = "enabledOnly", required = false, defaultValue = "false") boolean enabledOnly,
+        HttpServletRequest request) {
         List<Map<String, Object>> groups = hostGroupService.listGroups();
         if (enabledOnly) {
             Set<String> disabledGroupIds = hostGroupService.getDisabledGroupIds(groups);
@@ -83,21 +83,21 @@ public class HostGroupController {
      * Returns the hierarchical tree of groups, clusters, and business services.
      *
      * @param enabledOnly returns the hierarchical tree of groups, clusters, and business services
-     * @param request     server HTTP request
+     * @param request server HTTP request
      * @return the hierarchical tree of groups, clusters, and business services
      */
     @GetMapping("/tree")
     public Map<String, Object> getTree(
-            @RequestParam(value = "enabledOnly", required = false, defaultValue = "false") boolean enabledOnly,
-            HttpServletRequest request) {
+        @RequestParam(value = "enabledOnly", required = false, defaultValue = "false") boolean enabledOnly,
+        HttpServletRequest request) {
         List<Map<String, Object>> groups = hostGroupService.listGroups();
         List<Map<String, Object>> clusters = clusterService.listClusters(null, null);
         List<Map<String, Object>> businessServices = businessServiceService.listBusinessServices(null, null);
         if (enabledOnly) {
             Set<String> disabledGroupIds = hostGroupService.getDisabledGroupIds(groups);
             groups.removeIf(g -> disabledGroupIds.contains(g.get("id")));
-            clusters.removeIf(
-                c -> Boolean.FALSE.equals(c.get("enabled")) || disabledGroupIds.contains(c.get("groupId")));
+            clusters
+                .removeIf(c -> Boolean.FALSE.equals(c.get("enabled")) || disabledGroupIds.contains(c.get("groupId")));
             businessServices.removeIf(
                 bs -> Boolean.FALSE.equals(bs.get("enabled")) || disabledGroupIds.contains(bs.get("groupId")));
         }
@@ -107,7 +107,7 @@ public class HostGroupController {
     /**
      * Gets a host group by ID.
      *
-     * @param id      entity identifier
+     * @param id entity identifier
      * @param request server HTTP request
      * @return a host group by ID
      */
@@ -130,13 +130,13 @@ public class HostGroupController {
     /**
      * Creates a new host group.
      *
-     * @param request     HTTP request body
+     * @param request HTTP request body
      * @param httpRequest server HTTP request
      * @return the result
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createGroup(@RequestBody Map<String, Object> request,
-            HttpServletRequest httpRequest) {
+        HttpServletRequest httpRequest) {
         try {
             Map<String, Object> group = hostGroupService.createGroup(request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -154,14 +154,14 @@ public class HostGroupController {
     /**
      * Updates a host group by ID.
      *
-     * @param id          a host group by ID
-     * @param request     a host group by ID
+     * @param id a host group by ID
+     * @param request a host group by ID
      * @param httpRequest server HTTP request
      * @return the result
      */
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateGroup(@PathVariable("id") String id,
-            @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
+        @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
         try {
             Map<String, Object> group = hostGroupService.updateGroup(id, request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -179,20 +179,19 @@ public class HostGroupController {
     /**
      * Deletes a host group by ID, optionally forcing deletion of associated resources.
      *
-     * @param id      entity identifier
-     * @param force   whether to force the operation
+     * @param id entity identifier
+     * @param force whether to force the operation
      * @param request server HTTP request
      * @return the result
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteGroup(@PathVariable("id") String id,
-            @RequestParam(value = "force", required = false, defaultValue = "false") boolean force,
-            HttpServletRequest request) {
+        @RequestParam(value = "force", required = false, defaultValue = "false") boolean force,
+        HttpServletRequest request) {
         try {
             boolean deleted;
             if (force) {
-                deleted =
-                    hostGroupService.forceDeleteGroup(id, clusterService, hostService, businessServiceService);
+                deleted = hostGroupService.forceDeleteGroup(id, clusterService, hostService, businessServiceService);
             } else {
                 deleted = hostGroupService.deleteGroup(id, clusterService);
             }

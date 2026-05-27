@@ -4,6 +4,8 @@
 spring:
   profiles:
     active: prod                        # env override: OI_SPRING_PROFILE (set to 'prod' in production)
+  codec:
+    max-in-memory-size: 10MB             # allow large knowledge graph JSON imports
 
 server:
   port: 8096                            # env override: OI_PORT
@@ -32,7 +34,7 @@ operation-intelligence:
         env-name: "DigitalCRM SIT"
         agent-solution-type: "DigitalCRM"
         product-type-name: "DigitalCRM"
-        server-url: "https://127.0.0.1:26335"
+        server-url: "https://192.168.200.100:26335"
         utm-user: "MS_USER"
         utm-password: "AAaa11!!"
         crt-content: ""                       # Base64 encoded certificate

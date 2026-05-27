@@ -148,6 +148,21 @@ function KnowledgeIcon() {
     )
 }
 
+function KnowledgeGraphIcon() {
+    return (
+        <IconFrame strokeWidth={1.8}>
+            <circle cx="6.2" cy="7.2" r="2.15" />
+            <circle cx="17.8" cy="7.2" r="2.15" />
+            <circle cx="12" cy="17.05" r="2.25" />
+            <path d="M8.18 8.05l2.55 6.75" />
+            <path d="M15.82 8.05l-2.55 6.75" />
+            <path d="M8.35 7.2h7.3" />
+            <path d="M6.2 9.35v4.05a3.65 3.65 0 0 0 3.65 3.65" />
+            <path d="M17.8 9.35v4.05a3.65 3.65 0 0 1-3.65 3.65" />
+        </IconFrame>
+    )
+}
+
 function SkillMarketIcon() {
     return (
         <IconFrame strokeWidth={1.85}>
@@ -209,6 +224,7 @@ const ICONS: Record<IconKey, () => ReactNode> = {
     agents: AgentsIcon,
     skillMarket: SkillMarketIcon,
     knowledge: KnowledgeIcon,
+    knowledgeGraph: KnowledgeGraphIcon,
     scheduler: SchedulerIcon,
     monitoring: MonitoringIcon,
     hostResource: HostResourceIcon,

@@ -1,6 +1,21 @@
 import { trackedFetch } from '../app/platform/logging/requestClient'
 import { configureWebappLogging, type WebappLoggingRuntimeConfig } from '../app/platform/logging/settings'
 
+export interface KnowledgeGraphCollapsedRelationRule {
+    relationType: string
+    targetEntityTypes: string[]
+    threshold: number
+}
+
+export interface KnowledgeGraphResourceTreeHierarchyRule {
+    ontologyId?: string
+    relationType: string
+    mode?: 'hierarchy'
+    parentEntityTypes?: string[]
+    childEntityTypes?: string[]
+    threshold?: number
+}
+
 interface RuntimeConfig {
     gatewayUrl?: string
     gatewaySecretKey?: string
@@ -11,6 +26,10 @@ interface RuntimeConfig {
     skillMarketServiceUrl?: string
     operationIntelligenceServiceUrl?: string
     operationIntelligenceSecretKey?: string
+    operationIntelligenceKnowledgeGraph?: {
+        collapsedRelationRules?: KnowledgeGraphCollapsedRelationRule[]
+        resourceTreeHierarchyRules?: KnowledgeGraphResourceTreeHierarchyRule[]
+    }
     logging?: {
         level?: WebappLoggingRuntimeConfig['level']
         consoleEnabled?: boolean
@@ -58,6 +77,21 @@ function resolveServiceUrl(raw: string | undefined, endpoint: ServiceEndpoint): 
     }
 }
 
+const DEFAULT_KNOWLEDGE_GRAPH_COLLAPSED_RELATION_RULES: KnowledgeGraphCollapsedRelationRule[] = [
+    {
+        relationType: 'contains',
+        targetEntityTypes: ['Host'],
+        threshold: 1,
+    },
+]
+const DEFAULT_KNOWLEDGE_GRAPH_RESOURCE_TREE_HIERARCHY_RULES: KnowledgeGraphResourceTreeHierarchyRule[] = [
+    {
+        relationType: 'contains',
+        mode: 'hierarchy',
+        threshold: 1,
+    },
+]
+
 export const runtime = {
     GATEWAY_URL: resolveServiceUrl(undefined, SERVICE_ENDPOINTS.gateway),
     GATEWAY_SECRET_KEY: '',
@@ -68,6 +102,10 @@ export const runtime = {
     SKILL_MARKET_SERVICE_URL: resolveServiceUrl(undefined, SERVICE_ENDPOINTS.skillMarket),
     OPERATION_INTELLIGENCE_SERVICE_URL: resolveServiceUrl(undefined, SERVICE_ENDPOINTS.operationIntelligence),
     OPERATION_INTELLIGENCE_SECRET_KEY: '',
+    OPERATION_INTELLIGENCE_KNOWLEDGE_GRAPH_COLLAPSED_RELATION_RULES:
+        DEFAULT_KNOWLEDGE_GRAPH_COLLAPSED_RELATION_RULES,
+    OPERATION_INTELLIGENCE_KNOWLEDGE_GRAPH_RESOURCE_TREE_HIERARCHY_RULES:
+        DEFAULT_KNOWLEDGE_GRAPH_RESOURCE_TREE_HIERARCHY_RULES,
 }
 
 function setRuntimeConfig(config: RuntimeConfig): void {
@@ -76,11 +114,54 @@ function setRuntimeConfig(config: RuntimeConfig): void {
     runtime.CONTROL_CENTER_URL = resolveServiceUrl(config.controlCenterUrl, SERVICE_ENDPOINTS.controlCenter)
     runtime.CONTROL_CENTER_SECRET_KEY = config.controlCenterSecretKey ?? ''
     runtime.KNOWLEDGE_SERVICE_URL = resolveServiceUrl(config.knowledgeServiceUrl, SERVICE_ENDPOINTS.knowledge)
-    runtime.BUSINESS_INTELLIGENCE_SERVICE_URL = resolveServiceUrl(config.businessIntelligenceServiceUrl, SERVICE_ENDPOINTS.businessIntelligence)
+    runtime.BUSINESS_INTELLIGENCE_SERVICE_URL = resolveServiceUrl(
+        config.businessIntelligenceServiceUrl,
+        SERVICE_ENDPOINTS.businessIntelligence,
+    )
     runtime.SKILL_MARKET_SERVICE_URL = resolveServiceUrl(config.skillMarketServiceUrl, SERVICE_ENDPOINTS.skillMarket)
-    runtime.OPERATION_INTELLIGENCE_SERVICE_URL = resolveServiceUrl(config.operationIntelligenceServiceUrl, SERVICE_ENDPOINTS.operationIntelligence)
+    runtime.OPERATION_INTELLIGENCE_SERVICE_URL = resolveServiceUrl(
+        config.operationIntelligenceServiceUrl,
+        SERVICE_ENDPOINTS.operationIntelligence,
+    )
     runtime.OPERATION_INTELLIGENCE_SECRET_KEY = config.operationIntelligenceSecretKey ?? ''
+    runtime.OPERATION_INTELLIGENCE_KNOWLEDGE_GRAPH_COLLAPSED_RELATION_RULES =
+        normalizeCollapsedRelationRules(config.operationIntelligenceKnowledgeGraph?.collapsedRelationRules)
+    runtime.OPERATION_INTELLIGENCE_KNOWLEDGE_GRAPH_RESOURCE_TREE_HIERARCHY_RULES =
+        normalizeResourceTreeHierarchyRules(config.operationIntelligenceKnowledgeGraph?.resourceTreeHierarchyRules)
     configureWebappLogging(config.logging)
+}
+
+function normalizeCollapsedRelationRules(
+    rules: KnowledgeGraphCollapsedRelationRule[] | undefined,
+): KnowledgeGraphCollapsedRelationRule[] {
+    if (!rules?.length) {
+        return DEFAULT_KNOWLEDGE_GRAPH_COLLAPSED_RELATION_RULES
+    }
+    return rules
+        .filter(rule => rule.relationType && rule.targetEntityTypes?.length && Number.isFinite(rule.threshold))
+        .map(rule => ({
+            relationType: rule.relationType,
+            targetEntityTypes: rule.targetEntityTypes,
+            threshold: Math.max(0, Math.floor(rule.threshold)),
+        }))
+}
+
+function normalizeResourceTreeHierarchyRules(
+    rules: KnowledgeGraphResourceTreeHierarchyRule[] | undefined,
+): KnowledgeGraphResourceTreeHierarchyRule[] {
+    if (!rules?.length) {
+        return DEFAULT_KNOWLEDGE_GRAPH_RESOURCE_TREE_HIERARCHY_RULES
+    }
+    return rules
+        .filter(rule => rule.relationType)
+        .map(rule => ({
+            ontologyId: rule.ontologyId,
+            relationType: rule.relationType,
+            mode: rule.mode ?? 'hierarchy',
+            parentEntityTypes: rule.parentEntityTypes,
+            childEntityTypes: rule.childEntityTypes,
+            threshold: Math.max(1, Math.floor(rule.threshold ?? 1)),
+        }))
 }
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {

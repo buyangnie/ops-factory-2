@@ -163,6 +163,19 @@ extensions:
     timeout: 60
     bundled: null
     available_tools: []
+  current-time:
+    enabled: true
+    type: stdio
+    name: current-time
+    description: Current time MCP - returns the current local time in YYYY-MM-DD HH:MM:SS format
+    cmd: python
+    args:
+    - config/mcp/current-time/server.py
+    envs: {}
+    env_keys: []
+    timeout: 10
+    bundled: null
+    available_tools: []
   orchestrator:
     enabled: false
     type: platform

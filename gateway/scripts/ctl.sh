@@ -17,7 +17,7 @@ GATEWAY_CONFIG_PATH="${GATEWAY_CONFIG_PATH:-${SERVICE_DIR}/config.yaml}"
 yaml_path_val() {
     local path="$1" file="${GATEWAY_CONFIG_PATH}"
     [ -f "${file}" ] || return 0
-    node -e "const y=require('yaml');const fs=require('fs');const file=process.argv[1];const keys=process.argv[2].split('.');const c=y.parse(fs.readFileSync(file,'utf-8'));let v=c;for(const k of keys){v=v?.[k]};if(v!=null)process.stdout.write(String(v))" \
+    node -e "const y=require('js-yaml');const fs=require('fs');const file=process.argv[1];const keys=process.argv[2].split('.');const c=y.load(fs.readFileSync(file,'utf-8'));let v=c;for(const k of keys){v=v?.[k]};if(v!=null)process.stdout.write(String(v))" \
         "${file}" "${path}" 2>/dev/null || true
 }
 
