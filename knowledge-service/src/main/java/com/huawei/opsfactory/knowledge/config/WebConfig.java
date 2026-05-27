@@ -10,7 +10,7 @@ import org.springframework.web.filter.CorsFilter;
 import java.util.Arrays;
 import java.util.List;
 
-@Configuration("knowledgeWebConfig")
+@Configuration
 public class WebConfig {
 
     private final KnowledgeProperties properties;
