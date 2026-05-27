@@ -4,11 +4,11 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
 import com.huawei.opsfactory.gateway.service.CommandWhitelistService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -64,7 +64,7 @@ public class CommandWhitelistController {
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> addCommand(@RequestBody Map<String, Object> request,
-            HttpServletRequest httpRequest) {
+        HttpServletRequest httpRequest) {
         try {
             commandWhitelistService.addCommand(request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -82,14 +82,14 @@ public class CommandWhitelistController {
     /**
      * Updates a command pattern in the whitelist.
      *
-     * @param pattern  existing command pattern to update
-     * @param request  request body containing updated fields
+     * @param pattern existing command pattern to update
+     * @param request request body containing updated fields
      * @param httpRequest current HTTP request
      * @return ResponseEntity with updated command or 404
      */
     @PutMapping("/{pattern}")
     public ResponseEntity<Map<String, Object>> updateCommand(@PathVariable("pattern") String pattern,
-            @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
+        @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
         try {
             commandWhitelistService.updateCommand(pattern, request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -107,13 +107,13 @@ public class CommandWhitelistController {
     /**
      * Deletes a command pattern from the whitelist.
      *
-     * @param pattern     command pattern to remove
+     * @param pattern command pattern to remove
      * @param httpRequest current HTTP request
      * @return ResponseEntity with success status or 404
      */
     @DeleteMapping("/{pattern}")
     public ResponseEntity<Map<String, Object>> deleteCommand(@PathVariable("pattern") String pattern,
-            HttpServletRequest httpRequest) {
+        HttpServletRequest httpRequest) {
         try {
             commandWhitelistService.deleteCommand(pattern);
             Map<String, Object> body = new LinkedHashMap<>();

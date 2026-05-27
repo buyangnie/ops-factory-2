@@ -30,18 +30,6 @@ import com.huawei.opsfactory.gateway.service.channel.model.ChannelDetail;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelLoginState;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelVerificationResult;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.List;
 import reactor.core.publisher.Mono;
 
 import org.junit.Test;
@@ -103,8 +91,8 @@ public class ChannelAdminControllerTest {
         when(weChatLoginService.getLoginState("wechat-main", "admin")).thenReturn(new ChannelLoginState("wechat-main",
             "connected", "WeChat session connected", "auth", "wxid_123", "", "", "", null));
 
-        mockMvc.perform(get("/gateway/channels/wechat-main/login-state")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/channels/wechat-main/login-state").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.state.status").value("connected"))
@@ -123,9 +111,9 @@ public class ChannelAdminControllerTest {
         when(weChatLoginService.startLogin("wechat-main", "admin")).thenReturn(new ChannelLoginState("wechat-main",
             "pending", "WeChat QR login is pending", "auth", "wxid_123", "", "", "", "https://example.com/qr.png"));
 
-        mockMvc.perform(post("/gateway/channels/wechat-main/login")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(
+                post("/gateway/channels/wechat-main/login").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.state.status").value("pending"));
@@ -145,9 +133,9 @@ public class ChannelAdminControllerTest {
         when(adapter.testConnectivity("wechat-main", "admin"))
             .thenReturn(Mono.just(new ChannelConnectivityResult(true, "connected")));
 
-        mockMvc.perform(post("/gateway/channels/wechat-main/probe")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(
+                post("/gateway/channels/wechat-main/probe").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.connectivity.ok").value(true));
@@ -162,8 +150,8 @@ public class ChannelAdminControllerTest {
     public void testCreateChannel_unexpectedFailureIsSanitized() throws Exception {
         when(channelConfigService.createChannel(any(), eq("admin"))).thenThrow(new IllegalStateException("disk full"));
 
-        mockMvc.perform(post("/gateway/channels")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/channels").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -192,8 +180,8 @@ public class ChannelAdminControllerTest {
         when(weChatLoginService.logout("wechat-main", "admin"))
             .thenThrow(new IllegalStateException("helper process still running"));
 
-        mockMvc.perform(post("/gateway/channels/wechat-main/logout")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/channels/wechat-main/logout").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))

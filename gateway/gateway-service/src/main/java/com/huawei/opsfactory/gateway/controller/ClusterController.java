@@ -3,13 +3,14 @@
  */
 
 package com.huawei.opsfactory.gateway.controller;
-import org.apache.servicecomb.provider.rest.common.RestSchema;
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.huawei.opsfactory.gateway.service.ClusterService;
 import com.huawei.opsfactory.gateway.service.HostGroupService;
 import com.huawei.opsfactory.gateway.service.HostService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -72,8 +73,8 @@ public class ClusterController {
         if (enabledOnly) {
             List<Map<String, Object>> allGroups = hostGroupService.listGroups();
             Set<String> disabledGroupIds = hostGroupService.getDisabledGroupIds(allGroups);
-            clusters.removeIf(
-                c -> Boolean.FALSE.equals(c.get("enabled")) || disabledGroupIds.contains(c.get("groupId")));
+            clusters
+                .removeIf(c -> Boolean.FALSE.equals(c.get("enabled")) || disabledGroupIds.contains(c.get("groupId")));
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("clusters", clusters);
@@ -88,8 +89,7 @@ public class ClusterController {
      * @return a cluster by ID with its associated hosts
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getCluster(@PathVariable("id") String id,
-        HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> getCluster(@PathVariable("id") String id, HttpServletRequest request) {
         try {
             Map<String, Object> cluster = clusterService.getCluster(id);
             // Attach hosts for this cluster

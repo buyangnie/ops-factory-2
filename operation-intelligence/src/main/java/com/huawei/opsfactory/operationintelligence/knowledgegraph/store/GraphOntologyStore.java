@@ -104,8 +104,7 @@ public class GraphOntologyStore {
     }
 
     private Path resolveRoot() {
-        return properties.resolveDataRoot()
-            .resolve(properties.getKnowledgeGraph().getDataDir())
+        return properties.resolveKnowledgeGraphDataRoot()
             .resolve("_ontologies")
             .toAbsolutePath()
             .normalize();

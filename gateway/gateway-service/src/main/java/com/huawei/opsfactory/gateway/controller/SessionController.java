@@ -3,8 +3,6 @@
  */
 
 package com.huawei.opsfactory.gateway.controller;
-import org.apache.servicecomb.provider.rest.common.RestSchema;
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
 import com.huawei.opsfactory.gateway.common.util.FileUtil;
@@ -21,6 +19,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -46,8 +48,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -143,12 +143,12 @@ public class SessionController {
             agentId, userId, sessionId, instance.getPort(), startCallMs);
         long resumeStart = System.currentTimeMillis();
         String resumeResult = goosedProxy
-            .fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", resumeBody, 120,
-                instance.getSecretKey())
+            .fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", resumeBody, 120, instance.getSecretKey())
             .block();
         long resumeMs = System.currentTimeMillis() - resumeStart;
         instance.markSessionResumed(sessionId);
-        log.info("[SESSION-START] session ready agentId={} userId={} sessionId={} resident={} port={} resumeMs={} totalMs={}",
+        log.info(
+            "[SESSION-START] session ready agentId={} userId={} sessionId={} resident={} port={} resumeMs={} totalMs={}",
             agentId, userId, sessionId, resident, instance.getPort(), resumeMs,
             System.currentTimeMillis() - requestStart);
         return startResponse;
@@ -180,8 +180,7 @@ public class SessionController {
         @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
         @RequestParam(value = "search", required = false) String search,
         @RequestParam(value = "agentId", required = false) String agentId,
-        @RequestParam(value = "type", required = false) String type,
-        HttpServletRequest request) {
+        @RequestParam(value = "type", required = false) String type, HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         log.info("[SESSION-LIST] begin userId={} page={}/{} search={} agentId={} type={}", userId, pageIndex, pageSize,
             search, agentId, type);
@@ -351,8 +350,8 @@ public class SessionController {
         log.info("[SESSION-GET] begin agentId={} userId={} sessionId={}", agentId, userId, sessionId);
         try {
             ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-            String json = goosedProxy.fetchJson(instance.getPort(), "/sessions/" + sessionId,
-                instance.getSecretKey()).block();
+            String json =
+                goosedProxy.fetchJson(instance.getPort(), "/sessions/" + sessionId, instance.getSecretKey()).block();
             String result = injectAgentId(json, agentId);
             log.info("[SESSION-GET] complete agentId={} userId={} sessionId={}", agentId, userId, sessionId);
             return result;
@@ -379,10 +378,11 @@ public class SessionController {
         log.info("[SESSION-GET] begin agentId={} userId={} sessionId={} scope=global", agentId, userId, sessionId);
         try {
             ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-            String json = goosedProxy.fetchJson(instance.getPort(), "/sessions/" + sessionId,
-                instance.getSecretKey()).block();
+            String json =
+                goosedProxy.fetchJson(instance.getPort(), "/sessions/" + sessionId, instance.getSecretKey()).block();
             String result = injectAgentId(json, agentId);
-            log.info("[SESSION-GET] complete agentId={} userId={} sessionId={} scope=global", agentId, userId, sessionId);
+            log.info("[SESSION-GET] complete agentId={} userId={} sessionId={} scope=global", agentId, userId,
+                sessionId);
             return result;
         } catch (WebClientResponseException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
@@ -407,8 +407,11 @@ public class SessionController {
         log.info("[SESSION-DELETE] begin agentId={} userId={} sessionId={}", agentId, userId, sessionId);
         cleanupUploads(userId, agentId, sessionId);
         ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-        String result = goosedProxy.fetchJson(instance.getPort(), HttpMethod.DELETE, "/sessions/" + sessionId,
-            null, 30, instance.getSecretKey()).block();
+        String result =
+            goosedProxy
+                .fetchJson(instance.getPort(), HttpMethod.DELETE, "/sessions/" + sessionId, null, 30,
+                    instance.getSecretKey())
+                .block();
         sessionCacheService.invalidate(userId);
         log.info("[SESSION-DELETE] complete agentId={} userId={} sessionId={}", agentId, userId, sessionId);
         return result;
@@ -423,14 +426,17 @@ public class SessionController {
      * @return Mono that completes when the delete has been proxied
      */
     @DeleteMapping(value = "/sessions/{sessionId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String deleteSessionGlobal(@PathVariable("sessionId") String sessionId, @RequestParam("agentId") String agentId,
-        HttpServletRequest request) {
+    public String deleteSessionGlobal(@PathVariable("sessionId") String sessionId,
+        @RequestParam("agentId") String agentId, HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         log.info("[SESSION-DELETE] begin agentId={} userId={} sessionId={} scope=global", agentId, userId, sessionId);
         cleanupUploads(userId, agentId, sessionId);
         ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-        String result = goosedProxy.fetchJson(instance.getPort(), HttpMethod.DELETE, "/sessions/" + sessionId,
-            null, 30, instance.getSecretKey()).block();
+        String result =
+            goosedProxy
+                .fetchJson(instance.getPort(), HttpMethod.DELETE, "/sessions/" + sessionId, null, 30,
+                    instance.getSecretKey())
+                .block();
         sessionCacheService.invalidate(userId);
         log.info("[SESSION-DELETE] complete agentId={} userId={} sessionId={} scope=global", agentId, userId,
             sessionId);
@@ -447,23 +453,26 @@ public class SessionController {
      */
     @PostMapping(value = "/agents/{agentId}/sessions/{sessionId}/cleanup-empty",
         produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Object> cleanupEmptySession(@PathVariable("agentId") String agentId, @PathVariable("sessionId") String sessionId,
-        HttpServletRequest request) {
+    public Map<String, Object> cleanupEmptySession(@PathVariable("agentId") String agentId,
+        @PathVariable("sessionId") String sessionId, HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         log.info("[SESSION-CLEANUP-EMPTY] begin agentId={} userId={} sessionId={}", agentId, userId, sessionId);
 
         try {
             ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-            String json = goosedProxy.fetchJson(instance.getPort(), "/sessions/" + sessionId, instance.getSecretKey()).block();
+            String json =
+                goosedProxy.fetchJson(instance.getPort(), "/sessions/" + sessionId, instance.getSecretKey()).block();
             EmptySessionDecision decision = shouldDeleteEmptySession(json);
             if (!decision.delete()) {
-                log.info("[SESSION-CLEANUP-EMPTY] skip agentId={} userId={} sessionId={} reason={}", agentId,
-                    userId, sessionId, decision.reason());
+                log.info("[SESSION-CLEANUP-EMPTY] skip agentId={} userId={} sessionId={} reason={}", agentId, userId,
+                    sessionId, decision.reason());
                 return cleanupResult(false, decision.reason());
             }
 
-            goosedProxy.fetchJson(instance.getPort(), HttpMethod.DELETE, "/sessions/" + sessionId, null, 30,
-                instance.getSecretKey()).block();
+            goosedProxy
+                .fetchJson(instance.getPort(), HttpMethod.DELETE, "/sessions/" + sessionId, null, 30,
+                    instance.getSecretKey())
+                .block();
             cleanupUploads(userId, agentId, sessionId);
             log.info("[SESSION-CLEANUP-EMPTY] deleted agentId={} userId={} sessionId={}", agentId, userId, sessionId);
             return cleanupResult(true, "empty_session_deleted");
@@ -571,8 +580,11 @@ public class SessionController {
         log.info("[SESSION-RENAME] begin agentId={} userId={} sessionId={} bodyLen={}", agentId, userId, sessionId,
             body.length());
         ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-        String result = goosedProxy.fetchJson(instance.getPort(), HttpMethod.PUT,
-            "/sessions/" + sessionId + "/name", body, 30, instance.getSecretKey()).block();
+        String result =
+            goosedProxy
+                .fetchJson(instance.getPort(), HttpMethod.PUT, "/sessions/" + sessionId + "/name", body, 30,
+                    instance.getSecretKey())
+                .block();
         sessionCacheService.invalidate(userId);
         log.info("[SESSION-RENAME] complete agentId={} userId={} sessionId={}", agentId, userId, sessionId);
         return result;

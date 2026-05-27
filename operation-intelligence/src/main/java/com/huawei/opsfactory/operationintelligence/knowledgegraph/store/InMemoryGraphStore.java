@@ -404,19 +404,28 @@ public class InMemoryGraphStore {
             if (currentDistance >= maxHops) {
                 continue;
             }
-            for (String relationId : envGraph.entityRelations.getOrDefault(current, Set.of())) {
-                GraphRelation relation = envGraph.relations.get(relationId);
-                String next = relation.getFrom().equals(current) ? relation.getTo() : relation.getFrom();
-                if (distance.containsKey(next)) {
-                    continue;
-                }
-                distance.put(next, currentDistance + 1);
-                previousEntity.put(next, current);
-                previousRelation.put(next, relationId);
-                queue.add(next);
-            }
+            processPathNeighbors(envGraph, current, currentDistance, distance, previousEntity, previousRelation, queue);
         }
         return PathSearchResult.notFound();
+    }
+
+    private void processPathNeighbors(EnvGraph envGraph, String current, int currentDistance,
+        Map<String, Integer> distance, Map<String, String> previousEntity, Map<String, String> previousRelation,
+        Queue<String> queue) {
+        for (String relationId : envGraph.entityRelations.getOrDefault(current, Set.of())) {
+            GraphRelation relation = envGraph.relations.get(relationId);
+            if (relation == null || !relation.getFrom().equals(current)) {
+                continue;
+            }
+            String next = relation.getTo();
+            if (distance.containsKey(next)) {
+                continue;
+            }
+            distance.put(next, currentDistance + 1);
+            previousEntity.put(next, current);
+            previousRelation.put(next, relationId);
+            queue.add(next);
+        }
     }
 
     private PathSearchResult buildPath(String fromEntityId, String toEntityId, Map<String, String> previousEntity,

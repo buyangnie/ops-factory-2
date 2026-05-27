@@ -4,6 +4,11 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.huawei.opsfactory.gateway.filter.AuthWebFilter;
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
@@ -23,11 +28,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Test coverage for Agent Skill Controller.
@@ -64,8 +64,8 @@ public class AgentSkillControllerTest {
         Mockito.when(installService.install("agent1", "log-analysis"))
             .thenReturn(Map.of("success", true, "skill", Map.of("id", "log-analysis"), "restartRequired", true));
 
-        mockMvc.perform(post("/gateway/agents/agent1/skills/install")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/agents/agent1/skills/install").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"skillId\":\"log-analysis\"}"))
@@ -85,8 +85,8 @@ public class AgentSkillControllerTest {
         Mockito.when(installService.install("agent1", "log-analysis"))
             .thenReturn(Map.of("success", true, "skill", Map.of("id", "log-analysis"), "restartRequired", true));
 
-        mockMvc.perform(post("/gateway/agents/agent1/skills/install")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/agents/agent1/skills/install").header("x-secret-key", "test")
                 .header("x-user-id", "regular-user")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"skillId\":\"log-analysis\"}"))
@@ -106,8 +106,8 @@ public class AgentSkillControllerTest {
         Mockito.when(installService.install("agent1", "log-analysis"))
             .thenThrow(new SkillInstallConflictException("Skill already installed"));
 
-        mockMvc.perform(post("/gateway/agents/agent1/skills/install")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/agents/agent1/skills/install").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"skillId\":\"log-analysis\"}"))
@@ -125,8 +125,8 @@ public class AgentSkillControllerTest {
         Mockito.when(installService.uninstall("agent1", "log-analysis"))
             .thenReturn(Map.of("success", true, "skillId", "log-analysis", "restartRequired", true));
 
-        mockMvc.perform(delete("/gateway/agents/agent1/skills/log-analysis")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(delete("/gateway/agents/agent1/skills/log-analysis").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
@@ -144,8 +144,8 @@ public class AgentSkillControllerTest {
         Mockito.when(installService.uninstall("agent1", "log-analysis"))
             .thenReturn(Map.of("success", true, "skillId", "log-analysis", "restartRequired", true));
 
-        mockMvc.perform(delete("/gateway/agents/agent1/skills/log-analysis")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(delete("/gateway/agents/agent1/skills/log-analysis").header("x-secret-key", "test")
                 .header("x-user-id", "regular-user"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))

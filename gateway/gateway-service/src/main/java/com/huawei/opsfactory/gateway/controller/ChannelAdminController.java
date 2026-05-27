@@ -3,8 +3,6 @@
  */
 
 package com.huawei.opsfactory.gateway.controller;
-import org.apache.servicecomb.provider.rest.common.RestSchema;
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.service.channel.ChannelAdapterRegistry;
@@ -19,6 +17,9 @@ import com.huawei.opsfactory.gateway.service.channel.model.ChannelSelfTestResult
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelUpsertRequest;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelVerificationResult;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -91,7 +92,8 @@ public class ChannelAdminController {
      * @return a channel by ID
      */
     @GetMapping("/{channelId}")
-    public ResponseEntity<ChannelDetail> getChannel(@PathVariable("channelId") String channelId, HttpServletRequest request) {
+    public ResponseEntity<ChannelDetail> getChannel(@PathVariable("channelId") String channelId,
+        HttpServletRequest request) {
         String userId = currentUserId(request);
         ChannelDetail detail = channelConfigService.getChannel(channelId, userId);
         if (detail == null) {
@@ -114,8 +116,7 @@ public class ChannelAdminController {
         try {
             ChannelDetail detail =
                 channelConfigService.createChannel(requestBody, ownerUserId != null ? ownerUserId : "admin");
-            return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("success", true, "channel", detail));
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("success", true, "channel", detail));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(invalidChannelRequestBody());
         }
@@ -197,8 +198,7 @@ public class ChannelAdminController {
         HttpServletRequest request) {
         String userId = currentUserId(request);
         try {
-            return ResponseEntity
-                .ok(Map.of("bindings", channelConfigService.listBindings(channelId, userId)));
+            return ResponseEntity.ok(Map.of("bindings", channelConfigService.listBindings(channelId, userId)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(invalidChannelRequestBody());
         }
@@ -216,8 +216,7 @@ public class ChannelAdminController {
         HttpServletRequest request) {
         String userId = currentUserId(request);
         try {
-            return ResponseEntity
-                .ok(Map.of("events", channelConfigService.listEvents(channelId, userId)));
+            return ResponseEntity.ok(Map.of("events", channelConfigService.listEvents(channelId, userId)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(invalidChannelRequestBody());
         }
@@ -352,11 +351,11 @@ public class ChannelAdminController {
             detail = channelConfigService.resetChannelRuntimeState(channelId, userId);
             String disconnectedMessage =
                 "wechat".equals(detail.type()) ? "WeChat login required" : "WhatsApp Web login required";
-            ChannelLoginState state = new ChannelLoginState(detail.id(), "disconnected", disconnectedMessage,
-                detail.config().authStateDir(),
-                "wechat".equals(detail.type()) ? detail.config().wechatId() : detail.config().selfPhone(),
-                detail.config().lastConnectedAt(), detail.config().lastDisconnectedAt(),
-                detail.config().lastError(), null);
+            ChannelLoginState state =
+                new ChannelLoginState(detail.id(), "disconnected", disconnectedMessage, detail.config().authStateDir(),
+                    "wechat".equals(detail.type()) ? detail.config().wechatId() : detail.config().selfPhone(),
+                    detail.config().lastConnectedAt(), detail.config().lastDisconnectedAt(),
+                    detail.config().lastError(), null);
             return ResponseEntity.ok(Map.of("success", true, "state", state));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(invalidChannelRequestBody());
@@ -378,10 +377,9 @@ public class ChannelAdminController {
             }
             String disconnectedMessage =
                 "wechat".equals(detail.type()) ? "WeChat login required" : "WhatsApp Web login required";
-            ChannelLoginState fallbackState = new ChannelLoginState(detail.id(), "disconnected",
-                disconnectedMessage, detail.config().authStateDir(),
-                "wechat".equals(detail.type()) ? detail.config().wechatId() : "", detail.config().lastConnectedAt(),
-                detail.config().lastDisconnectedAt(), "", null);
+            ChannelLoginState fallbackState = new ChannelLoginState(detail.id(), "disconnected", disconnectedMessage,
+                detail.config().authStateDir(), "wechat".equals(detail.type()) ? detail.config().wechatId() : "",
+                detail.config().lastConnectedAt(), detail.config().lastDisconnectedAt(), "", null);
             return ResponseEntity.ok(Map.of("success", true, "state", fallbackState));
         }
     }
@@ -407,8 +405,7 @@ public class ChannelAdminController {
                 return ResponseEntity.badRequest().body(errorBody("wechat self-test is not implemented yet"));
             }
             if (!"whatsapp".equals(detail.type())) {
-                return ResponseEntity.badRequest()
-                    .body(errorBody(detail.type() + " self-test is not implemented yet"));
+                return ResponseEntity.badRequest().body(errorBody(detail.type() + " self-test is not implemented yet"));
             }
             ChannelSelfTestResult result =
                 whatsAppMessagePumpService.runSelfTest(channelId, userId, requestBody.text());

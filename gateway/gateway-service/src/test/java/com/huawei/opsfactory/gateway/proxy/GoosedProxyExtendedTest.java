@@ -234,8 +234,7 @@ public class GoosedProxyExtendedTest {
      */
     @Test
     public void testProxySessionEvents_injectsAntiProxyHeaders() {
-        String sseData = "data: {\"type\":\"Ping\"}\n\n"
-            + "id: 42\n"
+        String sseData = "data: {\"type\":\"Ping\"}\n\n" + "id: 42\n"
             + "data: {\"type\":\"Finish\",\"chat_request_id\":\"req-1\"}\n\n";
         DisposableServer server = HttpServer.create()
             .host("127.0.0.1")
@@ -248,9 +247,9 @@ public class GoosedProxyExtendedTest {
 
         try {
             MockServerHttpResponse response = new MockServerHttpResponse();
-            proxy.proxySessionEvents(response, server.port(), "/sessions/test-session/events",
-                "test-secret", null, "test-agent", "test-user", "test-session",
-                data -> Mono.empty())
+            proxy
+                .proxySessionEvents(response, server.port(), "/sessions/test-session/events", "test-secret", null,
+                    "test-agent", "test-user", "test-session", data -> Mono.empty())
                 .block(Duration.ofSeconds(5));
 
             assertEquals("no-cache", response.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL));
@@ -280,9 +279,9 @@ public class GoosedProxyExtendedTest {
 
         try {
             MockServerHttpResponse response = new MockServerHttpResponse();
-            proxy.proxySessionEvents(response, server.port(), "/sessions/test-session/events",
-                "test-secret", null, "test-agent", "test-user", "test-session",
-                data -> Mono.empty())
+            proxy
+                .proxySessionEvents(response, server.port(), "/sessions/test-session/events", "test-secret", null,
+                    "test-agent", "test-user", "test-session", data -> Mono.empty())
                 .block(Duration.ofSeconds(5));
 
             assertEquals("no-cache", response.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL));
@@ -311,9 +310,9 @@ public class GoosedProxyExtendedTest {
         try {
             MockServerHttpResponse response = new MockServerHttpResponse();
             assertThrows(WebClientResponseException.class,
-                () -> proxy.proxySessionEvents(response, server.port(), "/sessions/test-session/events",
-                    "test-secret", null, "test-agent", "test-user", "test-session",
-                    data -> Mono.empty())
+                () -> proxy
+                    .proxySessionEvents(response, server.port(), "/sessions/test-session/events", "test-secret", null,
+                        "test-agent", "test-user", "test-session", data -> Mono.empty())
                     .block(Duration.ofSeconds(5)));
 
             assertFalse(response.isCommitted());

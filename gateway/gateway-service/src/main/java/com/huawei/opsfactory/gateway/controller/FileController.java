@@ -4,7 +4,6 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
 import com.huawei.opsfactory.gateway.common.util.PathSanitizer;
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.process.InstanceManager;
@@ -13,8 +12,8 @@ import com.huawei.opsfactory.gateway.service.FileService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.core.io.Resource;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,9 +24,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -61,7 +60,7 @@ public class FileController {
      * Creates the file controller instance.
      */
     public FileController(InstanceManager instanceManager, AgentConfigService agentConfigService,
-            FileService fileService) {
+        FileService fileService) {
         this.instanceManager = instanceManager;
         this.agentConfigService = agentConfigService;
         this.fileService = fileService;
@@ -75,7 +74,8 @@ public class FileController {
      * @return the result
      */
     @GetMapping(value = "/files/list", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Object> listFiles(@PathVariable("agentId") String agentId, HttpServletRequest request) throws IOException {
+    public Map<String, Object> listFiles(@PathVariable("agentId") String agentId, HttpServletRequest request)
+        throws IOException {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         Path workingDir = agentConfigService.getUserAgentDir(userId, agentId);
         return Map.of("files", fileService.listFiles(workingDir));
@@ -92,7 +92,7 @@ public class FileController {
      */
     @GetMapping(value = "/files/get")
     public ResponseEntity<?> getFile(@PathVariable("agentId") String agentId, @RequestParam String path,
-            @RequestParam(defaultValue = "false") boolean download, HttpServletRequest request) {
+        @RequestParam(defaultValue = "false") boolean download, HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         Path workingDir = agentConfigService.getUserAgentDir(userId, agentId);
         String relativePath = URLDecoder.decode(path, StandardCharsets.UTF_8);
@@ -117,8 +117,10 @@ public class FileController {
                 content = is.readAllBytes();
             }
 
-            String encodedFilename = java.net.URLEncoder.encode(filename, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
-            String contentDisposition = disposition + "; filename=\"" + filename + "\"; filename*=UTF-8''" + encodedFilename;
+            String encodedFilename =
+                java.net.URLEncoder.encode(filename, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            String contentDisposition =
+                disposition + "; filename=\"" + filename + "\"; filename*=UTF-8''" + encodedFilename;
             return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(mimeType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
@@ -139,8 +141,8 @@ public class FileController {
      */
     @DeleteMapping(value = "/files/delete")
     public ResponseEntity<Map<String, Object>> deleteFile(@PathVariable("agentId") String agentId,
-            @RequestParam String path, @RequestParam(required = false) String rootId,
-            HttpServletRequest request) throws IOException {
+        @RequestParam String path, @RequestParam(required = false) String rootId, HttpServletRequest request)
+        throws IOException {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         Path workingDir = agentConfigService.getUserAgentDir(userId, agentId);
         String relativePath = URLDecoder.decode(path, StandardCharsets.UTF_8);
@@ -167,7 +169,7 @@ public class FileController {
      */
     @PutMapping(value = "/files/update", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> updateFile(@PathVariable("agentId") String agentId,
-            @RequestParam String path, @RequestBody FileUpdateRequest requestBody, HttpServletRequest request) {
+        @RequestParam String path, @RequestBody FileUpdateRequest requestBody, HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         Path workingDir = agentConfigService.getUserAgentDir(userId, agentId);
         String relativePath = URLDecoder.decode(path, StandardCharsets.UTF_8);
@@ -183,25 +185,24 @@ public class FileController {
 
         boolean updated = fileService.updateTextFile(workingDir, relativePath, requestBody.content());
         if (!updated) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("error", "file not found"));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "file not found"));
         }
         return ResponseEntity.ok(Map.of("status", "updated", "path", relativePath));
     }
-    
+
     /**
      * Uploads a file to the agent workspace for a specific session.
      *
-     * @param agentId   uploads a file to the agent workspace for a specific session
-     * @param filePart   uploads a file to the agent workspace for a specific session
+     * @param agentId uploads a file to the agent workspace for a specific session
+     * @param filePart uploads a file to the agent workspace for a specific session
      * @param sessionId uploads a file to the agent workspace for a specific session
-     * @param request   current HTTP request
+     * @param request current HTTP request
      * @return the upload result
      */
     @PostMapping(value = "/files/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Map<String, Object> uploadFile(@PathVariable("agentId") String agentId,
-            @RequestPart("file") MultipartFile filePart, @RequestPart("sessionId") String sessionId,
-            HttpServletRequest request) {
+        @RequestPart("file") MultipartFile filePart, @RequestPart("sessionId") String sessionId,
+        HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         Path uploadsDir = agentConfigService.getUserAgentDir(userId, agentId).resolve("uploads").resolve(sessionId);
 

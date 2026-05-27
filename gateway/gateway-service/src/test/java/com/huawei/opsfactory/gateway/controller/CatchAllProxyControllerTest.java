@@ -67,10 +67,12 @@ public class CatchAllProxyControllerTest {
      */
     @Test
     public void testAuthenticatedAccess_status() {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/gateway/agents/" + TEST_AGENT_ID + "/status");
+        MockHttpServletRequest request =
+            new MockHttpServletRequest("GET", "/gateway/agents/" + TEST_AGENT_ID + "/status");
         request.setAttribute(UserContextFilter.USER_ID_ATTR, TEST_USER_ID);
 
-        ManagedInstance instance = new ManagedInstance(TEST_AGENT_ID, TEST_USER_ID, INSTANCE_PORT, 123L, null, SECRET_KEY);
+        ManagedInstance instance =
+            new ManagedInstance(TEST_AGENT_ID, TEST_USER_ID, INSTANCE_PORT, 123L, null, SECRET_KEY);
         when(instanceManager.getOrSpawn(TEST_AGENT_ID, TEST_USER_ID)).thenReturn(Mono.just(instance));
         when(goosedProxy.fetchJson(eq(INSTANCE_PORT), any(), eq("/status"), any(), eq(TIMEOUT_SECONDS), eq(SECRET_KEY)))
             .thenReturn(Mono.just("{\"status\":\"ok\"}"));
@@ -87,13 +89,15 @@ public class CatchAllProxyControllerTest {
      */
     @Test
     public void testUserAccessToSystemInfo_allowed() {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/gateway/agents/" + TEST_AGENT_ID + "/system_info");
+        MockHttpServletRequest request =
+            new MockHttpServletRequest("GET", "/gateway/agents/" + TEST_AGENT_ID + "/system_info");
         request.setAttribute(UserContextFilter.USER_ID_ATTR, TEST_USER_ID);
 
-        ManagedInstance instance = new ManagedInstance(TEST_AGENT_ID, TEST_USER_ID, INSTANCE_PORT, 123L, null, SECRET_KEY);
+        ManagedInstance instance =
+            new ManagedInstance(TEST_AGENT_ID, TEST_USER_ID, INSTANCE_PORT, 123L, null, SECRET_KEY);
         when(instanceManager.getOrSpawn(TEST_AGENT_ID, TEST_USER_ID)).thenReturn(Mono.just(instance));
-        when(goosedProxy.fetchJson(eq(INSTANCE_PORT), any(), eq("/system_info"), any(), eq(TIMEOUT_SECONDS), eq(SECRET_KEY)))
-            .thenReturn(Mono.just("{\"info\":\"test\"}"));
+        when(goosedProxy.fetchJson(eq(INSTANCE_PORT), any(), eq("/system_info"), any(), eq(TIMEOUT_SECONDS),
+            eq(SECRET_KEY))).thenReturn(Mono.just("{\"info\":\"test\"}"));
 
         ResponseEntity<String> result = controller.proxySystemInfo(TEST_AGENT_ID, request);
 
@@ -109,18 +113,21 @@ public class CatchAllProxyControllerTest {
     @Test
     public void testQueryStringForwarding() {
         String queryString = "limit=5";
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/gateway/agents/" + TEST_AGENT_ID + "/status?" + queryString);
+        MockHttpServletRequest request =
+            new MockHttpServletRequest("GET", "/gateway/agents/" + TEST_AGENT_ID + "/status?" + queryString);
         request.setQueryString(queryString);
         request.setAttribute(UserContextFilter.USER_ID_ATTR, ADMIN_USER_ID);
 
-        ManagedInstance instance = new ManagedInstance(TEST_AGENT_ID, ADMIN_USER_ID, INSTANCE_PORT, 123L, null, SECRET_KEY);
+        ManagedInstance instance =
+            new ManagedInstance(TEST_AGENT_ID, ADMIN_USER_ID, INSTANCE_PORT, 123L, null, SECRET_KEY);
         when(instanceManager.getOrSpawn(TEST_AGENT_ID, ADMIN_USER_ID)).thenReturn(Mono.just(instance));
-        when(goosedProxy.fetchJson(eq(INSTANCE_PORT), any(), eq("/status?" + queryString), any(), eq(TIMEOUT_SECONDS), eq(SECRET_KEY)))
-            .thenReturn(Mono.just("{\"status\":\"ok\"}"));
+        when(goosedProxy.fetchJson(eq(INSTANCE_PORT), any(), eq("/status?" + queryString), any(), eq(TIMEOUT_SECONDS),
+            eq(SECRET_KEY))).thenReturn(Mono.just("{\"status\":\"ok\"}"));
 
         controller.proxyStatus(TEST_AGENT_ID, request);
 
-        verify(goosedProxy).fetchJson(eq(INSTANCE_PORT), any(), eq("/status?" + queryString), any(), eq(TIMEOUT_SECONDS), eq(SECRET_KEY));
+        verify(goosedProxy).fetchJson(eq(INSTANCE_PORT), any(), eq("/status?" + queryString), any(),
+            eq(TIMEOUT_SECONDS), eq(SECRET_KEY));
     }
 
     /**
@@ -129,7 +136,8 @@ public class CatchAllProxyControllerTest {
      */
     @Test
     public void testInstanceManagerThrowsException() {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/gateway/agents/" + TEST_AGENT_ID + "/status");
+        MockHttpServletRequest request =
+            new MockHttpServletRequest("GET", "/gateway/agents/" + TEST_AGENT_ID + "/status");
         request.setAttribute(UserContextFilter.USER_ID_ATTR, ADMIN_USER_ID);
 
         when(instanceManager.getOrSpawn(TEST_AGENT_ID, ADMIN_USER_ID))

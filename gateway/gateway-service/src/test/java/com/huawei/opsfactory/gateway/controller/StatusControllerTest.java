@@ -4,6 +4,11 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.huawei.opsfactory.gateway.config.GatewayProperties;
 import com.huawei.opsfactory.gateway.filter.AuthWebFilter;
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
@@ -17,11 +22,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Test coverage for Status Controller.
@@ -50,8 +50,7 @@ public class StatusControllerTest {
      */
     @Test
     public void testStatus() throws Exception {
-        mockMvc.perform(get("/gateway/status")
-                .header("x-secret-key", "test"))
+        mockMvc.perform(get("/gateway/status").header("x-secret-key", "test"))
             .andExpect(status().isOk())
             .andExpect(content().string("ok"));
     }
@@ -61,8 +60,7 @@ public class StatusControllerTest {
      */
     @Test
     public void testMe_noUserIdHeader_returnsUnknown() throws Exception {
-        mockMvc.perform(get("/gateway/me")
-                .header("x-secret-key", "test"))
+        mockMvc.perform(get("/gateway/me").header("x-secret-key", "test"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.userId").value("unknown"))
             .andExpect(jsonPath("$.role").value("user"));
@@ -73,9 +71,7 @@ public class StatusControllerTest {
      */
     @Test
     public void testMe_withUserIdHeader_returnsUser() throws Exception {
-        mockMvc.perform(get("/gateway/me")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "user123"))
+        mockMvc.perform(get("/gateway/me").header("x-secret-key", "test").header("x-user-id", "user123"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.userId").value("user123"))
             .andExpect(jsonPath("$.role").value("user"));
@@ -86,8 +82,7 @@ public class StatusControllerTest {
      */
     @Test
     public void testConfig() throws Exception {
-        mockMvc.perform(get("/gateway/config")
-                .header("x-secret-key", "test"))
+        mockMvc.perform(get("/gateway/config").header("x-secret-key", "test"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.officePreview.enabled").value(false));
     }
@@ -97,7 +92,6 @@ public class StatusControllerTest {
      */
     @Test
     public void testUnauthorized_noKey() throws Exception {
-        mockMvc.perform(get("/gateway/me"))
-            .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/gateway/me")).andExpect(status().isUnauthorized());
     }
 }

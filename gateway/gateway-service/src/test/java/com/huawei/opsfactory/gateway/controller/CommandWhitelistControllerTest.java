@@ -71,9 +71,7 @@ public class CommandWhitelistControllerTest {
             Map.of("pattern", "tail", "description", "查看日志", "enabled", true)));
         when(commandWhitelistService.getWhitelist()).thenReturn(whitelist);
 
-        mockMvc.perform(get("/gateway/command-whitelist/")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/command-whitelist/").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.commands").isArray())
             .andExpect(jsonPath("$.commands[0].pattern").value("ps"));
@@ -86,8 +84,8 @@ public class CommandWhitelistControllerTest {
      */
     @Test
     public void testAddCommand_success() throws Exception {
-        mockMvc.perform(post("/gateway/command-whitelist/")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/command-whitelist/").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"pattern\": \"iostat\", \"description\": \"IO统计\", \"enabled\": true}"))
@@ -102,8 +100,8 @@ public class CommandWhitelistControllerTest {
     public void testAddCommand_error() throws Exception {
         doThrow(new RuntimeException("Write failed")).when(commandWhitelistService).addCommand(any());
 
-        mockMvc.perform(post("/gateway/command-whitelist/")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/command-whitelist/").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"pattern\": \"test\"}"))
@@ -119,8 +117,8 @@ public class CommandWhitelistControllerTest {
      */
     @Test
     public void testUpdateCommand_success() throws Exception {
-        mockMvc.perform(put("/gateway/command-whitelist/ps")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(put("/gateway/command-whitelist/ps").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"description\": \"updated desc\", \"enabled\": false}"))
@@ -136,8 +134,8 @@ public class CommandWhitelistControllerTest {
         doThrow(new IllegalArgumentException("Command pattern not found: unknown")).when(commandWhitelistService)
             .updateCommand(eq("unknown"), any());
 
-        mockMvc.perform(put("/gateway/command-whitelist/unknown")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(put("/gateway/command-whitelist/unknown").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"description\": \"test\"}"))
@@ -152,9 +150,9 @@ public class CommandWhitelistControllerTest {
      */
     @Test
     public void testDeleteCommand_success() throws Exception {
-        mockMvc.perform(delete("/gateway/command-whitelist/ps")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(
+                delete("/gateway/command-whitelist/ps").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
     }
@@ -167,8 +165,8 @@ public class CommandWhitelistControllerTest {
         doThrow(new IllegalArgumentException("Command pattern not found: unknown")).when(commandWhitelistService)
             .deleteCommand("unknown");
 
-        mockMvc.perform(delete("/gateway/command-whitelist/unknown")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(delete("/gateway/command-whitelist/unknown").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.success").value(false));
@@ -181,8 +179,7 @@ public class CommandWhitelistControllerTest {
      */
     @Test
     public void testGetWhitelist_unauthorized_noKey() throws Exception {
-        mockMvc.perform(get("/gateway/command-whitelist/")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/command-whitelist/").header("x-user-id", "admin"))
             .andExpect(status().isUnauthorized());
     }
 
@@ -195,9 +192,9 @@ public class CommandWhitelistControllerTest {
         whitelist.put("commands", List.of(Map.of("pattern", "ps", "description", "查看进程", "enabled", true)));
         when(commandWhitelistService.getWhitelist()).thenReturn(whitelist);
 
-        mockMvc.perform(get("/gateway/command-whitelist/")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user"))
+        mockMvc
+            .perform(
+                get("/gateway/command-whitelist/").header("x-secret-key", "test").header("x-user-id", "regular-user"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.commands").isArray())
             .andExpect(jsonPath("$.commands[0].pattern").value("ps"));
@@ -208,8 +205,8 @@ public class CommandWhitelistControllerTest {
      */
     @Test
     public void testAddCommand_succeeds_forAnyUser() throws Exception {
-        mockMvc.perform(post("/gateway/command-whitelist/")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/command-whitelist/").header("x-secret-key", "test")
                 .header("x-user-id", "regular-user")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"pattern\": \"test\", \"description\": \"Test command\", \"enabled\": true}"))

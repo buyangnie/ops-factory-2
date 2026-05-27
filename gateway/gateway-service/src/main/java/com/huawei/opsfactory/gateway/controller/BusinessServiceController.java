@@ -4,11 +4,11 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
 import com.huawei.opsfactory.gateway.service.BusinessServiceService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -50,16 +50,15 @@ public class BusinessServiceController {
      * Lists business services, optionally filtered by group, host, or keyword.
      *
      * @param groupId optional group identifier filter
-     * @param hostId  optional host identifier filter
+     * @param hostId optional host identifier filter
      * @param keyword optional keyword for full-text search
      * @param request current HTTP request
      * @return a map with "businessServices" list
      */
     @GetMapping
-    public Map<String, Object> listBusinessServices(
-            @RequestParam(value = "groupId", required = false) String groupId,
-            @RequestParam(value = "hostId", required = false) String hostId,
-            @RequestParam(value = "keyword", required = false) String keyword, HttpServletRequest request) {
+    public Map<String, Object> listBusinessServices(@RequestParam(value = "groupId", required = false) String groupId,
+        @RequestParam(value = "hostId", required = false) String hostId,
+        @RequestParam(value = "keyword", required = false) String keyword, HttpServletRequest request) {
         List<Map<String, Object>> services;
         if (keyword != null && !keyword.isEmpty()) {
             services = businessServiceService.searchByKeyword(keyword);
@@ -74,13 +73,13 @@ public class BusinessServiceController {
     /**
      * Gets a business service by ID.
      *
-     * @param id      business service identifier
+     * @param id business service identifier
      * @param request current HTTP request
      * @return ResponseEntity containing the business service or 404
      */
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getBusinessService(@PathVariable("id") String id,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         try {
             Map<String, Object> bs = businessServiceService.getBusinessService(id);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -98,13 +97,12 @@ public class BusinessServiceController {
     /**
      * Gets a business service with its associated hosts resolved.
      *
-     * @param id      business service identifier
+     * @param id business service identifier
      * @param request current HTTP request
      * @return ResponseEntity containing the resolved business service or 404
      */
     @GetMapping("/{id}/resolved")
-    public ResponseEntity<Map<String, Object>> getResolved(@PathVariable("id") String id,
-            HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> getResolved(@PathVariable("id") String id, HttpServletRequest request) {
         try {
             Map<String, Object> resolved = businessServiceService.getWithResolvedHosts(id);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -122,7 +120,7 @@ public class BusinessServiceController {
     /**
      * Lists hosts associated with a business service.
      *
-     * @param id      business service identifier
+     * @param id business service identifier
      * @param request current HTTP request
      * @return a map with "hosts" list
      */
@@ -137,7 +135,7 @@ public class BusinessServiceController {
     /**
      * Gets the topology data for a business service.
      *
-     * @param id      business service identifier
+     * @param id business service identifier
      * @param request current HTTP request
      * @return a map with topology data
      */
@@ -149,13 +147,13 @@ public class BusinessServiceController {
     /**
      * Creates a new business service.
      *
-     * @param request     request body containing business service fields
+     * @param request request body containing business service fields
      * @param httpRequest current HTTP request
      * @return ResponseEntity with created business service or 400
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createBusinessService(@RequestBody Map<String, Object> request,
-            HttpServletRequest httpRequest) {
+        HttpServletRequest httpRequest) {
         try {
             Map<String, Object> bs = businessServiceService.createBusinessService(request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -173,14 +171,14 @@ public class BusinessServiceController {
     /**
      * Updates a business service by ID.
      *
-     * @param id          business service identifier
-     * @param request     request body containing updated fields
+     * @param id business service identifier
+     * @param request request body containing updated fields
      * @param httpRequest current HTTP request
      * @return ResponseEntity with updated business service or 404
      */
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateBusinessService(@PathVariable("id") String id,
-            @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
+        @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
         try {
             Map<String, Object> bs = businessServiceService.updateBusinessService(id, request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -198,13 +196,13 @@ public class BusinessServiceController {
     /**
      * Deletes a business service by ID.
      *
-     * @param id      business service identifier
+     * @param id business service identifier
      * @param request current HTTP request
      * @return ResponseEntity with success status or 404
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteBusinessService(@PathVariable("id") String id,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         boolean deleted = businessServiceService.deleteBusinessService(id);
         if (!deleted) {
             Map<String, Object> body = new LinkedHashMap<>();

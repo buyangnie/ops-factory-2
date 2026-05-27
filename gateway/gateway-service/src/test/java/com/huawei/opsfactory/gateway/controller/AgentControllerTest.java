@@ -75,9 +75,7 @@ public class AgentControllerTest {
             .of(Map.of("name", "brainstorming", "description", "Brainstorm ideas", "path", "skills/brainstorming")));
         when(agentConfigService.listSkills("agent2")).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/gateway/agents")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "alice"))
+        mockMvc.perform(get("/gateway/agents").header("x-secret-key", "test").header("x-user-id", "alice"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.agents[0].id").value("agent1"))
             .andExpect(jsonPath("$.agents[0].name").value("Agent One"))
@@ -96,9 +94,7 @@ public class AgentControllerTest {
     public void testListAgents_empty() throws Exception {
         when(agentConfigService.getRegistry()).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/agents")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "alice"))
+        mockMvc.perform(get("/gateway/agents").header("x-secret-key", "test").header("x-user-id", "alice"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.agents.length()").value(0));
     }
@@ -117,8 +113,8 @@ public class AgentControllerTest {
         agent.put("model", "gpt-4o");
         when(agentConfigService.createAgent(eq("new-agent"), eq("New Agent"))).thenReturn(agent);
 
-        mockMvc.perform(post("/gateway/agents")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/agents").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"id\": \"new-agent\", \"name\": \"New Agent\"}"))
@@ -141,8 +137,8 @@ public class AgentControllerTest {
         agent.put("model", "gpt-4o");
         when(agentConfigService.createAgent(eq("new-agent"), eq("New Agent"))).thenReturn(agent);
 
-        mockMvc.perform(post("/gateway/agents")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/agents").header("x-secret-key", "test")
                 .header("x-user-id", "regular-user")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"id\": \"new-agent\", \"name\": \"New Agent\"}"))
@@ -156,12 +152,10 @@ public class AgentControllerTest {
      */
     @Test
     public void testCreateAgent_missingId() throws Exception {
-        mockMvc.perform(post("/gateway/agents")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\": \"New Agent\"}"))
-            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/gateway/agents").header("x-secret-key", "test")
+            .header("x-user-id", "admin")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"name\": \"New Agent\"}")).andExpect(status().isBadRequest());
     }
 
     /**
@@ -174,9 +168,7 @@ public class AgentControllerTest {
         Mockito.doNothing().when(instanceManager).stopAllForAgent("agent1");
         Mockito.doNothing().when(agentConfigService).deleteAgent("agent1");
 
-        mockMvc.perform(delete("/gateway/agents/agent1")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(delete("/gateway/agents/agent1").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
     }
@@ -189,9 +181,9 @@ public class AgentControllerTest {
         Mockito.doNothing().when(instanceManager).stopAllForAgent("agent1");
         Mockito.doNothing().when(agentConfigService).deleteAgent("agent1");
 
-        mockMvc.perform(delete("/gateway/agents/agent1")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user"))
+        mockMvc
+            .perform(
+                delete("/gateway/agents/agent1").header("x-secret-key", "test").header("x-user-id", "regular-user"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
     }
@@ -205,9 +197,8 @@ public class AgentControllerTest {
             List.of(Map.of("name", "brainstorming", "description", "Brainstorm ideas", "path", "skills/brainstorming"),
                 Map.of("name", "analysis", "description", "Analyze data", "path", "skills/analysis")));
 
-        mockMvc.perform(get("/gateway/agents/agent1/skills")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(get("/gateway/agents/agent1/skills").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.skills[0].name").value("brainstorming"))
             .andExpect(jsonPath("$.skills[0].description").value("Brainstorm ideas"))
@@ -228,9 +219,8 @@ public class AgentControllerTest {
         when(agentConfigService.loadAgentConfigYaml("agent1")).thenReturn(config);
         when(agentConfigService.getAgentsDir()).thenReturn(Path.of("/tmp/agents"));
 
-        mockMvc.perform(get("/gateway/agents/agent1/config")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(get("/gateway/agents/agent1/config").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.agentsMd").value("# Agent One\n"))
             .andExpect(jsonPath("$.provider").value("anthropic"))
@@ -247,8 +237,8 @@ public class AgentControllerTest {
         when(agentConfigService.findAgent("agent1")).thenReturn(new AgentRegistryEntry("agent1", "Agent One"));
         Mockito.doNothing().when(agentConfigService).writeAgentsMd("agent1", "# Updated\n");
 
-        mockMvc.perform(put("/gateway/agents/agent1/config")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(put("/gateway/agents/agent1/config").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"agentsMd\": \"# Updated\\n\"}"))
@@ -264,8 +254,8 @@ public class AgentControllerTest {
         when(agentConfigService.findAgent("agent1")).thenReturn(new AgentRegistryEntry("agent1", "Agent One"));
         Mockito.doNothing().when(agentConfigService).writeAgentsMd("agent1", "# Updated\n");
 
-        mockMvc.perform(put("/gateway/agents/agent1/config")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(put("/gateway/agents/agent1/config").header("x-secret-key", "test")
                 .header("x-user-id", "regular-user")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"agentsMd\": \"# Updated\\n\"}"))
@@ -278,12 +268,10 @@ public class AgentControllerTest {
      */
     @Test
     public void testCreateAgent_missingName() throws Exception {
-        mockMvc.perform(post("/gateway/agents")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"id\": \"new-agent\"}"))
-            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/gateway/agents").header("x-secret-key", "test")
+            .header("x-user-id", "admin")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"id\": \"new-agent\"}")).andExpect(status().isBadRequest());
     }
 
     /**
@@ -291,12 +279,10 @@ public class AgentControllerTest {
      */
     @Test
     public void testCreateAgent_blankId() throws Exception {
-        mockMvc.perform(post("/gateway/agents")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"id\": \"   \", \"name\": \"New Agent\"}"))
-            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/gateway/agents").header("x-secret-key", "test")
+            .header("x-user-id", "admin")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"id\": \"   \", \"name\": \"New Agent\"}")).andExpect(status().isBadRequest());
     }
 
     /**
@@ -309,12 +295,10 @@ public class AgentControllerTest {
         when(agentConfigService.createAgent(eq("dup-agent"), eq("Dup Agent")))
             .thenThrow(new IllegalArgumentException("Agent already exists"));
 
-        mockMvc.perform(post("/gateway/agents")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"id\": \"dup-agent\", \"name\": \"Dup Agent\"}"))
-            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/gateway/agents").header("x-secret-key", "test")
+            .header("x-user-id", "admin")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"id\": \"dup-agent\", \"name\": \"Dup Agent\"}")).andExpect(status().isBadRequest());
     }
 
     /**
@@ -327,8 +311,8 @@ public class AgentControllerTest {
         when(agentConfigService.createAgent(eq("io-agent"), eq("IO Agent")))
             .thenThrow(new IllegalStateException("disk full"));
 
-        mockMvc.perform(post("/gateway/agents")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/agents").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"id\": \"io-agent\", \"name\": \"IO Agent\"}"))
@@ -346,9 +330,9 @@ public class AgentControllerTest {
             List.of(Map.of("name", "brainstorming", "description", "Brainstorm ideas", "path", "skills/brainstorming"),
                 Map.of("name", "analysis", "description", "Analyze data", "path", "skills/analysis")));
 
-        mockMvc.perform(get("/gateway/agents/agent1/skills")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user"))
+        mockMvc
+            .perform(
+                get("/gateway/agents/agent1/skills").header("x-secret-key", "test").header("x-user-id", "regular-user"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.skills[0].name").value("brainstorming"))
             .andExpect(jsonPath("$.skills[0].description").value("Brainstorm ideas"))
@@ -369,9 +353,9 @@ public class AgentControllerTest {
         when(agentConfigService.loadAgentConfigYaml("agent1")).thenReturn(config);
         when(agentConfigService.getAgentsDir()).thenReturn(Path.of("/tmp/agents"));
 
-        mockMvc.perform(get("/gateway/agents/agent1/config")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user"))
+        mockMvc
+            .perform(
+                get("/gateway/agents/agent1/config").header("x-secret-key", "test").header("x-user-id", "regular-user"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.agentsMd").value("# Agent One\n"))
             .andExpect(jsonPath("$.provider").value("anthropic"))
@@ -386,9 +370,7 @@ public class AgentControllerTest {
         // listAgents does not require admin, just auth
         when(agentConfigService.getRegistry()).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/agents")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user"))
+        mockMvc.perform(get("/gateway/agents").header("x-secret-key", "test").header("x-user-id", "regular-user"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.agents").isArray());
     }

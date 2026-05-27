@@ -3,12 +3,9 @@
  */
 
 package com.huawei.opsfactory.gateway.controller;
-import org.apache.servicecomb.provider.rest.common.RestSchema;
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
 import com.huawei.opsfactory.gateway.common.util.JsonUtil;
-import com.huawei.opsfactory.gateway.filter.RequestContextFilter;
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.hook.HookContext;
 import com.huawei.opsfactory.gateway.hook.HookPipeline;
@@ -22,9 +19,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import jakarta.annotation.PreDestroy;
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -43,7 +43,6 @@ import org.springframework.web.util.UriUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,8 +55,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.annotation.PreDestroy;
 
 /**
  * Core session controller handling chat replies, SSE event streams, session resume, and restart.
@@ -151,26 +148,25 @@ public class ReplyController {
         long requestStart = System.currentTimeMillis();
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         HookContext ctx = new HookContext(body, agentId, userId);
-        log.info("[SESSION-REPLY] request received agentId={} userId={} sessionId={} bodyLen={}", agentId, userId, sessionId,
-            body.length());
+        log.info("[SESSION-REPLY] request received agentId={} userId={} sessionId={} bodyLen={}", agentId, userId,
+            sessionId, body.length());
         String chatRequestId = extractRequestId(body);
 
         try {
-            String processedBody = hookPipeline.executeRequest(ctx)
-                .map(this::normalizeReplyUserMessageCreated)
-                .block();
+            String processedBody = hookPipeline.executeRequest(ctx).map(this::normalizeReplyUserMessageCreated).block();
             ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
             instance.touch();
             instanceManager.touchAllForUser(userId);
             String path = goosedSessionPath(sessionId, "reply");
             ensureSessionResumed(instance, sessionId);
             snapshotFilesBeforeReply(agentId, userId, sessionId, chatRequestId);
-            log.info("[SESSION-REPLY] forwarding agentId={} userId={} sessionId={} port={} path={}", agentId,
-                userId, sessionId, instance.getPort(), path);
-            String result = goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST, path,
-                processedBody, 120, instance.getSecretKey()).block();
-            log.info("[SESSION-REPLY] completed agentId={} userId={} sessionId={} totalMs={}", agentId,
-                userId, sessionId, System.currentTimeMillis() - requestStart);
+            log.info("[SESSION-REPLY] forwarding agentId={} userId={} sessionId={} port={} path={}", agentId, userId,
+                sessionId, instance.getPort(), path);
+            String result = goosedProxy
+                .fetchJson(instance.getPort(), HttpMethod.POST, path, processedBody, 120, instance.getSecretKey())
+                .block();
+            log.info("[SESSION-REPLY] completed agentId={} userId={} sessionId={} totalMs={}", agentId, userId,
+                sessionId, System.currentTimeMillis() - requestStart);
             return result;
         } catch (ResponseStatusException | WebClientResponseException | IllegalStateException err) {
             removeFileSnapshot(agentId, userId, sessionId, chatRequestId);
@@ -190,22 +186,23 @@ public class ReplyController {
      * @return a {@code void} that completes when the SSE stream ends or errors out
      */
     @GetMapping(value = "/sessions/{sessionId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter sessionEvents(@PathVariable("agentId") String agentId, @PathVariable("sessionId") String sessionId,
+    public SseEmitter sessionEvents(@PathVariable("agentId") String agentId,
+        @PathVariable("sessionId") String sessionId,
         @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId, HttpServletRequest request) {
         long requestStart = System.currentTimeMillis();
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
-        log.info("[SESSION-EVENTS] subscribe agentId={} userId={} sessionId={} lastEventId={}", agentId, userId, sessionId,
-            lastEventId);
+        log.info("[SESSION-EVENTS] subscribe agentId={} userId={} sessionId={} lastEventId={}", agentId, userId,
+            sessionId, lastEventId);
 
         ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
         instance.touch();
         instanceManager.touchAllForUser(userId);
         String path = goosedSessionPath(sessionId, "events");
-        log.info("[SESSION-EVENTS] forwarding agentId={} userId={} sessionId={} port={} path={}", agentId,
-            userId, sessionId, instance.getPort(), path);
+        log.info("[SESSION-EVENTS] forwarding agentId={} userId={} sessionId={} port={} path={}", agentId, userId,
+            sessionId, instance.getPort(), path);
 
-        return goosedProxy.proxySessionEventsToEmitter(instance.getPort(), path,
-            instance.getSecretKey(), lastEventId, agentId, userId, sessionId);
+        return goosedProxy.proxySessionEventsToEmitter(instance.getPort(), path, instance.getSecretKey(), lastEventId,
+            agentId, userId, sessionId);
     }
 
     /**
@@ -231,16 +228,17 @@ public class ReplyController {
             instance.touch();
             instanceManager.touchAllForUser(userId);
             String path = goosedSessionPath(sessionId, "cancel");
-            log.info("[SESSION-CANCEL] forwarding agentId={} userId={} sessionId={} port={} path={}", agentId,
-                userId, sessionId, instance.getPort(), path);
-            String result = goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST, path,
-                body, 30, instance.getSecretKey()).block();
-            log.info("[SESSION-CANCEL] completed agentId={} userId={} sessionId={} totalMs={}", agentId,
-                userId, sessionId, System.currentTimeMillis() - requestStart);
+            log.info("[SESSION-CANCEL] forwarding agentId={} userId={} sessionId={} port={} path={}", agentId, userId,
+                sessionId, instance.getPort(), path);
+            String result =
+                goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST, path, body, 30, instance.getSecretKey())
+                    .block();
+            log.info("[SESSION-CANCEL] completed agentId={} userId={} sessionId={} totalMs={}", agentId, userId,
+                sessionId, System.currentTimeMillis() - requestStart);
             return result;
         } catch (ResponseStatusException | WebClientResponseException | IllegalStateException err) {
-            log.warn("[SESSION-CANCEL] failed agentId={} userId={} sessionId={} totalMs={} error={}", agentId,
-                userId, sessionId, System.currentTimeMillis() - requestStart, err.getMessage());
+            log.warn("[SESSION-CANCEL] failed agentId={} userId={} sessionId={} totalMs={} error={}", agentId, userId,
+                sessionId, System.currentTimeMillis() - requestStart, err.getMessage());
             throw err;
         }
     }
@@ -278,8 +276,7 @@ public class ReplyController {
             beforeFiles.size(), agentId, userId, sessionId, requestId);
     }
 
-    private String outputFilesBeforeTerminalEvent(String agentId, String userId, String sessionId,
-        String eventJson) {
+    private String outputFilesBeforeTerminalEvent(String agentId, String userId, String sessionId, String eventJson) {
         try {
             JsonNode event = MAPPER.readTree(eventJson);
             String type = event.path("type").asText("");
@@ -560,8 +557,9 @@ public class ReplyController {
 
     private String resumeSession(ManagedInstance instance, String sessionId, String body, String logPrefix) {
         if (sessionId == null || sessionId.isBlank()) {
-            return goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", body, 120,
-                instance.getSecretKey()).block();
+            return goosedProxy
+                .fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", body, 120, instance.getSecretKey())
+                .block();
         }
 
         String dedupeKey = instance.getKey() + ":" + sessionId;
@@ -594,7 +592,8 @@ public class ReplyController {
      * @return a {@code String} emitting the JSON response from the goosed resume endpoint
      */
     @PostMapping(value = "/agent/resume", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String resume(@PathVariable("agentId") String agentId, @RequestBody String body, HttpServletRequest request) {
+    public String resume(@PathVariable("agentId") String agentId, @RequestBody String body,
+        HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         String sessionId = JsonUtil.extractSessionId(body);
         ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
@@ -713,11 +712,13 @@ public class ReplyController {
      * @return the restarts the agent instance with a fresh configuration
      */
     @PostMapping(value = "/agent/restart", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String restart(@PathVariable("agentId") String agentId, @RequestBody String body, HttpServletRequest request) {
+    public String restart(@PathVariable("agentId") String agentId, @RequestBody String body,
+        HttpServletRequest request) {
         String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
         ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
-        String result = goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST, "/agent/restart",
-            body, 30, instance.getSecretKey()).block();
+        String result = goosedProxy
+            .fetchJson(instance.getPort(), HttpMethod.POST, "/agent/restart", body, 30, instance.getSecretKey())
+            .block();
         return result;
     }
 }

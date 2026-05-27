@@ -3,8 +3,6 @@
  */
 
 package com.huawei.opsfactory.gateway.controller;
-import org.apache.servicecomb.provider.rest.common.RestSchema;
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.huawei.opsfactory.gateway.filter.UserContextFilter;
 import com.huawei.opsfactory.gateway.service.BusinessServiceService;
@@ -12,6 +10,9 @@ import com.huawei.opsfactory.gateway.service.ClusterService;
 import com.huawei.opsfactory.gateway.service.HostGroupService;
 import com.huawei.opsfactory.gateway.service.HostService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -94,8 +95,7 @@ public class HostController {
             return result;
         }
 
-        List<Map<String, Object>> hosts =
-            resolveHosts(businessServiceId, clusterId, groupId, tags);
+        List<Map<String, Object>> hosts = resolveHosts(businessServiceId, clusterId, groupId, tags);
 
         // Filter out hosts belonging to disabled clusters when enabledOnly=true
         if (enabledOnly && !disabledSets.clusterIds.isEmpty()) {
@@ -131,8 +131,7 @@ public class HostController {
         if (clusterId != null && !clusterId.isEmpty()) {
             try {
                 Map<String, Object> cluster = clusterService.getCluster(clusterId);
-                if (Boolean.FALSE.equals(cluster.get("enabled"))
-                    || disabledGroupIds.contains(cluster.get("groupId"))) {
+                if (Boolean.FALSE.equals(cluster.get("enabled")) || disabledGroupIds.contains(cluster.get("groupId"))) {
                     return null;
                 }
             } catch (IllegalArgumentException e) {
@@ -163,8 +162,8 @@ public class HostController {
      * @param tags optional comma-separated tags
      * @return the resolved host list
      */
-    private List<Map<String, Object>> resolveHosts(String businessServiceId, String clusterId,
-        String groupId, String tags) {
+    private List<Map<String, Object>> resolveHosts(String businessServiceId, String clusterId, String groupId,
+        String tags) {
         if (businessServiceId != null && !businessServiceId.isEmpty()) {
             return businessServiceService.getHostsForBusinessService(businessServiceId);
         }
@@ -184,6 +183,7 @@ public class HostController {
      */
     private static final class DisabledSets {
         final Set<String> groupIds;
+
         final Set<String> clusterIds;
 
         DisabledSets(Set<String> groupIds, Set<String> clusterIds) {
@@ -200,8 +200,7 @@ public class HostController {
      * @return a host by its IP address
      */
     @GetMapping("/by-ip")
-    public ResponseEntity<Map<String, Object>> getHostByIp(@RequestParam("ip") String ip,
-        HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> getHostByIp(@RequestParam("ip") String ip, HttpServletRequest request) {
         Map<String, Object> host = hostService.findByIp(ip);
         if (host == null) {
             Map<String, Object> body = new LinkedHashMap<>();
@@ -223,8 +222,7 @@ public class HostController {
      * @return a host by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getHost(@PathVariable("id") String id,
-        HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> getHost(@PathVariable("id") String id, HttpServletRequest request) {
         Map<String, Object> host;
         try {
             host = hostService.getHost(id);
@@ -311,8 +309,7 @@ public class HostController {
      * @return the result
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteHost(@PathVariable("id") String id,
-        HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> deleteHost(@PathVariable("id") String id, HttpServletRequest request) {
         boolean deleted = hostService.deleteHost(id);
         if (!deleted) {
             Map<String, Object> body = new LinkedHashMap<>();

@@ -75,9 +75,8 @@ public class InternalRuntimeSourceControllerTest {
         when(instanceManager.getAllInstances()).thenReturn(List.of());
         when(langfuseService.isConfigured()).thenReturn(false);
 
-        mockMvc.perform(get("/gateway/runtime-source/system")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(get("/gateway/runtime-source/system").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.gateway.uptimeMs").exists())
             .andExpect(jsonPath("$.gateway.host").exists())
@@ -96,8 +95,8 @@ public class InternalRuntimeSourceControllerTest {
         when(instanceManager.getAllInstances()).thenReturn(List.of());
         when(langfuseService.isConfigured()).thenReturn(false);
 
-        mockMvc.perform(get("/gateway/runtime-source/system")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/runtime-source/system").header("x-secret-key", "test")
                 .header("x-user-id", "regular-user"))
             .andExpect(status().isOk());
     }
@@ -113,9 +112,9 @@ public class InternalRuntimeSourceControllerTest {
         when(agentConfigService.findAgent("agent1"))
             .thenReturn(new com.huawei.opsfactory.gateway.common.model.AgentRegistryEntry("agent1", "Agent One"));
 
-        mockMvc.perform(get("/gateway/runtime-source/instances")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(
+                get("/gateway/runtime-source/instances").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalInstances").value(1))
             .andExpect(jsonPath("$.runningInstances").value(1))
@@ -134,8 +133,8 @@ public class InternalRuntimeSourceControllerTest {
     public void testInstances_succeeds_forAnyUser() throws Exception {
         when(instanceManager.getAllInstances()).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/runtime-source/instances")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/runtime-source/instances").header("x-secret-key", "test")
                 .header("x-user-id", "regular-user"))
             .andExpect(status().isOk());
     }
@@ -147,9 +146,8 @@ public class InternalRuntimeSourceControllerTest {
     public void testMetrics_empty() throws Exception {
         when(metricsBuffer.getSnapshots(120)).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/runtime-source/metrics")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(get("/gateway/runtime-source/metrics").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.collectionIntervalSec").value(30))
             .andExpect(jsonPath("$.maxSlots").value(120))
@@ -194,9 +192,8 @@ public class InternalRuntimeSourceControllerTest {
         when(metricsBuffer.getSnapshots(120)).thenReturn(List.of(s1, s2));
         when(metricsBuffer.getAgentStats()).thenReturn(Map.of());
 
-        mockMvc.perform(get("/gateway/runtime-source/metrics")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(get("/gateway/runtime-source/metrics").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.returnedSlots").value(2))
             .andExpect(jsonPath("$.current.activeInstances").value(3))
@@ -217,8 +214,8 @@ public class InternalRuntimeSourceControllerTest {
     public void testMetrics_succeeds_forAnyUser() throws Exception {
         when(metricsBuffer.getSnapshots(120)).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/runtime-source/metrics")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/runtime-source/metrics").header("x-secret-key", "test")
                 .header("x-user-id", "regular-user"))
             .andExpect(status().isOk());
     }

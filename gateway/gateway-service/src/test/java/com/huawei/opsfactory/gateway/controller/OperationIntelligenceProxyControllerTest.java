@@ -34,14 +34,12 @@ public class OperationIntelligenceProxyControllerTest {
     @Test
     public void testGraphProxy() throws Exception {
         OperationIntelligenceProxyService proxyService = Mockito.mock(OperationIntelligenceProxyService.class);
-        when(proxyService.proxy(any()))
-            .thenReturn(ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, "application/json")
-                .body("{\"success\":true}"));
+        when(proxyService.proxy(any())).thenReturn(
+            ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json").body("{\"success\":true}"));
 
         OperationIntelligenceProxyFilter filter = new OperationIntelligenceProxyFilter(proxyService);
-        MockHttpServletRequest request = new MockHttpServletRequest("POST",
-            "/gateway/operation-intelligence/graph/resources/tree");
+        MockHttpServletRequest request =
+            new MockHttpServletRequest("POST", "/gateway/operation-intelligence/graph/resources/tree");
         request.setQueryString("envCode=prod");
         MockHttpServletResponse response = new MockHttpServletResponse();
 

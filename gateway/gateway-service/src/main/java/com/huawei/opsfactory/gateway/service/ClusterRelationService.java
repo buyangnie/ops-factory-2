@@ -475,10 +475,8 @@ public class ClusterRelationService {
     }
 
     private void processRelationsForGraph(List<Map<String, Object>> allRelations,
-            Map<String, Map<String, Object>> clusterMap,
-            List<Map<String, Object>> matchedEdges,
-            Map<String, Map<String, Object>> bsNodes,
-            Map<String, Map<String, Object>> hostNodes) {
+        Map<String, Map<String, Object>> clusterMap, List<Map<String, Object>> matchedEdges,
+        Map<String, Map<String, Object>> bsNodes, Map<String, Map<String, Object>> hostNodes) {
 
         for (Map<String, Object> rel : allRelations) {
             String sourceId = (String) rel.get("sourceId");
@@ -538,8 +536,7 @@ public class ClusterRelationService {
     }
 
     private List<Map<String, Object>> buildGraphNodes(Map<String, Map<String, Object>> clusterMap,
-            Map<String, Map<String, Object>> hostNodes,
-            Map<String, Map<String, Object>> bsNodes) {
+        Map<String, Map<String, Object>> hostNodes, Map<String, Map<String, Object>> bsNodes) {
 
         List<Map<String, Object>> nodes = new ArrayList<>();
         for (Map<String, Object> c : clusterMap.values()) {

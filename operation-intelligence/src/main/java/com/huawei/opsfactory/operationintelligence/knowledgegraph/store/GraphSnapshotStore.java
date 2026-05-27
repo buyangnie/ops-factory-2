@@ -61,8 +61,7 @@ public class GraphSnapshotStore {
      * @return the result
      */
     public Path resolveRoot() {
-        String dataDir = properties.getKnowledgeGraph().getDataDir();
-        return properties.resolveDataRoot().resolve(dataDir).toAbsolutePath().normalize();
+        return properties.resolveKnowledgeGraphDataRoot();
     }
 
     /**

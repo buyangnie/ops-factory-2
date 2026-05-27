@@ -4,11 +4,11 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
 import com.huawei.opsfactory.gateway.service.BusinessTypeService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -62,13 +62,13 @@ public class BusinessTypeController {
     /**
      * Gets a business type by ID.
      *
-     * @param id      business type identifier
+     * @param id business type identifier
      * @param request current HTTP request
      * @return ResponseEntity containing the business type or 404
      */
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getBusinessType(@PathVariable("id") String id,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         try {
             Map<String, Object> bt = businessTypeService.getBusinessType(id);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -92,7 +92,7 @@ public class BusinessTypeController {
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createBusinessType(@RequestBody Map<String, Object> request,
-            HttpServletRequest httpRequest) {
+        HttpServletRequest httpRequest) {
         try {
             Map<String, Object> bt = businessTypeService.createBusinessType(request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -110,14 +110,14 @@ public class BusinessTypeController {
     /**
      * Updates a business type by ID.
      *
-     * @param id          business type identifier
-     * @param request     request body containing updated fields
+     * @param id business type identifier
+     * @param request request body containing updated fields
      * @param httpRequest current HTTP request
      * @return ResponseEntity with updated business type or 404
      */
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateBusinessType(@PathVariable("id") String id,
-            @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
+        @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
         try {
             Map<String, Object> bt = businessTypeService.updateBusinessType(id, request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -135,13 +135,13 @@ public class BusinessTypeController {
     /**
      * Deletes a business type by ID.
      *
-     * @param id      business type identifier
+     * @param id business type identifier
      * @param request current HTTP request
      * @return ResponseEntity with success status or 404
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteBusinessType(@PathVariable("id") String id,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         boolean deleted = businessTypeService.deleteBusinessType(id);
         if (!deleted) {
             Map<String, Object> body = new LinkedHashMap<>();

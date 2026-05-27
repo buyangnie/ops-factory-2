@@ -4,11 +4,11 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
 import com.huawei.opsfactory.gateway.service.SopService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -66,13 +66,12 @@ public class SopController {
     /**
      * Gets an SOP by ID.
      *
-     * @param id      the unique identifier of the SOP to retrieve
+     * @param id the unique identifier of the SOP to retrieve
      * @param request the current HTTP request
      * @return a response entity with the SOP details, or 404 if not found
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getSop(@PathVariable("id") String id,
-            HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> getSop(@PathVariable("id") String id, HttpServletRequest request) {
         Map<String, Object> sop = sopService.getSop(id);
         if (sop == null) {
             Map<String, Object> body = new LinkedHashMap<>();
@@ -89,14 +88,14 @@ public class SopController {
     /**
      * Creates a new SOP definition.
      *
-     * @param request     the SOP definition fields to create, provided as a JSON request body
+     * @param request the SOP definition fields to create, provided as a JSON request body
      * @param httpRequest the current HTTP request
      * @return a response entity with the created SOP and 201 status,
      *         or 409 if a duplicate name already exists
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createSop(@RequestBody Map<String, Object> request,
-            HttpServletRequest httpRequest) {
+        HttpServletRequest httpRequest) {
         try {
             Map<String, Object> sop = sopService.createSop(request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -115,15 +114,15 @@ public class SopController {
     /**
      * Updates an SOP by ID.
      *
-     * @param id          the unique identifier of the SOP to update
-     * @param request     the SOP fields to modify, provided as a JSON request body
+     * @param id the unique identifier of the SOP to update
+     * @param request the SOP fields to modify, provided as a JSON request body
      * @param httpRequest the current HTTP request
      * @return a response entity with the updated SOP, 404 if not found,
      *         or 409 if the update causes a name conflict
      */
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateSop(@PathVariable("id") String id,
-            @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
+        @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
         try {
             Map<String, Object> sop = sopService.updateSop(id, request);
             if (sop == null) {
@@ -148,13 +147,12 @@ public class SopController {
     /**
      * Deletes an SOP by ID.
      *
-     * @param id      the unique identifier of the SOP to delete
+     * @param id the unique identifier of the SOP to delete
      * @param request the current HTTP request
      * @return a response entity with a success flag, or 404 if the SOP does not exist
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteSop(@PathVariable("id") String id,
-            HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> deleteSop(@PathVariable("id") String id, HttpServletRequest request) {
         boolean deleted = sopService.deleteSop(id);
         if (!deleted) {
             Map<String, Object> body = new LinkedHashMap<>();

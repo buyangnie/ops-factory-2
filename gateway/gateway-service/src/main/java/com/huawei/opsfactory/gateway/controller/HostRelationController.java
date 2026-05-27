@@ -3,12 +3,13 @@
  */
 
 package com.huawei.opsfactory.gateway.controller;
-import org.apache.servicecomb.provider.rest.common.RestSchema;
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.huawei.opsfactory.gateway.service.BusinessServiceService;
 import com.huawei.opsfactory.gateway.service.HostRelationService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -103,8 +104,7 @@ public class HostRelationController {
      * @return the neighbor hosts for a given host
      */
     @GetMapping("/hosts/{hostId}/neighbors")
-    public Map<String, Object> getHostNeighbors(@PathVariable("hostId") String hostId,
-        HttpServletRequest request) {
+    public Map<String, Object> getHostNeighbors(@PathVariable("hostId") String hostId, HttpServletRequest request) {
         return hostRelationService.getNeighbors(hostId);
     }
 

@@ -372,6 +372,7 @@ public class KnowledgeGraphService {
         String fromEntityId = stringValue(request.get("fromEntityId"));
         String toEntityId = stringValue(request.get("toEntityId"));
         int maxHops = boundedHops(request.get("maxHops"), 4);
+        requireSafeId(envCode, "envCode");
         requireText(fromEntityId, "fromEntityId");
         requireText(toEntityId, "toEntityId");
         GraphSnapshot path = graphStore.findPath(ontologyId, envCode, fromEntityId, toEntityId, maxHops)

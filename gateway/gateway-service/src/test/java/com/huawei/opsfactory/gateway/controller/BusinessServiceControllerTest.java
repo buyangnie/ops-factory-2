@@ -68,9 +68,7 @@ public class BusinessServiceControllerTest {
     public void testListBusinessServices() throws Exception {
         when(businessServiceService.listBusinessServices(isNull(), isNull())).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/business-services")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/business-services").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.businessServices").isArray())
             .andExpect(jsonPath("$.businessServices").isEmpty());
@@ -86,8 +84,8 @@ public class BusinessServiceControllerTest {
         bs.put("name", "OrderService");
         when(businessServiceService.searchByKeyword("order")).thenReturn(List.of(bs));
 
-        mockMvc.perform(get("/gateway/business-services?keyword=order")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/business-services?keyword=order").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.businessServices[0].id").value("bs-1"));
@@ -105,9 +103,8 @@ public class BusinessServiceControllerTest {
         bs.put("name", "OrderService");
         when(businessServiceService.getBusinessService("bs-1")).thenReturn(bs);
 
-        mockMvc.perform(get("/gateway/business-services/bs-1")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(get("/gateway/business-services/bs-1").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.businessService.id").value("bs-1"));
@@ -121,8 +118,8 @@ public class BusinessServiceControllerTest {
         when(businessServiceService.getBusinessService("nonexistent"))
             .thenThrow(new IllegalArgumentException("Business service not found: nonexistent"));
 
-        mockMvc.perform(get("/gateway/business-services/nonexistent")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/business-services/nonexistent").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.success").value(false));
@@ -142,8 +139,8 @@ public class BusinessServiceControllerTest {
         resolved.put("totalHostCount", 0);
         when(businessServiceService.getWithResolvedHosts("bs-1")).thenReturn(resolved);
 
-        mockMvc.perform(get("/gateway/business-services/bs-1/resolved")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/business-services/bs-1/resolved").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
@@ -162,8 +159,8 @@ public class BusinessServiceControllerTest {
         host.put("name", "Server1");
         when(businessServiceService.getHostsForBusinessService("bs-1")).thenReturn(List.of(host));
 
-        mockMvc.perform(get("/gateway/business-services/bs-1/hosts")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/business-services/bs-1/hosts").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.hosts[0].id").value("host-1"));
@@ -181,8 +178,8 @@ public class BusinessServiceControllerTest {
         topology.put("edges", List.of());
         when(businessServiceService.getTopologyForBusinessService("bs-1")).thenReturn(topology);
 
-        mockMvc.perform(get("/gateway/business-services/bs-1/topology")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(get("/gateway/business-services/bs-1/topology").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.nodes").isArray())
@@ -204,8 +201,8 @@ public class BusinessServiceControllerTest {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("name", "NewService");
 
-        mockMvc.perform(post("/gateway/business-services")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/business-services").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"NewService\"}"))
@@ -224,8 +221,8 @@ public class BusinessServiceControllerTest {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("name", "FailService");
 
-        mockMvc.perform(post("/gateway/business-services")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/business-services").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"FailService\"}"))
@@ -249,8 +246,8 @@ public class BusinessServiceControllerTest {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("name", "UpdatedService");
 
-        mockMvc.perform(put("/gateway/business-services/bs-1")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(put("/gateway/business-services/bs-1").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"UpdatedService\"}"))
@@ -270,8 +267,8 @@ public class BusinessServiceControllerTest {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("name", "Updated");
 
-        mockMvc.perform(put("/gateway/business-services/nonexistent")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(put("/gateway/business-services/nonexistent").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"Updated\"}"))
@@ -288,9 +285,9 @@ public class BusinessServiceControllerTest {
     public void testDeleteBusinessService() throws Exception {
         when(businessServiceService.deleteBusinessService("bs-1")).thenReturn(true);
 
-        mockMvc.perform(delete("/gateway/business-services/bs-1")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(
+                delete("/gateway/business-services/bs-1").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
     }
@@ -302,8 +299,8 @@ public class BusinessServiceControllerTest {
     public void testDeleteBusinessService_notFound() throws Exception {
         when(businessServiceService.deleteBusinessService("nonexistent")).thenReturn(false);
 
-        mockMvc.perform(delete("/gateway/business-services/nonexistent")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(delete("/gateway/business-services/nonexistent").header("x-secret-key", "test")
                 .header("x-user-id", "admin"))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.success").value(false));
@@ -321,9 +318,9 @@ public class BusinessServiceControllerTest {
         migrateResult.put("businessServices", List.of());
         when(businessServiceService.migrateFromBusinessField()).thenReturn(migrateResult);
 
-        mockMvc.perform(post("/gateway/business-services/migrate")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc
+            .perform(
+                post("/gateway/business-services/migrate").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.migrated").value(2));
     }
@@ -335,8 +332,7 @@ public class BusinessServiceControllerTest {
      */
     @Test
     public void testListBusinessServices_unauthorized_noKey() throws Exception {
-        mockMvc.perform(get("/gateway/business-services")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/business-services").header("x-user-id", "admin"))
             .andExpect(status().isUnauthorized());
     }
 
@@ -347,9 +343,9 @@ public class BusinessServiceControllerTest {
     public void testListBusinessServices_succeeds_forAnyUser() throws Exception {
         when(businessServiceService.listBusinessServices(isNull(), isNull())).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/business-services")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user"))
+        mockMvc
+            .perform(
+                get("/gateway/business-services").header("x-secret-key", "test").header("x-user-id", "regular-user"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.businessServices").isArray())
             .andExpect(jsonPath("$.businessServices").isEmpty());
@@ -368,8 +364,8 @@ public class BusinessServiceControllerTest {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("name", "Service");
 
-        mockMvc.perform(post("/gateway/business-services")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/business-services").header("x-secret-key", "test")
                 .header("x-user-id", "regular-user")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"Service\"}"))

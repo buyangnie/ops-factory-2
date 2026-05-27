@@ -10,10 +10,10 @@ import static org.mockito.Mockito.when;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
 
+import reactor.core.publisher.Mono;
+
 import org.junit.Test;
 import org.springframework.http.HttpMethod;
-
-import reactor.core.publisher.Mono;
 
 /**
  * E2E tests for CatchAllProxyController:
@@ -32,8 +32,8 @@ public class CatchAllProxyEndpointE2ETest extends BaseE2ETest {
         ManagedInstance instance = new ManagedInstance("test-agent", "alice", 9000, 123L, null, "test-secret");
         instance.setStatus(ManagedInstance.Status.RUNNING);
         when(instanceManager.getOrSpawn("test-agent", "alice")).thenReturn(Mono.just(instance));
-        when(goosedProxy.fetchJson(eq(9000), eq(HttpMethod.GET), eq("/status"),
-            isNull(), eq(30), eq("test-secret"))).thenReturn(Mono.just("{\"status\":\"ok\"}"));
+        when(goosedProxy.fetchJson(eq(9000), eq(HttpMethod.GET), eq("/status"), isNull(), eq(30), eq("test-secret")))
+            .thenReturn(Mono.just("{\"status\":\"ok\"}"));
 
         webClient.get()
             .uri("/gateway/agents/test-agent/status")
@@ -60,8 +60,8 @@ public class CatchAllProxyEndpointE2ETest extends BaseE2ETest {
         ManagedInstance instance = new ManagedInstance("test-agent", "admin", 9000, 123L, null, "test-secret");
         instance.setStatus(ManagedInstance.Status.RUNNING);
         when(instanceManager.getOrSpawn("test-agent", "admin")).thenReturn(Mono.just(instance));
-        when(goosedProxy.fetchJson(eq(9000), eq(HttpMethod.GET), eq("/status?verbose=true"),
-            isNull(), eq(30), eq("test-secret"))).thenReturn(Mono.just("{\"status\":\"ok\"}"));
+        when(goosedProxy.fetchJson(eq(9000), eq(HttpMethod.GET), eq("/status?verbose=true"), isNull(), eq(30),
+            eq("test-secret"))).thenReturn(Mono.just("{\"status\":\"ok\"}"));
 
         webClient.get()
             .uri("/gateway/agents/test-agent/status?verbose=true")

@@ -13,14 +13,14 @@ import com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectivityRe
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelDetail;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import reactor.core.publisher.Mono;
 
-import java.util.Locale;
-
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
+
+import java.util.Locale;
 
 /**
  * {@link ChannelAdapter} implementation for WhatsApp Web channels, providing connectivity testing based on login state.

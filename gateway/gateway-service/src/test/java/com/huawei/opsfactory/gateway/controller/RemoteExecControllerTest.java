@@ -64,8 +64,8 @@ public class RemoteExecControllerTest {
      */
     @Test
     public void testExecute_missingHostId() throws Exception {
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"command\": \"ps -ef\"}"))
@@ -79,8 +79,8 @@ public class RemoteExecControllerTest {
      */
     @Test
     public void testExecute_blankHostId() throws Exception {
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"hostId\": \"  \", \"command\": \"ps -ef\"}"))
@@ -93,8 +93,8 @@ public class RemoteExecControllerTest {
      */
     @Test
     public void testExecute_missingCommand() throws Exception {
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"hostId\": \"host-1\"}"))
@@ -108,8 +108,8 @@ public class RemoteExecControllerTest {
      */
     @Test
     public void testExecute_blankCommand() throws Exception {
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"hostId\": \"host-1\", \"command\": \"  \"}"))
@@ -133,8 +133,8 @@ public class RemoteExecControllerTest {
         execResult.put("duration", 1250L);
         when(remoteExecutionService.execute("host-1", "ps -ef", 30)).thenReturn(execResult);
 
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"hostId\": \"host-1\", \"command\": \"ps -ef\"}"))
@@ -159,8 +159,8 @@ public class RemoteExecControllerTest {
         execResult.put("duration", 100L);
         when(remoteExecutionService.execute("host-1", "ls", 60)).thenReturn(execResult);
 
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"hostId\": \"host-1\", \"command\": \"ls\", \"timeout\": 60}"))
@@ -185,8 +185,8 @@ public class RemoteExecControllerTest {
         execResult.put("duration", 0L);
         when(remoteExecutionService.execute("host-1", "rm -rf /", 30)).thenReturn(execResult);
 
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"hostId\": \"host-1\", \"command\": \"rm -rf /\"}"))
@@ -210,8 +210,8 @@ public class RemoteExecControllerTest {
         execResult.put("duration", 0L);
         when(remoteExecutionService.execute("host-1", "rm -rf /", 30)).thenReturn(execResult);
 
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"hostId\": \"host-1\", \"command\": \"rm -rf /\"}"))
@@ -236,8 +236,8 @@ public class RemoteExecControllerTest {
         execResult.put("duration", 0L);
         when(remoteExecutionService.execute("nonexistent", "ls", 30)).thenReturn(execResult);
 
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"hostId\": \"nonexistent\", \"command\": \"ls\"}"))
@@ -252,8 +252,8 @@ public class RemoteExecControllerTest {
     public void testExecute_unexpectedFailure_isSanitized() throws Exception {
         when(remoteExecutionService.execute("host-1", "ls", 30)).thenThrow(new RuntimeException("SSH stack trace"));
 
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/remote/execute").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"hostId\": \"host-1\", \"command\": \"ls\"}"))
@@ -269,11 +269,9 @@ public class RemoteExecControllerTest {
      */
     @Test
     public void testExecute_unauthorized_noKey() throws Exception {
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-user-id", "admin")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"hostId\": \"host-1\", \"command\": \"ls\"}"))
-            .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/gateway/remote/execute").header("x-user-id", "admin")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"hostId\": \"host-1\", \"command\": \"ls\"}")).andExpect(status().isUnauthorized());
     }
 
     /**
@@ -290,11 +288,9 @@ public class RemoteExecControllerTest {
         execResult.put("duration", 100L);
         when(remoteExecutionService.execute("host-1", "ls", 30)).thenReturn(execResult);
 
-        mockMvc.perform(post("/gateway/remote/execute")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"hostId\": \"host-1\", \"command\": \"ls\"}"))
-            .andExpect(status().isOk());
+        mockMvc.perform(post("/gateway/remote/execute").header("x-secret-key", "test")
+            .header("x-user-id", "regular-user")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"hostId\": \"host-1\", \"command\": \"ls\"}")).andExpect(status().isOk());
     }
 }

@@ -127,8 +127,7 @@ public class RemoteExecutionService {
             channel = (ChannelExec) session.openChannel("exec");
             channel.setCommand("bash -l -c " + singleQuote(effectiveCommand));
 
-            try (InputStream in = channel.getInputStream();
-                 InputStream err = channel.getExtInputStream()) {
+            try (InputStream in = channel.getInputStream(); InputStream err = channel.getExtInputStream()) {
 
                 ByteArrayOutputStream outputBuffer = new ByteArrayOutputStream();
                 ByteArrayOutputStream errorBuffer = new ByteArrayOutputStream();
@@ -226,8 +225,8 @@ public class RemoteExecutionService {
      * Returns a CommandResolution where result is non-null if validation failed (caller should return immediately),
      * or effectiveCommand is set when the command is ready to execute.
      */
-    private CommandResolution buildEffectiveCommand(ExecutionContext ctx, String command,
-        String commandPrefix, Map<String, String> envVars) {
+    private CommandResolution buildEffectiveCommand(ExecutionContext ctx, String command, String commandPrefix,
+        Map<String, String> envVars) {
         // Replace ${VAR} and $VAR placeholders (sorted longest key first to avoid partial matches)
         String effectiveCommand = command;
         List<String> sortedKeys = new ArrayList<>(envVars.keySet());
@@ -243,9 +242,10 @@ public class RemoteExecutionService {
         // Validate resolved command against whitelist
         List<String> rejected = commandWhitelistService.validateCommand(effectiveCommand);
         if (!rejected.isEmpty()) {
-            Map<String, Object> result = buildResult(ctx, -1, "",
-                "Command rejected: the following commands are not in the whitelist: " + String.join(", ", rejected),
-                0L);
+            Map<String,
+                Object> result = buildResult(ctx, -1, "",
+                    "Command rejected: the following commands are not in the whitelist: " + String.join(", ", rejected),
+                    0L);
             result.put("rejectedCommands", rejected);
             return new CommandResolution(null, result);
         }
@@ -303,8 +303,8 @@ public class RemoteExecutionService {
     /**
      * Builds a standard result map for remote execution responses.
      */
-    private Map<String, Object> buildResult(ExecutionContext ctx, int exitCode,
-        String output, String error, long duration) {
+    private Map<String, Object> buildResult(ExecutionContext ctx, int exitCode, String output, String error,
+        long duration) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("hostId", ctx.hostId);
         result.put("hostIp", ctx.hostname);
@@ -322,6 +322,7 @@ public class RemoteExecutionService {
      */
     private static class EnvResolution {
         final String commandPrefix;
+
         final Map<String, String> envVars;
 
         EnvResolution(String commandPrefix, Map<String, String> envVars) {
@@ -333,11 +334,13 @@ public class RemoteExecutionService {
     /**
      * Holds the result of effective-command building. Exactly one of effectiveCommand or result is non-null:
      * effectiveCommand is set on success; result is set when validation fails (caller should return immediately).
+     *
      * @author x00000000
      * @since 2026-05-27
      */
     private static class CommandResolution {
         final String effectiveCommand;
+
         final Map<String, Object> result;
 
         CommandResolution(String effectiveCommand, Map<String, Object> result) {
@@ -348,13 +351,17 @@ public class RemoteExecutionService {
 
     /**
      * Encapsulates host identity fields shared across remote execution result building.
+     *
      * @author x00000000
      * @since 2026-05-27
      */
     private static final class ExecutionContext {
         final String hostId;
+
         final String hostname;
+
         final String username;
+
         final String hostName;
 
         ExecutionContext(String hostId, String hostname, String username, String hostName) {

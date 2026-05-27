@@ -230,8 +230,7 @@ public class InstanceManager {
             if (listJson == null || !listJson.contains("\"jobs\"")) {
                 return existingIds;
             }
-            Map<String, Object> parsed =
-                MAPPER.readValue(listJson, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> parsed = MAPPER.readValue(listJson, new TypeReference<Map<String, Object>>() {});
             Object jobs = parsed.get("jobs");
             if (!(jobs instanceof List<?> jobList)) {
                 return existingIds;

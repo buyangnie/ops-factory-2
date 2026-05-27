@@ -183,6 +183,24 @@ public class OperationIntelligenceProperties {
     }
 
     /**
+     * Resolves the knowledge graph data root under the configured data directory.
+     *
+     * @return the result
+     */
+    public Path resolveKnowledgeGraphDataRoot() {
+        Path dataRootPath = resolveDataRoot();
+        Path configured = Path.of(knowledgeGraph.getDataDir());
+        if (configured.isAbsolute()) {
+            throw new IllegalStateException("knowledgeGraph.dataDir must be a relative path");
+        }
+        Path resolved = dataRootPath.resolve(configured).normalize();
+        if (!resolved.startsWith(dataRootPath)) {
+            throw new IllegalStateException("knowledgeGraph.dataDir must stay within data root");
+        }
+        return resolved;
+    }
+
+    /**
      * Gets the config path.
      *
      * @return the result

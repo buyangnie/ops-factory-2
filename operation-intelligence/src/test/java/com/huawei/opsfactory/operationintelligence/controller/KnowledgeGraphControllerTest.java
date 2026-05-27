@@ -408,6 +408,46 @@ class KnowledgeGraphControllerTest {
     }
 
     @Test
+    void findImpactPath_rejectsMissingEnvCode() throws IOException {
+        importFixture();
+
+        webTestClient.post()
+            .uri("/operation-intelligence/graph/impact-path")
+            .header("x-secret-key", SECRET_KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(Map.of("fromEntityId", "svc-prod-bes-business-common-sysparambs",
+                "toEntityId", "cluster-prod-rsp", "maxHops", 4))
+            .exchange()
+            .expectStatus()
+            .isBadRequest()
+            .expectBody()
+            .jsonPath("$.success")
+            .isEqualTo(false)
+            .jsonPath("$.error")
+            .value(Matchers.containsString("envCode is required"));
+    }
+
+    @Test
+    void findImpactPath_respectsRelationDirection() throws IOException {
+        importFixture();
+
+        webTestClient.post()
+            .uri("/operation-intelligence/graph/impact-path")
+            .header("x-secret-key", SECRET_KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(Map.of("envCode", "prod", "fromEntityId", "cluster-prod-rsp",
+                "toEntityId", "svc-prod-bes-business-common-sysparambs", "maxHops", 4))
+            .exchange()
+            .expectStatus()
+            .isNotFound()
+            .expectBody()
+            .jsonPath("$.success")
+            .isEqualTo(false)
+            .jsonPath("$.error")
+            .value(Matchers.containsString("Impact path not found"));
+    }
+
+    @Test
     void rootCauseCandidates_returnsAbnormalObservationEvidence() throws IOException {
         importFixture();
 

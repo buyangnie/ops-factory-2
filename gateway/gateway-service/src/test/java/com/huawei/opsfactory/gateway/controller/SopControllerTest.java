@@ -67,9 +67,7 @@ public class SopControllerTest {
     public void testListSops_empty() throws Exception {
         when(sopService.listSops()).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/sops/")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/sops/").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.sops").isArray())
             .andExpect(jsonPath("$.sops").isEmpty());
@@ -85,9 +83,7 @@ public class SopControllerTest {
         sop.put("name", "RCPA诊断");
         when(sopService.listSops()).thenReturn(List.of(sop));
 
-        mockMvc.perform(get("/gateway/sops/")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/sops/").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.sops[0].id").value("sop-1"))
             .andExpect(jsonPath("$.sops[0].name").value("RCPA诊断"));
@@ -106,9 +102,7 @@ public class SopControllerTest {
         sop.put("nodes", List.of());
         when(sopService.getSop("sop-1")).thenReturn(sop);
 
-        mockMvc.perform(get("/gateway/sops/sop-1")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/sops/sop-1").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.sop.id").value("sop-1"));
@@ -121,9 +115,7 @@ public class SopControllerTest {
     public void testGetSop_notFound() throws Exception {
         when(sopService.getSop("nonexistent")).thenThrow(new IllegalArgumentException("SOP not found: nonexistent"));
 
-        mockMvc.perform(get("/gateway/sops/nonexistent")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(get("/gateway/sops/nonexistent").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().is5xxServerError());
     }
 
@@ -139,8 +131,8 @@ public class SopControllerTest {
         created.put("name", "NewSOP");
         when(sopService.createSop(any())).thenReturn(created);
 
-        mockMvc.perform(post("/gateway/sops/")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/sops/").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"NewSOP\", \"description\": \"Test\"}"))
@@ -156,8 +148,8 @@ public class SopControllerTest {
     public void testCreateSop_error() throws Exception {
         when(sopService.createSop(any())).thenThrow(new RuntimeException("Write failed"));
 
-        mockMvc.perform(post("/gateway/sops/")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/sops/").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"SOP\"}"))
@@ -178,8 +170,8 @@ public class SopControllerTest {
         updated.put("name", "UpdatedSOP");
         when(sopService.updateSop(eq("sop-1"), any())).thenReturn(updated);
 
-        mockMvc.perform(put("/gateway/sops/sop-1")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(put("/gateway/sops/sop-1").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"UpdatedSOP\"}"))
@@ -196,12 +188,10 @@ public class SopControllerTest {
         when(sopService.updateSop(eq("nonexistent"), any()))
             .thenThrow(new IllegalArgumentException("SOP not found: nonexistent"));
 
-        mockMvc.perform(put("/gateway/sops/nonexistent")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\": \"Updated\"}"))
-            .andExpect(status().isConflict());
+        mockMvc.perform(put("/gateway/sops/nonexistent").header("x-secret-key", "test")
+            .header("x-user-id", "admin")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"name\": \"Updated\"}")).andExpect(status().isConflict());
     }
 
     // ── deleteSop ────────────────────────────────────────────────
@@ -213,9 +203,7 @@ public class SopControllerTest {
     public void testDeleteSop_success() throws Exception {
         when(sopService.deleteSop("sop-1")).thenReturn(true);
 
-        mockMvc.perform(delete("/gateway/sops/sop-1")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(delete("/gateway/sops/sop-1").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
     }
@@ -227,9 +215,7 @@ public class SopControllerTest {
     public void testDeleteSop_notFound() throws Exception {
         when(sopService.deleteSop("nonexistent")).thenReturn(false);
 
-        mockMvc.perform(delete("/gateway/sops/nonexistent")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "admin"))
+        mockMvc.perform(delete("/gateway/sops/nonexistent").header("x-secret-key", "test").header("x-user-id", "admin"))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.success").value(false));
     }
@@ -241,8 +227,8 @@ public class SopControllerTest {
     public void testCreateSop_duplicateName_returnsConflict() throws Exception {
         when(sopService.createSop(any())).thenThrow(new IllegalArgumentException("SOP name already exists: TestSOP"));
 
-        mockMvc.perform(post("/gateway/sops/")
-                .header("x-secret-key", "test")
+        mockMvc
+            .perform(post("/gateway/sops/").header("x-secret-key", "test")
                 .header("x-user-id", "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"TestSOP\"}"))
@@ -258,9 +244,7 @@ public class SopControllerTest {
      */
     @Test
     public void testListSops_unauthorized_noKey() throws Exception {
-        mockMvc.perform(get("/gateway/sops/")
-                .header("x-user-id", "admin"))
-            .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/gateway/sops/").header("x-user-id", "admin")).andExpect(status().isUnauthorized());
     }
 
     /**
@@ -270,9 +254,7 @@ public class SopControllerTest {
     public void testListSops_succeeds_forAnyUser() throws Exception {
         when(sopService.listSops()).thenReturn(List.of());
 
-        mockMvc.perform(get("/gateway/sops/")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user"))
+        mockMvc.perform(get("/gateway/sops/").header("x-secret-key", "test").header("x-user-id", "regular-user"))
             .andExpect(status().isOk());
     }
 
@@ -286,11 +268,9 @@ public class SopControllerTest {
         created.put("name", "SOP");
         when(sopService.createSop(any())).thenReturn(created);
 
-        mockMvc.perform(post("/gateway/sops/")
-                .header("x-secret-key", "test")
-                .header("x-user-id", "regular-user")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\": \"SOP\"}"))
-            .andExpect(status().isCreated());
+        mockMvc.perform(post("/gateway/sops/").header("x-secret-key", "test")
+            .header("x-user-id", "regular-user")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"name\": \"SOP\"}")).andExpect(status().isCreated());
     }
 }

@@ -4,11 +4,11 @@
 
 package com.huawei.opsfactory.gateway.controller;
 
-import org.apache.servicecomb.provider.rest.common.RestSchema;
 import com.huawei.opsfactory.gateway.service.ClusterTypeService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -62,13 +62,13 @@ public class ClusterTypeController {
     /**
      * Gets a cluster type by ID.
      *
-     * @param id      cluster type identifier
+     * @param id cluster type identifier
      * @param request current HTTP request
      * @return ResponseEntity containing the cluster type or 404
      */
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getClusterType(@PathVariable("id") String id,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         try {
             Map<String, Object> ct = clusterTypeService.getClusterType(id);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -86,13 +86,13 @@ public class ClusterTypeController {
     /**
      * Creates a new cluster type.
      *
-     * @param request     request body containing cluster type fields
+     * @param request request body containing cluster type fields
      * @param httpRequest current HTTP request
      * @return ResponseEntity with created cluster type or 400
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createClusterType(@RequestBody Map<String, Object> request,
-            HttpServletRequest httpRequest) {
+        HttpServletRequest httpRequest) {
         try {
             Map<String, Object> ct = clusterTypeService.createClusterType(request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -110,14 +110,14 @@ public class ClusterTypeController {
     /**
      * Updates a cluster type by ID.
      *
-     * @param id          cluster type identifier
-     * @param request     request body containing updated fields
+     * @param id cluster type identifier
+     * @param request request body containing updated fields
      * @param httpRequest current HTTP request
      * @return ResponseEntity with updated cluster type or 404
      */
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateClusterType(@PathVariable("id") String id,
-            @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
+        @RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
         try {
             Map<String, Object> ct = clusterTypeService.updateClusterType(id, request);
             Map<String, Object> body = new LinkedHashMap<>();
@@ -135,13 +135,13 @@ public class ClusterTypeController {
     /**
      * Deletes a cluster type by ID.
      *
-     * @param id      cluster type identifier
+     * @param id cluster type identifier
      * @param request current HTTP request
      * @return ResponseEntity with success status or 404
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteClusterType(@PathVariable("id") String id,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         boolean deleted = clusterTypeService.deleteClusterType(id);
         if (!deleted) {
             Map<String, Object> body = new LinkedHashMap<>();

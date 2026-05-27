@@ -141,8 +141,8 @@ public class HostRelationService {
         return ids;
     }
 
-    private boolean matchesRelationFilters(Map<String, Object> rel, String hostId,
-            List<String> targetHostIds, String sourceType, String sourceId) {
+    private boolean matchesRelationFilters(Map<String, Object> rel, String hostId, List<String> targetHostIds,
+        String sourceType, String sourceId) {
         if (hostId != null && !hostId.isEmpty()) {
             String relSourceId = (String) rel.get("sourceHostId");
             String relTargetId = (String) rel.get("targetHostId");
@@ -395,7 +395,7 @@ public class HostRelationService {
     }
 
     private void processRelationsForGraph(Map<String, Map<String, Object>> hostMap,
-            List<Map<String, Object>> matchedEdges) {
+        List<Map<String, Object>> matchedEdges) {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(relationsDir, "*.json")) {
             for (Path file : stream) {
                 if (!Files.isRegularFile(file)) {
@@ -442,7 +442,7 @@ public class HostRelationService {
     }
 
     private List<Map<String, Object>> buildGraphNodes(Map<String, Map<String, Object>> hostMap,
-            Map<String, Map<String, Object>> clusterMap) {
+        Map<String, Map<String, Object>> clusterMap) {
         List<Map<String, Object>> nodes = new ArrayList<>();
         for (Map<String, Object> h : hostMap.values()) {
             nodes.add(buildHostNode(h, clusterMap));
