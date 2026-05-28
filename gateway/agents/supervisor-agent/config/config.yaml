@@ -107,13 +107,13 @@ extensions:
     type: stdio
     name: control_center
     description: OpsFactory control center — provides runtime, observability, service action, log, config, and event tools
-    cmd: node
+    cmd: python3
     args:
-    - config/mcp/control-center/src/index.js
+    - config/mcp/control-center/server.py
     envs:
+      PYTHONPATH: config/mcp/control-center/.python-deps
       CONTROL_CENTER_URL: http://127.0.0.1:8094
       CONTROL_CENTER_SECRET_KEY: change-me
-      NODE_TLS_REJECT_UNAUTHORIZED: '0'
     env_keys: []
     timeout: 60
     bundled: null

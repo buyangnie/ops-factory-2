@@ -294,6 +294,12 @@ build_knowledge_cli_mcp() {
         "${SERVICE_DIR}/agents/qa-cli-agent/config/mcp/knowledge-cli/server.py"
 }
 
+build_supervisor_control_center_mcp() {
+    check_python_mcp "Supervisor-Control-Center" \
+        "${SERVICE_DIR}/agents/supervisor-agent/config/mcp/control-center" \
+        "${SERVICE_DIR}/agents/supervisor-agent/config/mcp/control-center/server.py"
+}
+
 build_local_tiny_tools_mcp() {
     build_node_mcp "Local-Tiny-Tools" \
         "${SERVICE_DIR}/agents/local-tiny-agent/config/mcp/local-tiny-tools" \
@@ -383,6 +389,7 @@ do_startup() {
     build_gateway
     build_knowledge_service_mcp
     build_knowledge_cli_mcp
+    build_supervisor_control_center_mcp
     build_local_tiny_tools_mcp
 
     local jar="${SERVICE_DIR}/gateway-service/target/gateway-service.jar"

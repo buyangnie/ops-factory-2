@@ -472,6 +472,7 @@ Gateway 启动脚本会自动构建 Java 包，也会为以下 Python MCP 子项
 
 - `gateway/agents/qa-agent/config/mcp/knowledge-service`
 - `gateway/agents/qa-cli-agent/config/mcp/knowledge-cli`
+- `gateway/agents/supervisor-agent/config/mcp/control-center`
 
 如果内网环境 Maven 下载慢或失败，配置 Maven mirror。示例 `~/.m2/settings.xml`：
 
@@ -766,6 +767,7 @@ tail -n 200 gateway/logs/gateway-stdout-stderr.log
 node -v
 npm -v
 PYTHONPATH=gateway/agents/qa-agent/config/mcp/knowledge-service/.python-deps python3 -c "import importlib.metadata as md; from mcp.server.fastmcp import FastMCP; raise SystemExit(0 if md.version('mcp') == '1.27.1' else 1)"
+PYTHONPATH=gateway/agents/supervisor-agent/config/mcp/control-center/.python-deps python3 -c "import importlib.metadata as md; from mcp.server.fastmcp import FastMCP; raise SystemExit(0 if md.version('mcp') == '1.27.1' else 1)"
 tail -n 200 web-app/logs/webapp.log
 ```
 
@@ -775,6 +777,7 @@ tail -n 200 web-app/logs/webapp.log
 cd web-app && npm install
 cd ../gateway/agents/qa-agent/config/mcp/knowledge-service && python3 -m pip install --target .python-deps -r requirements.txt
 cd ../../../../qa-cli-agent/config/mcp/knowledge-cli && python3 -m pip install --target .python-deps -r requirements.txt
+cd ../../../../supervisor-agent/config/mcp/control-center && python3 -m pip install --target .python-deps -r requirements.txt
 ```
 
 内网环境配置 npm registry 和 Python package mirror 后重试。

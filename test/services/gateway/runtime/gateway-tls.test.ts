@@ -402,9 +402,9 @@ describe('InstanceManager GATEWAY_URL injection', () => {
 })
 
 // =============================================================================
-// 11. supervisor-agent control-center MCP relies on built-in defaults
+// 11. supervisor-agent control-center MCP uses Python runtime
 // =============================================================================
-describe('supervisor-agent control-center MCP config defaults', () => {
+describe('supervisor-agent control-center MCP config', () => {
   let config: string
 
   beforeAll(async () => {
@@ -414,18 +414,17 @@ describe('supervisor-agent control-center MCP config defaults', () => {
     )
   })
 
-  it('does NOT hardcode CONTROL_CENTER_URL in envs', () => {
-    const lines = config.split('\n')
-    const envsBlock = lines.some(l => /^\s+CONTROL_CENTER_URL:\s*http/.test(l))
-    expect(envsBlock).toBe(false)
+  it('runs through python3 instead of node', () => {
+    expect(config).toContain('cmd: python3')
+    expect(config).toContain('- config/mcp/control-center/server.py')
   })
 
-  it('does NOT require CONTROL_CENTER_URL in env_keys', () => {
-    expect(config).not.toContain('- CONTROL_CENTER_URL')
+  it('sets the Python dependency path in envs', () => {
+    expect(config).toContain('PYTHONPATH: config/mcp/control-center/.python-deps')
   })
 
-  it('sets NODE_TLS_REJECT_UNAUTHORIZED in envs', () => {
-    expect(config).toContain("NODE_TLS_REJECT_UNAUTHORIZED: '0'")
+  it('does not keep Node TLS settings', () => {
+    expect(config).not.toContain('NODE_TLS_REJECT_UNAUTHORIZED')
   })
 
   it('does NOT require CONTROL_CENTER_SECRET_KEY in env_keys', () => {
@@ -434,7 +433,7 @@ describe('supervisor-agent control-center MCP config defaults', () => {
 })
 
 // =============================================================================
-// 12. control-center MCP fallback URL uses https
+// 12. control-center MCP source uses the Python SDK
 // =============================================================================
 describe('control-center MCP source', () => {
   let source: string
@@ -442,21 +441,23 @@ describe('control-center MCP source', () => {
   beforeAll(async () => {
     source = await readFile(
       join(GATEWAY_DIR, 'agents', 'supervisor-agent', 'config', 'mcp',
-        'control-center', 'src', 'handlers.js'),
+        'control-center', 'core.py'),
       'utf-8',
     )
   })
 
-  it('fallback URL uses https', () => {
-    expect(source).toMatch(/CONTROL_CENTER_URL\s*=\s*process\.env\.CONTROL_CENTER_URL\s*\|\|\s*'https:\/\//)
+  it('fallback URL matches the local control-center default', () => {
+    expect(source).toMatch(
+      /os\.environ\.get\(\s*"CONTROL_CENTER_URL",\s*"http:\/\/127\.0\.0\.1:8094",\s*\)/,
+    )
   })
 
-  it('does not contain http:// fallback', () => {
-    expect(source).not.toMatch(/CONTROL_CENTER_URL.*\|\|\s*'http:\/\//)
+  it('does not depend on the Node MCP SDK', () => {
+    expect(source).not.toContain('@modelcontextprotocol/sdk')
   })
 
   it('reads CONTROL_CENTER_URL from environment', () => {
-    expect(source).toContain('process.env.CONTROL_CENTER_URL')
+    expect(source).toMatch(/os\.environ\.get\(\s*"CONTROL_CENTER_URL"/)
   })
 })
 
