@@ -37,11 +37,11 @@ public class FlowNode {
 
     private String elementType;
 
-    private List<IpStat> ip;
+    private List<IpStat> ipList;
 
-    private List<String> ClusterTypeId;
+    private String clusterTypeId;
 
-    private List<String> clusterId;
+    private String clusterId;
 
     private Long avgCost;
 
@@ -230,56 +230,56 @@ public class FlowNode {
     }
 
     /**
-     * Gets the ip.
+     * Gets the ip list.
      *
      * @return the ip statistics list
      */
-    public List<IpStat> getIp() {
-        return ip;
+    public List<IpStat> getIpList() {
+        return ipList;
     }
 
     /**
-     * Sets the ip.
+     * Sets the ip list.
      *
-     * @param ip the ip statistics list
+     * @param ipList the ip statistics list
      */
-    public void setIp(List<IpStat> ip) {
-        this.ip = ip;
+    public void setIpList(List<IpStat> ipList) {
+        this.ipList = ipList;
     }
 
     /**
      * Gets the cluster type id.
      *
-     * @return the cluster type id list
+     * @return the cluster type id string (first value if multiple)
      */
-    public List<String> getClusterTypeId() {
-        return ClusterTypeId;
+    public String getClusterTypeId() {
+        return clusterTypeId;
     }
 
     /**
      * Sets the cluster type id.
      *
-     * @param clusterTypeId the cluster type id list
+     * @param clusterTypeId the cluster type id string
      */
-    public void setClusterTypeId(List<String> clusterTypeId) {
-        this.ClusterTypeId = clusterTypeId;
+    public void setClusterTypeId(String clusterTypeId) {
+        this.clusterTypeId = clusterTypeId;
     }
 
     /**
      * Gets the cluster id.
      *
-     * @return the cluster id list
+     * @return the cluster id string (first value if multiple)
      */
-    public List<String> getClusterId() {
+    public String getClusterId() {
         return clusterId;
     }
 
     /**
      * Sets the cluster id.
      *
-     * @param clusterId the cluster id list
+     * @param clusterId the cluster id string
      */
-    public void setClusterId(List<String> clusterId) {
+    public void setClusterId(String clusterId) {
         this.clusterId = clusterId;
     }
 

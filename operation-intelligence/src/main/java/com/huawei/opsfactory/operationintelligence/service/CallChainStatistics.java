@@ -159,12 +159,12 @@ public class CallChainStatistics {
         setNodeFieldsFromSample(node, sample);
 
         // Calculate IP statistics
-        node.setIp(calculateIpStatistics(logs));
+        node.setIpList(calculateIpStatistics(logs));
 
-        // Extract cluster type id list
+        // Extract cluster type id string (comma-separated)
         node.setClusterTypeId(extractClusterTypes(logs));
 
-        // Extract cluster id list
+        // Extract cluster id string (comma-separated)
         node.setClusterId(extractClusterIds(logs));
 
         // Calculate node-level cost statistics
@@ -248,28 +248,28 @@ public class CallChainStatistics {
      * Extract unique cluster type values from logs.
      *
      * @param logs the trace logs
-     * @return list of cluster type values
+     * @return first cluster type value
      */
-    private List<String> extractClusterTypes(List<TraceLogRecord> logs) {
+    private String extractClusterTypes(List<TraceLogRecord> logs) {
         return logs.stream()
             .map(TraceLogRecord::getCluster)
             .filter(cluster -> cluster != null && !cluster.isEmpty())
-            .distinct()
-            .collect(Collectors.toList());
+            .findFirst()
+            .orElse(null);
     }
 
     /**
      * Extract unique cluster id values from logs.
      *
      * @param logs the trace logs
-     * @return list of cluster id values
+     * @return first cluster id value
      */
-    private List<String> extractClusterIds(List<TraceLogRecord> logs) {
+    private String extractClusterIds(List<TraceLogRecord> logs) {
         return logs.stream()
             .map(TraceLogRecord::getClusterId)
             .filter(clusterId -> clusterId != null && !clusterId.isEmpty())
-            .distinct()
-            .collect(Collectors.toList());
+            .findFirst()
+            .orElse(null);
     }
 
     /**
@@ -496,14 +496,14 @@ public class CallChainStatistics {
         }
 
         // Merge IP statistics
-        merged.setIp(mergeIpStatisticsFromNodes(serviceNodes));
+        merged.setIpList(mergeIpStatisticsFromNodes(serviceNodes));
 
         // Merge cost statistics
         merged.setAvgCost(mergeCostStatsFromNodes(serviceNodes, "avg"));
         merged.setMinCost(mergeCostStatsFromNodes(serviceNodes, "min"));
         merged.setMaxCost(mergeCostStatsFromNodes(serviceNodes, "max"));
 
-        // Merge clusterId and clusterTypeId
+        // Merge clusterId and clusterTypeId (comma-separated strings)
         merged.setClusterId(mergeClusterIdsFromNodes(serviceNodes));
         merged.setClusterTypeId(mergeClusterTypeIdsFromNodes(serviceNodes));
 
@@ -618,10 +618,10 @@ public class CallChainStatistics {
         Map<String, IpMergeAccumulator> byIp = new LinkedHashMap<>();
 
         for (FlowNode node : nodes) {
-            if (node.getIp() == null) {
+            if (node.getIpList() == null) {
                 continue;
             }
-            for (IpStat ipStat : node.getIp()) {
+            for (IpStat ipStat : node.getIpList()) {
                 String ip = ipStat.getIp();
                 IpMergeAccumulator acc = byIp.computeIfAbsent(ip, k -> new IpMergeAccumulator(ip));
                 acc.totalCalls += ipStat.getCallCount();
@@ -658,9 +658,9 @@ public class CallChainStatistics {
             long totalCost = 0;
             long totalCount = 0;
             for (FlowNode node : nodes) {
-                if (node.getAvgCost() != null && node.getIp() != null) {
+                if (node.getAvgCost() != null && node.getIpList() != null) {
                     // Calculate total calls from IP statistics
-                    long nodeCalls = node.getIp().stream()
+                    long nodeCalls = node.getIpList().stream()
                         .mapToLong(IpStat::getCallCount)
                         .sum();
                     totalCost += node.getAvgCost() * nodeCalls;
@@ -692,26 +692,28 @@ public class CallChainStatistics {
      * Merge cluster IDs from multiple nodes.
      *
      * @param nodes list of flow nodes
-     * @return merged cluster ID list
+     * @return first cluster ID from all nodes
      */
-    private List<String> mergeClusterIdsFromNodes(List<FlowNode> nodes) {
+    private String mergeClusterIdsFromNodes(List<FlowNode> nodes) {
         return nodes.stream()
-            .flatMap(node -> node.getClusterId() != null ? node.getClusterId().stream() : java.util.stream.Stream.empty())
-            .distinct()
-            .collect(Collectors.toList());
+            .filter(node -> node.getClusterId() != null && !node.getClusterId().isEmpty())
+            .map(FlowNode::getClusterId)
+            .findFirst()
+            .orElse(null);
     }
 
     /**
      * Merge cluster type IDs from multiple nodes.
      *
      * @param nodes list of flow nodes
-     * @return merged cluster type ID list
+     * @return first cluster type ID from all nodes
      */
-    private List<String> mergeClusterTypeIdsFromNodes(List<FlowNode> nodes) {
+    private String mergeClusterTypeIdsFromNodes(List<FlowNode> nodes) {
         return nodes.stream()
-            .flatMap(node -> node.getClusterTypeId() != null ? node.getClusterTypeId().stream() : java.util.stream.Stream.empty())
-            .distinct()
-            .collect(Collectors.toList());
+            .filter(node -> node.getClusterTypeId() != null && !node.getClusterTypeId().isEmpty())
+            .map(FlowNode::getClusterTypeId)
+            .findFirst()
+            .orElse(null);
     }
 
     /**
