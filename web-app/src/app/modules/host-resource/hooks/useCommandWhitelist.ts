@@ -52,7 +52,7 @@ export function useCommandWhitelist() {
 
     const updateCommand = useCallback(async (pattern: string, updates: Partial<WhitelistCommand>): Promise<boolean> => {
         try {
-            const res = await fetch(`${runtime.GATEWAY_URL}/command-whitelist/${encodeURIComponent(pattern)}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/command-whitelist?pattern=${encodeURIComponent(pattern)}`, {
                 method: 'PUT',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify(updates),
@@ -69,7 +69,7 @@ export function useCommandWhitelist() {
 
     const deleteCommand = useCallback(async (pattern: string): Promise<boolean> => {
         try {
-            const res = await fetch(`${runtime.GATEWAY_URL}/command-whitelist/${encodeURIComponent(pattern)}`, {
+            const res = await fetch(`${runtime.GATEWAY_URL}/command-whitelist?pattern=${encodeURIComponent(pattern)}`, {
                 method: 'DELETE',
                 headers: gatewayHeaders(userId),
                 signal: AbortSignal.timeout(10000),

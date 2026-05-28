@@ -100,7 +100,7 @@ export function useResourceImport(deps: ImportDeps) {
             Hosts: ['ip', 'port', 'username', 'authtype', 'credential'],
             BusinessServices: ['businesstype'],
             Relations: ['sourcenode', 'destnode'],
-            SOPs: ['version', 'triggercondition', 'enabled', 'mode'],
+            SOPs: ['version', 'triggercondition', 'mode'],
             Whitelist: ['pattern'],
         }
 
@@ -423,6 +423,11 @@ export function useResourceImport(deps: ImportDeps) {
                     case 'Whitelist': {
                         if (createdPatterns.has(row.pattern)) {
                             errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Whitelist', name: row.pattern } })
+                            continue
+                        }
+                        // 只允许字母、数字、下划线、连字符、点号、斜杠和空格
+                        if (!/^[a-zA-Z0-9_\-./\s]+$/.test(row.pattern)) {
+                            errors.push({ row: i + 1, code: 'import.whitelistInvalidPattern', params: { pattern: row.pattern } })
                             continue
                         }
                         await deps.addWhitelistCommand({

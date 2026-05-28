@@ -45,7 +45,7 @@ Log Cleanup,Regularly clean up log files,v1.1,Disk usage over 80%,true,structure
     Whitelist: `pattern,description,enabled
 ls -la,List files,true
 ps aux,View processes,true
-cat /var/log/*,View logs,false`,
+cat /var/log/syslog,View logs,false`,
 }
 
 interface ImportDialogProps {
@@ -95,7 +95,7 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `${selectedType.toLowerCase()}_sample.csv`
+        a.download = selectedType === 'Whitelist' ? 'trustlist_sample.csv' : `${selectedType.toLowerCase()}_sample.csv`
         a.click()
         URL.revokeObjectURL(url)
     }
@@ -155,6 +155,8 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
                 return t('hostResource.importErrorHostUsernameRequired')
             case 'import.duplicate':
                 return t('hostResource.importErrorDuplicate', { type: err.params?.type, name: err.params?.name })
+            case 'import.whitelistInvalidPattern':
+                return t('hostResource.importErrorWhitelistInvalidPattern', { pattern: err.params?.pattern })
             case 'import.setParentFailed':
                 return t('hostResource.importErrorSetParentFailed', { message: err.params?.message })
             case 'import.importFailed':
