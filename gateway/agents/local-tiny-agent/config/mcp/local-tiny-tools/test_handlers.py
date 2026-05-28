@@ -9,7 +9,16 @@ from contextlib import contextmanager
 # Allow running from any directory
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from handlers import handle_fetch_url_content, handle_run_command
+from handlers import (
+    _normalize_args,
+    _normalize_command_args,
+    _normalize_url,
+    _reject_pathless_read,
+    _reject_unsafe_args,
+    _split_simple_command,
+    handle_fetch_url_content,
+    handle_run_command,
+)
 
 
 def _parse(raw: str) -> dict:
@@ -169,6 +178,187 @@ class TestFetchUrlContent(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(result["ok"])
         self.assertEqual(result["error"]["code"], "REDIRECT_HOST_NOT_ALLOWED")
+
+
+class TestPureHelpers(unittest.TestCase):
+
+    def test_split_simple_command_respects_quotes(self):
+        self.assertEqual(_split_simple_command('ls "foo bar" baz'), ["ls", "foo bar", "baz"])
+        self.assertEqual(_split_simple_command("rg 'a b' c"), ["rg", "a b", "c"])
+        self.assertEqual(_split_simple_command(""), [])
+        self.assertEqual(_split_simple_command("   pwd   "), ["pwd"])
+
+    def test_normalize_args_accepts_list_or_string(self):
+        self.assertEqual(_normalize_args(["a", "b"]), ["a", "b"])
+        self.assertEqual(_normalize_args("-d ."), ["-d", "."])
+        self.assertEqual(_normalize_args(None), [])
+        self.assertEqual(_normalize_args(42), [])
+
+    def test_normalize_url_scheme_handling(self):
+        self.assertEqual(_normalize_url("localhost:3000/x").geturl(), "http://localhost:3000/x")
+        self.assertEqual(_normalize_url("http://localhost/y").scheme, "http")
+        self.assertEqual(_normalize_url("https://x.example/y").scheme, "https")
+        self.assertEqual(_normalize_url("ftp://localhost/").scheme, "ftp")
+        self.assertIsNone(_normalize_url(""))
+        self.assertIsNone(_normalize_url(None))
+
+    def test_reject_unsafe_args(self):
+        self.assertIsNone(_reject_unsafe_args(["foo", "-bar"]))
+        self.assertIsNotNone(_reject_unsafe_args(["foo", "|"]))
+        self.assertIsNotNone(_reject_unsafe_args(["a", "$(b)"]))
+        self.assertIsNotNone(_reject_unsafe_args(["a\nb"]))
+        self.assertIsNotNone(_reject_unsafe_args(["a;b"]))
+        self.assertIsNotNone(_reject_unsafe_args(["a`b"]))
+
+    def test_reject_pathless_read(self):
+        self.assertIsNotNone(_reject_pathless_read("cat", []))
+        self.assertIsNotNone(_reject_pathless_read("rg", []))
+        self.assertIsNone(_reject_pathless_read("cat", ["file.txt"]))
+        self.assertIsNone(_reject_pathless_read("ls", []))
+        self.assertIsNone(_reject_pathless_read("pwd", []))
+
+    def test_normalize_command_args_rg_injects_max_count(self):
+        self.assertEqual(
+            _normalize_command_args("rg", ["foo", "."]),
+            ["--max-count", "50", "foo", "."],
+        )
+        self.assertEqual(
+            _normalize_command_args("rg", ["-m", "10", "foo"]),
+            ["-m", "10", "foo"],
+        )
+        self.assertEqual(
+            _normalize_command_args("rg", ["--max-count", "5", "foo"]),
+            ["--max-count", "5", "foo"],
+        )
+        self.assertEqual(
+            _normalize_command_args("rg", ["--max-count=5", "foo"]),
+            ["--max-count=5", "foo"],
+        )
+
+    def test_normalize_command_args_du_injects_depth(self):
+        out = _normalize_command_args("du", ["."])
+        if sys.platform == "darwin":
+            self.assertEqual(out, ["-d", "2", "."])
+        else:
+            self.assertEqual(out, ["--max-depth=2", "."])
+        # already has -d: pass-through
+        self.assertEqual(_normalize_command_args("du", ["-d", "3", "."]), ["-d", "3", "."])
+        self.assertEqual(_normalize_command_args("du", ["--max-depth=3"]), ["--max-depth=3"])
+
+    def test_normalize_command_args_top_is_forced_to_one_shot(self):
+        out = _normalize_command_args("top", ["whatever"])
+        if sys.platform == "darwin":
+            self.assertEqual(out, ["-l", "1", "-n", "20"])
+        else:
+            self.assertEqual(out, ["-b", "-n", "1"])
+
+    def test_normalize_command_args_unrelated_command_pass_through(self):
+        self.assertEqual(_normalize_command_args("ls", ["-la"]), ["-la"])
+        self.assertEqual(_normalize_command_args("pwd", []), [])
+
+
+class TestRunCommandEdgeCases(unittest.IsolatedAsyncioTestCase):
+
+    async def test_args_as_string_is_split(self):
+        result = _parse(await handle_run_command({
+            "command": "ls",
+            "args": "-d .",
+            "cwd": os.getcwd(),
+        }))
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["data"]["args"], ["-d", "."])
+
+    async def test_cat_without_args_is_rejected(self):
+        result = _parse(await handle_run_command({"command": "cat", "cwd": os.getcwd()}))
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["code"], "ARGUMENT_REQUIRED")
+
+    async def test_nonzero_exit_reports_exit_nonzero(self):
+        result = _parse(await handle_run_command({
+            "command": "ls",
+            "args": ["/this/path/should/not/exist/xyz"],
+            "cwd": os.getcwd(),
+        }))
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["code"], "COMMAND_EXIT_NONZERO")
+        self.assertNotEqual(result["data"]["exit_code"], 0)
+
+    async def test_output_truncation(self):
+        result = _parse(await handle_run_command({
+            "command": "ls",
+            "args": ["-la", "/usr/bin"],
+            "cwd": os.getcwd(),
+            "max_output_bytes": 1024,
+        }))
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["truncated"])
+        self.assertGreater(len(result["warnings"]), 0)
+
+    async def test_rg_injects_max_count_through_handler(self):
+        # Create a file with many matches inside a tmp dir under cwd
+        tmp_dir = os.path.join(os.getcwd(), ".test-rg-tmp")
+        os.makedirs(tmp_dir, exist_ok=True)
+        f = os.path.join(tmp_dir, "matches.txt")
+        try:
+            with open(f, "w") as fh:
+                fh.write("\n".join(["hit"] * 200))
+            result = _parse(await handle_run_command({
+                "command": "rg",
+                "args": ["hit", tmp_dir],
+                "cwd": os.getcwd(),
+            }))
+            self.assertEqual(result["data"]["args"][:2], ["--max-count", "50"])
+        finally:
+            os.remove(f)
+            os.rmdir(tmp_dir)
+
+
+class TestFetchEdgeCases(unittest.IsolatedAsyncioTestCase):
+
+    async def test_rejects_ftp_scheme(self):
+        result = _parse(await handle_fetch_url_content({"url": "ftp://localhost/foo"}))
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["code"], "URL_SCHEME_NOT_ALLOWED")
+
+    async def test_http_error_status(self):
+        def handler(req):
+            body = b"not here"
+            req.send_response(404)
+            req.send_header("Content-Type", "text/plain")
+            req.send_header("Content-Length", str(len(body)))
+            req.end_headers()
+            req.wfile.write(body)
+
+        with _http_server(handler) as url:
+            result = _parse(await handle_fetch_url_content({"url": url}))
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["code"], "HTTP_ERROR")
+        self.assertEqual(result["data"]["status"], 404)
+
+    async def test_non_readable_content_type(self):
+        def handler(req):
+            body = b"\x89PNG\r\n\x1a\n"  # PNG header
+            req.send_response(200)
+            req.send_header("Content-Type", "image/png")
+            req.send_header("Content-Length", str(len(body)))
+            req.end_headers()
+            req.wfile.write(body)
+
+        with _http_server(handler) as url:
+            result = _parse(await handle_fetch_url_content({"url": url}))
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["code"], "CONTENT_TYPE_NOT_READABLE")
+
+    async def test_fetch_failed_on_unreachable(self):
+        # Bind to an ephemeral port, then close so nobody's listening
+        import socket
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+        s.close()
+        result = _parse(await handle_fetch_url_content({"url": f"http://127.0.0.1:{port}/"}))
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["code"], "FETCH_FAILED")
 
 
 if __name__ == "__main__":
