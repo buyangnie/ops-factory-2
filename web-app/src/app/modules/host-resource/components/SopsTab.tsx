@@ -576,6 +576,7 @@ function SopFormModal({
                             placeholder={t('remoteDiagnosis.sops.stepsDescriptionPlaceholder')}
                             value={stepsDescription}
                             onChange={e => setStepsDescription(e.target.value)}
+                            maxLength={1000}
                         />
                     </div>
                 </section>

@@ -12,7 +12,6 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.servicecomb.provider.rest.common.RestSchema;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -87,8 +86,8 @@ public class SessionTraceController {
      * @return ResponseEntity containing the trace archive file
      */
     @GetMapping("/session-traces/{jobId}/download")
-    public ResponseEntity<Resource> downloadTrace(@PathVariable("jobId") String jobId, HttpServletRequest request)
-        throws IOException {
+    public ResponseEntity<FileSystemResource> downloadTrace(@PathVariable("jobId") String jobId,
+        HttpServletRequest request) throws IOException {
         Path archive = traceService.getArchive(jobId);
         if (!Files.isRegularFile(archive)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "trace archive not found");
@@ -101,7 +100,7 @@ public class SessionTraceController {
         String contentDisposition =
             "attachment; filename=\"" + filename.replace("\"", "") + "\"; filename*=UTF-8''" + encodedFilename;
 
-        Resource resource = new FileSystemResource(archive);
+        FileSystemResource resource = new FileSystemResource(archive);
         traceService.deleteJob(jobId);
 
         return ResponseEntity.ok()
