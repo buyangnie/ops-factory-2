@@ -256,7 +256,7 @@ describe('MessageList tool error rendering', () => {
             {
                 id: 'assistant-think-tag',
                 role: 'assistant',
-                content: [{ type: 'text', text: '分析中' }],
+                content: [{ type: 'text', text: '<think>分析中</think>结论正文' }],
             },
         ]
 
@@ -272,7 +272,7 @@ describe('MessageList tool error rendering', () => {
             {
                 id: 'assistant-closed-think-tag',
                 role: 'assistant',
-                content: [{ type: 'text', text: '分析中' }],
+                content: [{ type: 'text', text: '<think>分析中</think>' }],
             },
         ]
 

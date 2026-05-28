@@ -25,6 +25,8 @@
         ],
         "testConnectionEntityTypes": ["Host", "WorkerNode", "K8sInstance"]
     },
+    "finopsServiceUrl": "",
+    "finopsSecretKey": "",
     "logging": {
         "level": "info",
         "consoleEnabled": true,

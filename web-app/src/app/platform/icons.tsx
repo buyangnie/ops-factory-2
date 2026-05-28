@@ -109,6 +109,17 @@ function OperationIntelligenceIcon() {
     )
 }
 
+function FinOpsIcon() {
+    return (
+        <IconFrame strokeWidth={1.85}>
+            <path d="M12 3.9l6.6 3.8v7.6L12 19.1l-6.6-3.8V7.7z" />
+            <circle cx="12" cy="11.5" r="2.15" />
+            <path d="M7.65 15.55l2.55-2.05 2.15 1.55 3.95-4.2" />
+            <path d="M14.25 10.85h2.05v2.05" />
+        </IconFrame>
+    )
+}
+
 function WorkflowIcon() {
     return (
         <IconFrame strokeWidth={1.85}>
@@ -221,6 +232,7 @@ const ICONS: Record<IconKey, () => ReactNode> = {
     diagnosis: WorkflowIcon,
     businessIntelligence: BusinessIntelligenceIcon,
     operationIntelligence: OperationIntelligenceIcon,
+    finops: FinOpsIcon,
     agents: AgentsIcon,
     skillMarket: SkillMarketIcon,
     knowledge: KnowledgeIcon,

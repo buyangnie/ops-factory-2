@@ -1,0 +1,5 @@
+target/
+logs/
+data/
+config.yaml
+!src/main/resources/application.yaml

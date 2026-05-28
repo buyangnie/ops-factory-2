@@ -12,8 +12,8 @@ export interface UseCitationCardReturn {
     showCard: boolean
     cardPosition: 'above' | 'below'
     cardStyle: CardStyle | null
-    markRef: React.RefObject<HTMLSpanElement | null>
-    cardRef: React.RefObject<HTMLDivElement | null>
+    markRef: React.RefObject<HTMLSpanElement>
+    cardRef: React.RefObject<HTMLDivElement>
     show: () => void
     hide: () => void
     renderCard: (children: ReactNode) => ReactNode
@@ -23,8 +23,8 @@ export function useCitationCard(dependency: unknown): UseCitationCardReturn {
     const [showCard, setShowCard] = useState(false)
     const [cardPosition, setCardPosition] = useState<'above' | 'below'>('above')
     const [cardStyle, setCardStyle] = useState<CardStyle | null>(null)
-    const markRef = useRef<HTMLSpanElement>(null)
-    const cardRef = useRef<HTMLDivElement>(null)
+    const markRef = useRef<HTMLSpanElement>(null!)
+    const cardRef = useRef<HTMLDivElement>(null!)
     const showTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
     const hideTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 

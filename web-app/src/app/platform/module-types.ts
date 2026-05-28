@@ -14,6 +14,7 @@ export type IconKey =
     | 'diagnosis'
     | 'businessIntelligence'
     | 'operationIntelligence'
+    | 'finops'
     | 'agents'
     | 'skillMarket'
     | 'knowledge'

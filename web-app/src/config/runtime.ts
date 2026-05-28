@@ -33,6 +33,8 @@ interface RuntimeConfig {
         resourceTreeHierarchyRules?: KnowledgeGraphResourceTreeHierarchyRule[]
         testConnectionEntityTypes?: KnowledgeGraphTestConnectionEntityTypes
     }
+    finopsServiceUrl?: string
+    finopsSecretKey?: string
     logging?: {
         level?: WebappLoggingRuntimeConfig['level']
         consoleEnabled?: boolean
@@ -60,6 +62,7 @@ const SERVICE_ENDPOINTS: Record<string, ServiceEndpoint> = {
     businessIntelligence:     { pathPrefix: '/business-intelligence',   fallbackPort: 8093 },
     skillMarket:              { pathPrefix: '/skill-market',            fallbackPort: 8095 },
     operationIntelligence:    { pathPrefix: '/operation-intelligence',  fallbackPort: 8096 },
+    finops:                   { pathPrefix: '/finops',                  fallbackPort: 8097 },
 }
 
 function resolveServiceUrl(raw: string | undefined, endpoint: ServiceEndpoint): string {
@@ -116,6 +119,8 @@ export const runtime = {
         DEFAULT_KNOWLEDGE_GRAPH_RESOURCE_TREE_HIERARCHY_RULES,
     OPERATION_INTELLIGENCE_KNOWLEDGE_GRAPH_TEST_CONNECTION_ENTITY_TYPES:
         DEFAULT_KNOWLEDGE_GRAPH_TEST_CONNECTION_ENTITY_TYPES,
+    FINOPS_URL: resolveServiceUrl(undefined, SERVICE_ENDPOINTS.finops),
+    FINOPS_SECRET_KEY: '',
 }
 
 function setRuntimeConfig(config: RuntimeConfig): void {
@@ -140,6 +145,8 @@ function setRuntimeConfig(config: RuntimeConfig): void {
         normalizeResourceTreeHierarchyRules(config.operationIntelligenceKnowledgeGraph?.resourceTreeHierarchyRules)
     runtime.OPERATION_INTELLIGENCE_KNOWLEDGE_GRAPH_TEST_CONNECTION_ENTITY_TYPES =
         normalizeTestConnectionEntityTypes(config.operationIntelligenceKnowledgeGraph?.testConnectionEntityTypes)
+    runtime.FINOPS_URL = resolveServiceUrl(config.finopsServiceUrl, SERVICE_ENDPOINTS.finops)
+    runtime.FINOPS_SECRET_KEY = config.finopsSecretKey ?? ''
     configureWebappLogging(config.logging)
 }
 
