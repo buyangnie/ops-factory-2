@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -258,19 +259,22 @@ public class KnowledgeGraphService {
         ontologyId = resolveOntologyId(ontologyId);
         requireSafeId(envCode, "envCode");
         requireText(entityId, "entityId");
-        GraphSnapshot snapshot = getRequiredSnapshot(ontologyId, envCode);
-        GraphEntity existing = getEntity(ontologyId, envCode, entityId);
-        GraphEntity updated = mergeEntity(existing, request, entityId);
-        GraphSnapshot nextSnapshot = copySnapshot(snapshot);
-        nextSnapshot.setEntities(
-            snapshot.getEntities().stream().map(entity -> entityId.equals(entity.getId()) ? updated : entity).toList());
-        nextSnapshot.setSnapshotId(null);
-        nextSnapshot.setGeneratedAt(null);
-        prepareDefaults(nextSnapshot);
-        schemaRegistry.validate(nextSnapshot);
-        snapshotStore.save(nextSnapshot);
-        graphStore.loadSnapshot(nextSnapshot);
-        return updated;
+        String lockKey = ontologyId + ":" + envCode;
+        ReentrantLock lock = ontologyLocks.computeIfAbsent(lockKey, key -> new ReentrantLock());
+        lock.lock();
+        try {
+            GraphSnapshot snapshot = getRequiredSnapshot(ontologyId, envCode);
+            GraphEntity existing = getEntity(ontologyId, envCode, entityId);
+            GraphEntity updated = mergeEntity(existing, request, entityId);
+            persistSnapshotModification(snapshot, next ->
+                next.setEntities(snapshot.getEntities().stream()
+                    .map(e -> entityId.equals(e.getId()) ? updated : e)
+                    .toList()));
+            return updated;
+        } finally {
+            lock.unlock();
+            ontologyLocks.remove(lockKey);
+        }
     }
 
     /**
@@ -286,29 +290,31 @@ public class KnowledgeGraphService {
         ontologyId = resolveOntologyId(ontologyId);
         requireSafeId(envCode, "envCode");
         requireText(entityId, "entityId");
-        GraphSnapshot snapshot = getRequiredSnapshot(ontologyId, envCode);
-        getEntity(ontologyId, envCode, entityId);
-        GraphSnapshot nextSnapshot = copySnapshot(snapshot);
-        nextSnapshot
-            .setEntities(snapshot.getEntities().stream().filter(entity -> !entityId.equals(entity.getId())).toList());
-        nextSnapshot.setRelations(snapshot.getRelations()
-            .stream()
-            .filter(relation -> !entityId.equals(relation.getFrom()) && !entityId.equals(relation.getTo()))
-            .toList());
-        nextSnapshot.setObservations(snapshot.getObservations()
-            .stream()
-            .filter(observation -> !entityId.equals(observation.getEntityId()))
-            .toList());
-        nextSnapshot.setSnapshotId(null);
-        nextSnapshot.setGeneratedAt(null);
-        prepareDefaults(nextSnapshot);
-        schemaRegistry.validate(nextSnapshot);
-        snapshotStore.save(nextSnapshot);
-        graphStore.loadSnapshot(nextSnapshot);
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("entityId", entityId);
-        result.put("deleted", true);
-        return result;
+        String lockKey = ontologyId + ":" + envCode;
+        ReentrantLock lock = ontologyLocks.computeIfAbsent(lockKey, key -> new ReentrantLock());
+        lock.lock();
+        try {
+            GraphSnapshot snapshot = getRequiredSnapshot(ontologyId, envCode);
+            getEntity(ontologyId, envCode, entityId);
+            persistSnapshotModification(snapshot, next -> {
+                next.setEntities(snapshot.getEntities().stream()
+                    .filter(e -> !entityId.equals(e.getId()))
+                    .toList());
+                next.setRelations(snapshot.getRelations().stream()
+                    .filter(r -> !entityId.equals(r.getFrom()) && !entityId.equals(r.getTo()))
+                    .toList());
+                next.setObservations(snapshot.getObservations().stream()
+                    .filter(o -> !entityId.equals(o.getEntityId()))
+                    .toList());
+            });
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("entityId", entityId);
+            result.put("deleted", true);
+            return result;
+        } finally {
+            lock.unlock();
+            ontologyLocks.remove(lockKey);
+        }
     }
 
     /**
@@ -574,6 +580,17 @@ public class KnowledgeGraphService {
         return copy;
     }
 
+    private void persistSnapshotModification(GraphSnapshot snapshot, Consumer<GraphSnapshot> modifier) {
+        GraphSnapshot nextSnapshot = copySnapshot(snapshot);
+        modifier.accept(nextSnapshot);
+        nextSnapshot.setSnapshotId(null);
+        nextSnapshot.setGeneratedAt(null);
+        prepareDefaults(nextSnapshot);
+        schemaRegistry.validate(nextSnapshot);
+        snapshotStore.save(nextSnapshot);
+        graphStore.loadSnapshot(nextSnapshot);
+    }
+
     private GraphEntity mergeEntity(GraphEntity existing, GraphEntity request, String entityId) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "entity is required");
@@ -598,7 +615,10 @@ public class KnowledgeGraphService {
     }
 
     private String normalizeOptionalText(String value, String fallback) {
-        return value == null ? fallback : value.trim().isEmpty() ? null : value.trim();
+        if (value == null) {
+            return fallback;
+        }
+        return value.isBlank() ? null : value.trim();
     }
 
     private Map<String, Object> toResourceGroup(String type, List<GraphEntity> entities) {
