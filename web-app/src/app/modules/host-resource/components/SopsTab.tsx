@@ -536,6 +536,7 @@ function SopFormModal({
                         type="text"
                         value={triggerCondition}
                         onChange={e => setTriggerCondition(e.target.value)}
+                        maxLength={500}
                     />
                 </div>
             </section>
