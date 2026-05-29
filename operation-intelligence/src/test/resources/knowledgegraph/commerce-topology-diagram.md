@@ -177,23 +177,23 @@ graph TB
 
 ## Summary Statistics
 
-| Category | Count | Total PODs |
-|----------|-------|-----------|
-| Middleware | 10 | 10 |
-| Platform Services | 6 | 6 |
-| Application Services | 15 | 17 |
-| Network Gateway | 7 | 4 PODs + 3 Containers |
-| **Total** | **38 services** | **40 PODs + 3 Containers** |
+| Category             | Count           | Total PODs                 |
+|----------------------|-----------------|----------------------------|
+| Middleware           | 10              | 10                         |
+| Platform Services    | 6               | 6                          |
+| Application Services | 15              | 17                         |
+| Network Gateway      | 7               | 4 PODs + 3 Containers      |
+| **Total**            | **38 services** | **40 PODs + 3 Containers** |
 
 ## Worker Node Distribution
 
-| Worker Node | POD Count | Services |
-|-------------|-----------|----------|
-| 192.171.233.150 | 8 | Redis master/sentinel, DDS FE, VSearch, BDI, API Access In, RunningMaster, LoyaltyCalEngine |
-| 192.171.91.23 | 8 | Redis slave, DBAgent, Lodas Portal/RunningWorker, CLE, RetailPortal, MgmtPortal, OrderScheduler |
-| 192.171.247.220 | 6 | ZooKeeper, jetMQ, BHF, BatchExecutor, OrderScheduler, SearchCenter |
-| 192.171.150.80 | 5 | Lodas Feature, BHB, SearchCenter, RetailPortal, ProExeandTag |
-| 192.171.172.46 | 5 | DDS Backend, Lodas Training, CAS, API Access Out, BHB |
-| 192.171.112.129 | 5 | LSS, BHF, MarketingMgmtExec, MgmtPortal, API Portal |
-| 192.171.182.181 | 2 | EMGW, API Governance |
-| 192.171.234.38 | 1 | FILESERVER |
+| Worker Node     | POD Count | Services                                                                                        |
+|-----------------|-----------|-------------------------------------------------------------------------------------------------|
+| 192.171.233.150 | 8         | Redis master/sentinel, DDS FE, VSearch, BDI, API Access In, RunningMaster, LoyaltyCalEngine     |
+| 192.171.91.23   | 8         | Redis slave, DBAgent, Lodas Portal/RunningWorker, CLE, RetailPortal, MgmtPortal, OrderScheduler |
+| 192.171.247.220 | 6         | ZooKeeper, jetMQ, BHF, BatchExecutor, OrderScheduler, SearchCenter                              |
+| 192.171.150.80  | 5         | Lodas Feature, BHB, SearchCenter, RetailPortal, ProExeandTag                                    |
+| 192.171.172.46  | 5         | DDS Backend, Lodas Training, CAS, API Access Out, BHB                                           |
+| 192.171.112.129 | 5         | LSS, BHF, MarketingMgmtExec, MgmtPortal, API Portal                                             |
+| 192.171.182.181 | 2         | EMGW, API Governance                                                                            |
+| 192.171.234.38  | 1         | FILESERVER                                                                                      |

@@ -14,7 +14,10 @@
     "menuId": "604015020",
     "menuName": "B2B业务",
     "totalFlowCount": 50,
-    "sampleFlowIds": ["flow_001", "flow_004"]
+    "sampleFlowIds": [
+      "flow_001",
+      "flow_004"
+    ]
   },
   "entities": [
     {
@@ -40,32 +43,86 @@
               {
                 "seqNo": "1",
                 "url": "/common/v1/sysparam/querysysparams",
-                "cluster": ["RSP"],
+                "cluster": [
+                  "RSP"
+                ],
                 "avgCostMs": 3,
                 "minCostMs": 2,
                 "maxCostMs": 5,
                 "ipStats": [
-                  {"ip": "10.152.4.94", "successCount": 2, "callCount": 2, "successRate": 1.0},
-                  {"ip": "10.152.4.95", "successCount": 5, "callCount": 5, "successRate": 1.0},
-                  {"ip": "10.59.32.23", "successCount": 4, "callCount": 4, "successRate": 1.0},
-                  {"ip": "10.59.32.24", "successCount": 1, "callCount": 1, "successRate": 1.0},
-                  {"ip": "10.59.32.26", "successCount": 4, "callCount": 4, "successRate": 1.0}
+                  {
+                    "ip": "10.152.4.94",
+                    "successCount": 2,
+                    "callCount": 2,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.152.4.95",
+                    "successCount": 5,
+                    "callCount": 5,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.59.32.23",
+                    "successCount": 4,
+                    "callCount": 4,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.59.32.24",
+                    "successCount": 1,
+                    "callCount": 1,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.59.32.26",
+                    "successCount": 4,
+                    "callCount": 4,
+                    "successRate": 1.0
+                  }
                 ]
               },
               {
                 "seqNo": "1.1",
                 "serviceName": "bes.business.common.SysParamBS",
                 "operationName": "querySysParams",
-                "cluster": ["RSP"],
+                "cluster": [
+                  "RSP"
+                ],
                 "avgCostMs": 0,
                 "minCostMs": 0,
                 "maxCostMs": 1,
                 "ipStats": [
-                  {"ip": "10.152.4.94", "successCount": 2, "callCount": 2, "successRate": 1.0},
-                  {"ip": "10.152.4.95", "successCount": 5, "callCount": 5, "successRate": 1.0},
-                  {"ip": "10.59.32.23", "successCount": 4, "callCount": 4, "successRate": 1.0},
-                  {"ip": "10.59.32.24", "successCount": 1, "callCount": 1, "successRate": 1.0},
-                  {"ip": "10.59.32.26", "successCount": 4, "callCount": 4, "successRate": 1.0}
+                  {
+                    "ip": "10.152.4.94",
+                    "successCount": 2,
+                    "callCount": 2,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.152.4.95",
+                    "successCount": 5,
+                    "callCount": 5,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.59.32.23",
+                    "successCount": 4,
+                    "callCount": 4,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.59.32.24",
+                    "successCount": 1,
+                    "callCount": 1,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.59.32.26",
+                    "successCount": 4,
+                    "callCount": 4,
+                    "successRate": 1.0
+                  }
                 ]
               }
             ]
@@ -83,39 +140,75 @@
               {
                 "seqNo": "1",
                 "url": "/common/v1/datadict/querydatadicts",
-                "cluster": ["RSP"],
+                "cluster": [
+                  "RSP"
+                ],
                 "avgCostMs": 4,
                 "minCostMs": 3,
                 "maxCostMs": 4,
                 "ipStats": [
-                  {"ip": "10.152.4.95", "successCount": 2, "callCount": 2, "successRate": 1.0},
-                  {"ip": "10.59.32.23", "successCount": 2, "callCount": 2, "successRate": 1.0}
+                  {
+                    "ip": "10.152.4.95",
+                    "successCount": 2,
+                    "callCount": 2,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.59.32.23",
+                    "successCount": 2,
+                    "callCount": 2,
+                    "successRate": 1.0
+                  }
                 ]
               },
               {
                 "seqNo": "1.1",
                 "serviceName": "bes.business.common.DataDictBS",
                 "operationName": "queryDataDicts",
-                "cluster": ["RSP"],
+                "cluster": [
+                  "RSP"
+                ],
                 "avgCostMs": 2,
                 "minCostMs": 2,
                 "maxCostMs": 3,
                 "ipStats": [
-                  {"ip": "10.152.4.95", "successCount": 2, "callCount": 2, "successRate": 1.0},
-                  {"ip": "10.59.32.23", "successCount": 2, "callCount": 2, "successRate": 1.0}
+                  {
+                    "ip": "10.152.4.95",
+                    "successCount": 2,
+                    "callCount": 2,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.59.32.23",
+                    "successCount": 2,
+                    "callCount": 2,
+                    "successRate": 1.0
+                  }
                 ]
               },
               {
                 "seqNo": "1.1.2",
                 "serviceName": "bes.common.base.datadict.DataDictQueryService",
                 "operationName": "queryDataDict",
-                "cluster": ["RSP"],
+                "cluster": [
+                  "RSP"
+                ],
                 "avgCostMs": 0,
                 "minCostMs": 0,
                 "maxCostMs": 0,
                 "ipStats": [
-                  {"ip": "10.152.4.95", "successCount": 2, "callCount": 2, "successRate": 1.0},
-                  {"ip": "10.59.32.23", "successCount": 2, "callCount": 2, "successRate": 1.0}
+                  {
+                    "ip": "10.152.4.95",
+                    "successCount": 2,
+                    "callCount": 2,
+                    "successRate": 1.0
+                  },
+                  {
+                    "ip": "10.59.32.23",
+                    "successCount": 2,
+                    "callCount": 2,
+                    "successRate": 1.0
+                  }
                 ]
               }
             ]
@@ -146,7 +239,13 @@
             "avgCostMs": 0,
             "minCostMs": 0,
             "maxCostMs": 1,
-            "ips": ["10.152.4.94", "10.152.4.95", "10.59.32.23", "10.59.32.24", "10.59.32.26"]
+            "ips": [
+              "10.152.4.94",
+              "10.152.4.95",
+              "10.59.32.23",
+              "10.59.32.24",
+              "10.59.32.26"
+            ]
           }
         ]
       },
@@ -174,7 +273,10 @@
             "avgCostMs": 2,
             "minCostMs": 2,
             "maxCostMs": 3,
-            "ips": ["10.152.4.95", "10.59.32.23"]
+            "ips": [
+              "10.152.4.95",
+              "10.59.32.23"
+            ]
           }
         ]
       },
@@ -206,8 +308,12 @@
       "from": "svc-prod-bes-business-common-sysparambs",
       "to": "cluster-prod-rsp",
       "properties": {
-        "clusters": ["RSP"],
-        "flowIds": ["flow_001"]
+        "clusters": [
+          "RSP"
+        ],
+        "flowIds": [
+          "flow_001"
+        ]
       },
       "source": {
         "system": "service-call-mining",
@@ -220,8 +326,12 @@
       "from": "svc-prod-bes-business-common-datadictbs",
       "to": "cluster-prod-rsp",
       "properties": {
-        "clusters": ["RSP"],
-        "flowIds": ["flow_004"]
+        "clusters": [
+          "RSP"
+        ],
+        "flowIds": [
+          "flow_004"
+        ]
       },
       "source": {
         "system": "service-call-mining",

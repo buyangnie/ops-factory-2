@@ -383,6 +383,40 @@ public class KnowledgeGraphService {
     }
 
     /**
+     * Gets the full snapshot for one environment.
+     *
+     * @param ontologyId the ontologyId
+     * @param envCode the envCode
+     * @return the snapshot
+     */
+    public GraphSnapshot getSnapshot(String ontologyId, String envCode) {
+        return getRequiredSnapshot(ontologyId, envCode);
+    }
+
+    /**
+     * Queries a multi-seed subgraph with relation type filtering.
+     *
+     * @param ontologyId the ontologyId
+     * @param envCode the envCode
+     * @param entityIds the seed entity ids
+     * @param maxHops the max hops
+     * @param relationTypes the allowed relation types
+     * @return the snapshot
+     */
+    public GraphSnapshot querySubgraph(String ontologyId, String envCode, Set<String> entityIds, int maxHops,
+        Set<String> relationTypes) {
+        ensureEnabled();
+        ontologyId = resolveOntologyId(ontologyId);
+        requireSafeId(envCode, "envCode");
+        if (entityIds == null || entityIds.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "entityIds is required");
+        }
+        validateHops("maxHops", maxHops);
+        return graphStore.querySubgraph(ontologyId, envCode, entityIds, maxHops, relationTypes)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entities not found"));
+    }
+
+    /**
      * Gets entities grouped as a lightweight resource tree.
      *
      * @param envCode the envCode

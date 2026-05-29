@@ -46,15 +46,43 @@ operation-intelligence:
     data-dir: "knowledge-graph"                  # relative to operation-intelligence.data-root
     max-hops: 4                                  # maximum supported subgraph query hops
     snapshot-retention: 3                        # keep the latest N successful snapshots per environment
+    call-chain-subgraph-dir: "call-chain-subgraphs" # short-term generated call chain subgraph storage
+    call-chain-subgraph-retention: 50            # keep the latest N generated call chain subgraphs
+    call-chain-subgraph-ttl-minutes: 120         # expire generated call chain subgraphs after N minutes
+    resource-subgraph-enabled: true              # enrich call chain subgraphs with vertical resource topology
+    resource-subgraph-max-hops: 4                # max hops when expanding resource-layer topology
+    resource-subgraph-relation-types:            # allowed vertical relation types
+      - "contains"
+      - "contains_service"
+      - "runs_on"
+      - "belongs_to_cluster"
+      - "manages"
+    resource-subgraph-entity-types:              # allowed resource entity types
+      - "MicroService"
+      - "Service"
+      - "ServiceCluster"
+      - "Cluster"
+      - "ApplicationServiceCluster"
+      - "MiddlewareCluster"
+      - "Pod"
+      - "K8sInstance"
+      - "K8sCluster"
+      - "WorkerNode"
+      - "ComputeNode"
+      - "Host"
+      - "Container"
 
   call-chain:
     enabled: true
+    query-mode: "service"               # default call chain query mode
     query-size: 100
     query-limit: 10000
     request-timeout-ms: 60000
     max-time-range-ms: 1800000            # 30 minutes (max query time range)
     rotation-interval-ms: 3600000         # 1 hour (data file rotation)
     normalize-data-retention-days: 90     # data retention days
+    mock-query-enabled: false             # local debug: return call chain data from a JSON file instead of DV
+    mock-query-file: ""                   # absolute path or path relative to config.yaml, supports root.flows/result.flows
     time-split:
       initial-minutes: 15
       degrade-minutes: [10, 5]

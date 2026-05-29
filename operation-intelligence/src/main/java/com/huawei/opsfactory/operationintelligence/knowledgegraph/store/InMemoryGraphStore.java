@@ -270,6 +270,64 @@ public class InMemoryGraphStore {
     }
 
     /**
+     * Queries a multi-seed subgraph with optional relation type filtering.
+     *
+     * @param ontologyId the ontologyId
+     * @param envCode the envCode
+     * @param entityIds the start entity ids
+     * @param maxHops the max hops
+     * @param relationTypes the allowed relation types, empty means no filtering
+     * @return the result
+     */
+    public Optional<GraphSnapshot> querySubgraph(String ontologyId, String envCode, Set<String> entityIds, int maxHops,
+        Set<String> relationTypes) {
+        if (entityIds == null || entityIds.isEmpty()) {
+            return Optional.empty();
+        }
+        EnvGraph envGraph = graphs.get(graphKey(ontologyId, envCode));
+        if (envGraph == null) {
+            return Optional.empty();
+        }
+        envGraph.lock.readLock().lock();
+        try {
+            Set<String> existingSeeds = entityIds.stream()
+                .filter(envGraph.entities::containsKey)
+                .collect(LinkedHashSet::new, Set::add, Set::addAll);
+            if (existingSeeds.isEmpty()) {
+                return Optional.empty();
+            }
+            Set<String> selectedEntities = collectEntityIds(envGraph, existingSeeds, maxHops, relationTypes);
+            Set<String> selectedRelations = new LinkedHashSet<>();
+            for (GraphRelation relation : envGraph.relations.values()) {
+                if (!matchesRelationType(relation, relationTypes)) {
+                    continue;
+                }
+                if (selectedEntities.contains(relation.getFrom()) && selectedEntities.contains(relation.getTo())) {
+                    selectedRelations.add(relation.getId());
+                }
+            }
+            GraphSnapshot result = new GraphSnapshot();
+            result.setOntologyId(ontologyId);
+            result.setEnvCode(envCode);
+            result.setSnapshotId(envGraph.snapshotId);
+            result.setSchemaVersion(envGraph.schemaVersion);
+            result.setGeneratedAt(envGraph.generatedAt);
+            result.setSourceSystem(envGraph.sourceSystem);
+            result.setImportMode("UPSERT");
+            result.setMetadata(new LinkedHashMap<>(envGraph.metadata));
+            result.setEntities(selectedEntities.stream().map(id -> envGraph.entities.get(id)).toList());
+            result.setRelations(selectedRelations.stream().map(id -> envGraph.relations.get(id)).toList());
+            result.setObservations(envGraph.observations.values()
+                .stream()
+                .filter(observation -> selectedEntities.contains(observation.getEntityId()))
+                .toList());
+            return Optional.of(result);
+        } finally {
+            envGraph.lock.readLock().unlock();
+        }
+    }
+
+    /**
      * Finds the shortest relation path between two entities.
      *
      * @param envCode the envCode
@@ -334,6 +392,36 @@ public class InMemoryGraphStore {
         return visited;
     }
 
+    private Set<String> collectEntityIds(EnvGraph envGraph, Set<String> startIds, int maxHops, Set<String> relationTypes) {
+        Set<String> visited = new LinkedHashSet<>();
+        Map<String, Integer> distance = new HashMap<>();
+        Queue<String> queue = new ArrayDeque<>();
+        for (String startId : startIds) {
+            visited.add(startId);
+            distance.put(startId, 0);
+            queue.add(startId);
+        }
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            int currentDistance = distance.get(current);
+            if (currentDistance >= maxHops) {
+                continue;
+            }
+            for (String relationId : envGraph.entityRelations.getOrDefault(current, Set.of())) {
+                GraphRelation relation = envGraph.relations.get(relationId);
+                if (relation == null || !matchesRelationType(relation, relationTypes)) {
+                    continue;
+                }
+                String next = relation.getFrom().equals(current) ? relation.getTo() : relation.getFrom();
+                if (visited.add(next)) {
+                    distance.put(next, currentDistance + 1);
+                    queue.add(next);
+                }
+            }
+        }
+        return visited;
+    }
+
     private SubgraphSelection collectDirectionalSubgraph(EnvGraph envGraph, String startId, int upstreamHops,
         int downstreamHops) {
         Set<String> selectedEntities = new LinkedHashSet<>();
@@ -384,6 +472,10 @@ public class InMemoryGraphStore {
             return relation.getFrom().equals(current);
         }
         return relation.getTo().equals(current);
+    }
+
+    private boolean matchesRelationType(GraphRelation relation, Set<String> relationTypes) {
+        return relationTypes == null || relationTypes.isEmpty() || relationTypes.contains(relation.getType());
     }
 
     private String graphKey(String ontologyId, String envCode) {

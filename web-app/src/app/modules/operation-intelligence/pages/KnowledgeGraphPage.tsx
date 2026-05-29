@@ -24,9 +24,13 @@ import {
     type KnowledgeGraphResourceTreeHierarchyRule,
 } from '../../../../config/runtime'
 import {
+    generateCallChainSubgraph,
+    getCallChainSubgraph,
     deleteGraphEntity,
     exportGraph,
     findHostByIp,
+    getEnvironments,
+    listCallChainSubgraphs,
     getResourceTree,
     deleteEntities,
     deleteOntology,
@@ -37,6 +41,9 @@ import {
     queryObservations,
     querySubgraph,
     testHostConnection,
+    type CallChainSubgraphHistoryItem,
+    type CallChainSubgraphResult,
+    type EnvironmentInfo,
     type GraphEnvironmentInfo,
     type GraphEntity,
     type GraphExportPackage,
@@ -62,6 +69,7 @@ const DEFAULT_SUBGRAPH_UPSTREAM_HOPS = 0
 const DEFAULT_SUBGRAPH_DOWNSTREAM_HOPS = 3
 const MIN_SUBGRAPH_HOPS = 0
 const MAX_SUBGRAPH_HOPS = 6
+const DEFAULT_CALL_CHAIN_RANGE_MINUTES = 15
 const DEFAULT_GRAPH_ZOOM = 1
 const MIN_GRAPH_ZOOM = 0.5
 const MAX_GRAPH_ZOOM = 1.6
@@ -161,6 +169,7 @@ type KnowledgeGraphTab = 'ontology' | 'entities' | 'entity-management'
 type GraphCanvasDensity = 'compact' | 'spacious'
 type EntityEditableFieldKind = 'text' | 'number' | 'boolean' | 'json'
 type EntityEditableValue = string | boolean
+type SubgraphMode = 'entity' | 'call-chain'
 
 type ResourceTreeSelection =
     | { kind: 'group'; groupId: string }
@@ -1308,6 +1317,96 @@ interface KnowledgeGraphPageProps {
     embedded?: boolean
 }
 
+interface CallChainTimeRangeInput {
+    startTimeLocal: string
+    endTimeLocal: string
+}
+
+interface CallChainDateTimeDraft {
+    startDateValue: string
+    startTimeValue: string
+    endDateValue: string
+    endTimeValue: string
+}
+
+function roundDateToMinute(input: Date): Date {
+    const rounded = new Date(input)
+    rounded.setSeconds(0, 0)
+    return rounded
+}
+
+function toDateTimeLocalValue(input: Date): string {
+    const year = input.getFullYear()
+    const month = String(input.getMonth() + 1).padStart(2, '0')
+    const day = String(input.getDate()).padStart(2, '0')
+    const hours = String(input.getHours()).padStart(2, '0')
+    const minutes = String(input.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+function buildDefaultCallChainTimeRange(): CallChainTimeRangeInput {
+    const endTime = roundDateToMinute(new Date())
+    const startTime = new Date(endTime.getTime() - (DEFAULT_CALL_CHAIN_RANGE_MINUTES * 60 * 1000))
+    return {
+        startTimeLocal: toDateTimeLocalValue(startTime),
+        endTimeLocal: toDateTimeLocalValue(endTime),
+    }
+}
+
+function parseDateTimeLocalValue(value: string): number | null {
+    if (!value) {
+        return null
+    }
+    const timestamp = new Date(value).getTime()
+    return Number.isNaN(timestamp) ? null : timestamp
+}
+
+function formatLocalDateTimeDisplay(value: string, locale?: string): string {
+    const timestamp = parseDateTimeLocalValue(value)
+    if (timestamp === null) {
+        return value
+    }
+    return new Intl.DateTimeFormat(locale, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).format(new Date(timestamp))
+}
+
+function formatHistoryTimestamp(value: string, locale?: string): string {
+    const timestamp = Date.parse(value)
+    if (Number.isNaN(timestamp)) {
+        return value
+    }
+    return new Intl.DateTimeFormat(locale, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).format(new Date(timestamp))
+}
+
+function splitDateTimeLocalValue(value: string): { dateValue: string; timeValue: string } {
+    const [dateValue = '', timeValue = ''] = value.split('T')
+    return {
+        dateValue,
+        timeValue: timeValue.slice(0, 5),
+    }
+}
+
+function mergeDateAndTime(dateValue: string, timeValue: string): string | null {
+    if (!dateValue || !timeValue) {
+        return null
+    }
+    const mergedValue = `${dateValue}T${timeValue}`
+    return parseDateTimeLocalValue(mergedValue) === null ? null : mergedValue
+}
+
 export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphPageProps) {
     const { t } = useTranslation()
     const { userId } = useUser()
@@ -1319,6 +1418,12 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
     const [envCode, setEnvCode] = useState(storedSelection.envCode || DEFAULT_ENV_CODE)
     const [entityId, setEntityId] = useState(storedSelection.entityId || DEFAULT_ENTITY_ID)
     const [entityQuery, setEntityQuery] = useState('')
+    const [callChainMenuId, setCallChainMenuId] = useState('')
+    const [callChainSolutionType, setCallChainSolutionType] = useState('')
+    const [callChainTimeRange, setCallChainTimeRange] = useState<CallChainTimeRangeInput>(buildDefaultCallChainTimeRange)
+    const [callChainDateTimeDraft, setCallChainDateTimeDraft] = useState<CallChainDateTimeDraft | null>(null)
+    const [callChainHistoryItems, setCallChainHistoryItems] = useState<CallChainSubgraphHistoryItem[]>([])
+    const [selectedCallChainHistoryId, setSelectedCallChainHistoryId] = useState('')
     const [resourceSearch, setResourceSearch] = useState('')
     const [entityManagementSearch, setEntityManagementSearch] = useState('')
     const [entityManagementPage, setEntityManagementPage] = useState(1)
@@ -1329,8 +1434,11 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
     const [resourceGroups, setResourceGroups] = useState<ResourceTreeGroup[]>([])
     const [observations, setObservations] = useState<GraphObservation[]>([])
     const [subgraph, setSubgraph] = useState<GraphSnapshot | null>(null)
+    const [subgraphMode, setSubgraphMode] = useState<SubgraphMode | null>(null)
+    const [callChainSubgraphResult, setCallChainSubgraphResult] = useState<CallChainSubgraphResult | null>(null)
     const [exportPackage, setExportPackage] = useState<GraphExportPackage | null>(null)
     const [activeGraphTab, setActiveGraphTab] = useState<KnowledgeGraphTab>('ontology')
+    const [environmentInfos, setEnvironmentInfos] = useState<EnvironmentInfo[]>([])
     const [selectedOntologyNodeId, setSelectedOntologyNodeId] = useState<string | null>(null)
     const [selectedEntityNodeId, setSelectedEntityNodeId] = useState<string | null>(null)
     const [expandedEntityGraphNodeIds, setExpandedEntityGraphNodeIds] = useState<Set<string>>(new Set())
@@ -1384,6 +1492,9 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                 : environment.envCode,
         }))
     }, [environments])
+    const selectedEnvironmentInfo = useMemo(() => {
+        return environmentInfos.find(environment => environment.envCode === envCode) ?? null
+    }, [envCode, environmentInfos])
     const graphTabs: Array<{ key: KnowledgeGraphTab; label: string }> = [
         { key: 'ontology', label: t('operationIntelligence.knowledgeGraph.ontology') },
         { key: 'entities', label: t('operationIntelligence.knowledgeGraph.entities') },
@@ -1479,10 +1590,84 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
         }
         return buildEntityEditableFields(editingEntity, entityTypeDefinitions[editingEntity.type] ?? null, t)
     }, [editingEntity, entityTypeDefinitions, t])
+    const graphTitle = useMemo(() => {
+        if (subgraphMode === 'call-chain') {
+            return t('operationIntelligence.knowledgeGraph.callChainSubgraph')
+        }
+        return subgraph ? t('operationIntelligence.knowledgeGraph.subgraph') : t('operationIntelligence.knowledgeGraph.entityGraph')
+    }, [subgraph, subgraphMode, t])
+    const graphSubtitle = useMemo(() => {
+        if (subgraphMode === 'call-chain') {
+            return t('operationIntelligence.knowledgeGraph.callChainSubgraphSubtitle', {
+                menuId: callChainSubgraphResult?.menuId ?? (callChainMenuId.trim() || '-'),
+                flows: callChainSubgraphResult?.summary.flowCount ?? 0,
+                entities: totalEntities,
+                relations: totalRelations,
+                observations: totalObservations,
+                resourceEntities: callChainSubgraphResult?.summary.resourceEntityCount ?? 0,
+                resourceRelations: callChainSubgraphResult?.summary.resourceRelationCount ?? 0,
+                matchedServices: callChainSubgraphResult?.summary.matchedServiceCount ?? 0,
+                unmatchedServices: callChainSubgraphResult?.summary.unmatchedServiceCount ?? 0,
+            })
+        }
+        if (subgraph) {
+            return t('operationIntelligence.knowledgeGraph.subgraphSubtitle', {
+                entity: selectedEntity ? toDisplayName(selectedEntity) : entityId,
+                upstreamHops: subgraphUpstreamHops,
+                downstreamHops: subgraphDownstreamHops,
+                entities: totalEntities,
+                relations: totalRelations,
+                observations: totalObservations,
+            })
+        }
+        return t('operationIntelligence.knowledgeGraph.entityGraphSubtitle', {
+            entities: totalEntities,
+            relations: totalRelations,
+            observations: totalObservations,
+        })
+    }, [
+        callChainMenuId,
+        callChainSubgraphResult,
+        entityId,
+        selectedEntity,
+        subgraph,
+        subgraphDownstreamHops,
+        subgraphMode,
+        subgraphUpstreamHops,
+        t,
+        totalEntities,
+        totalObservations,
+        totalRelations,
+    ])
 
     const alertApiError = useCallback((err: unknown) => {
         showToast('error', err instanceof Error ? err.message : t('operationIntelligence.loadFailed'))
     }, [showToast, t])
+
+    const reloadCallChainSubgraphHistory = useCallback(async (
+        targetOntologyId = ontologyId,
+        targetEnvCode = envCode,
+        options?: { silent?: boolean },
+    ) => {
+        if (!targetOntologyId || !targetEnvCode) {
+            setCallChainHistoryItems([])
+            setSelectedCallChainHistoryId('')
+            return []
+        }
+        try {
+            const response = await listCallChainSubgraphs(targetOntologyId, targetEnvCode, userId)
+            setCallChainHistoryItems(response.result)
+            setSelectedCallChainHistoryId(previous => response.result.some(item => item.subgraphId === previous) ? previous : '')
+            return response.result
+        } catch (err) {
+            setCallChainHistoryItems([])
+            setSelectedCallChainHistoryId('')
+            if (!options?.silent) {
+                alertApiError(err)
+            }
+            return []
+        }
+    }, [alertApiError, envCode, ontologyId, userId])
 
     const loadGraph = useCallback(async (
         query?: { ontologyId?: string; envCode?: string },
@@ -1503,6 +1688,8 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
             setExportPackage(exportResponse.result)
             setObservations([])
             setSubgraph(null)
+            setSubgraphMode(null)
+            setCallChainSubgraphResult(null)
             setSelectedEntityNodeId(null)
             setSelectedResourceEntity(null)
             setSelectedResourceTreeItem(null)
@@ -1511,6 +1698,7 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
             setExpandedEntityGraphNodeIds(new Set())
             setExpandedResourceGroupIds(new Set())
             setExpandedResourceEntityIds(new Set())
+            void reloadCallChainSubgraphHistory(targetOntologyId, targetEnvCode, { silent: true })
             return true
         } catch (err) {
             if (!options?.silent) {
@@ -1520,7 +1708,7 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
         } finally {
             setLoading(false)
         }
-    }, [alertApiError, envCode, ontologyId, userId])
+    }, [alertApiError, envCode, ontologyId, reloadCallChainSubgraphHistory, userId])
 
     const reloadOntologies = useCallback(async () => {
         const ontologyResponse = await listOntologies(userId)
@@ -1538,6 +1726,8 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
         setResourceGroups([])
         setObservations([])
         setSubgraph(null)
+        setSubgraphMode(null)
+        setCallChainSubgraphResult(null)
         setExportPackage(null)
         setSelectedOntologyNodeId(null)
         setSelectedEntityNodeId(null)
@@ -1548,6 +1738,8 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
         setExpandedEntityGraphNodeIds(new Set())
         setExpandedResourceGroupIds(new Set())
         setExpandedResourceEntityIds(new Set())
+        setCallChainHistoryItems([])
+        setSelectedCallChainHistoryId('')
     }
 
     const handleOntologySelectionChange = (nextOntologyId: string) => {
@@ -1635,6 +1827,32 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
             isMounted = false
         }
     }, [envCode, ontologyId, userId])
+
+    useEffect(() => {
+        let isMounted = true
+        getEnvironments(userId)
+            .then(response => {
+                if (isMounted) {
+                    setEnvironmentInfos(response.results)
+                }
+            })
+            .catch(() => {
+                if (isMounted) {
+                    setEnvironmentInfos([])
+                }
+            })
+        return () => {
+            isMounted = false
+        }
+    }, [userId])
+
+    useEffect(() => {
+        void reloadCallChainSubgraphHistory(ontologyId, envCode, { silent: true })
+    }, [envCode, ontologyId, reloadCallChainSubgraphHistory])
+
+    useEffect(() => {
+        setCallChainSolutionType(selectedEnvironmentInfo?.agentSolutionType ?? '')
+    }, [selectedEnvironmentInfo])
 
     const readJsonFile = async (file: File): Promise<unknown> => {
         try {
@@ -1725,10 +1943,132 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
             setEntityId(matchedEntity.id)
             setEntityQuery('')
             setSubgraph(subgraphResponse.result)
+            setSubgraphMode('entity')
+            setCallChainSubgraphResult(null)
             setObservations(observationResponse.result.results)
             setSelectedEntityNodeId(null)
             setExpandedEntityGraphNodeIds(new Set())
             showToast('success', t('operationIntelligence.knowledgeGraph.subgraphLoaded', { entity: toDisplayName(matchedEntity) }))
+        } catch (err) {
+            alertApiError(err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleGenerateCallChainSubgraph = async () => {
+        const normalizedMenuId = callChainMenuId.trim()
+        const normalizedSolutionType = callChainSolutionType.trim()
+        if (!normalizedMenuId) {
+            showToast('warning', t('operationIntelligence.knowledgeGraph.callChainMenuIdRequired'))
+            return
+        }
+        if (!normalizedSolutionType) {
+            showToast('warning', t('operationIntelligence.knowledgeGraph.callChainSolutionTypeRequired'))
+            return
+        }
+        const startTime = parseDateTimeLocalValue(callChainTimeRange.startTimeLocal)
+        const endTime = parseDateTimeLocalValue(callChainTimeRange.endTimeLocal)
+        if (startTime === null || endTime === null || endTime <= startTime) {
+            showToast('warning', t('operationIntelligence.knowledgeGraph.callChainTimeRangeInvalid'))
+            return
+        }
+        setLoading(true)
+        try {
+            const response = await generateCallChainSubgraph({
+                menuId: normalizedMenuId,
+                envCode,
+                solutionType: normalizedSolutionType,
+                ontologyId,
+                startTime,
+                endTime,
+            }, userId)
+            setSubgraph(response.result.graph)
+            setSubgraphMode('call-chain')
+            setCallChainSubgraphResult(response.result)
+            setObservations(response.result.graph.observations ?? [])
+            setSelectedEntityNodeId(null)
+            setExpandedEntityGraphNodeIds(new Set())
+            setSelectedCallChainHistoryId(response.result.subgraphId)
+            await reloadCallChainSubgraphHistory(ontologyId, envCode, { silent: true })
+            showToast('success', t('operationIntelligence.knowledgeGraph.callChainSubgraphLoaded', {
+                menuId: normalizedMenuId,
+            }))
+        } catch (err) {
+            alertApiError(err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const openCallChainDateTimeDialog = () => {
+        const { dateValue: startDateValue, timeValue: startTimeValue } = splitDateTimeLocalValue(callChainTimeRange.startTimeLocal)
+        const { dateValue: endDateValue, timeValue: endTimeValue } = splitDateTimeLocalValue(callChainTimeRange.endTimeLocal)
+        setCallChainDateTimeDraft({
+            startDateValue,
+            startTimeValue,
+            endDateValue,
+            endTimeValue,
+        })
+    }
+
+    const handleCancelCallChainDateTimeDialog = () => {
+        setCallChainDateTimeDraft(null)
+    }
+
+    const handleConfirmCallChainDateTimeDialog = () => {
+        if (!callChainDateTimeDraft) {
+            return
+        }
+        const nextStartTimeLocal = mergeDateAndTime(callChainDateTimeDraft.startDateValue, callChainDateTimeDraft.startTimeValue)
+        const nextEndTimeLocal = mergeDateAndTime(callChainDateTimeDraft.endDateValue, callChainDateTimeDraft.endTimeValue)
+        if (!nextStartTimeLocal || !nextEndTimeLocal) {
+            showToast('warning', t('operationIntelligence.knowledgeGraph.callChainDateTimeRequired'))
+            return
+        }
+        const nextStartTime = parseDateTimeLocalValue(nextStartTimeLocal)
+        const nextEndTime = parseDateTimeLocalValue(nextEndTimeLocal)
+        if (nextStartTime === null || nextEndTime === null || nextEndTime <= nextStartTime) {
+            showToast('warning', t('operationIntelligence.knowledgeGraph.callChainTimeRangeInvalid'))
+            return
+        }
+        setCallChainTimeRange({
+            startTimeLocal: nextStartTimeLocal,
+            endTimeLocal: nextEndTimeLocal,
+        })
+        setCallChainDateTimeDraft(null)
+    }
+
+    const handleResetSubgraphView = () => {
+        setSubgraph(null)
+        setSubgraphMode(null)
+        setCallChainSubgraphResult(null)
+        setObservations([])
+        setSelectedEntityNodeId(null)
+        setExpandedEntityGraphNodeIds(new Set())
+        setEntityQuery('')
+        setSelectedCallChainHistoryId('')
+    }
+
+    const handleSelectCallChainHistory = async (subgraphId: string) => {
+        setSelectedCallChainHistoryId(subgraphId)
+        if (!subgraphId) {
+            return
+        }
+        setLoading(true)
+        try {
+            const response = await getCallChainSubgraph(subgraphId, userId)
+            setSubgraph(response.result.graph)
+            setSubgraphMode('call-chain')
+            setCallChainSubgraphResult(response.result)
+            setCallChainMenuId(response.result.menuId)
+            setCallChainSolutionType(response.result.solutionType)
+            setObservations(response.result.graph.observations ?? [])
+            setSelectedEntityNodeId(null)
+            setExpandedEntityGraphNodeIds(new Set())
+            showToast('success', t('operationIntelligence.knowledgeGraph.callChainHistoryLoaded', {
+                menuId: response.result.menuId,
+            }))
         } catch (err) {
             alertApiError(err)
         } finally {
@@ -2143,7 +2483,7 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                 ) : activeGraphTab === 'entities' ? (
                     <div className="kg-tab-page">
                         <div className="kg-entity-control-panel">
-                            <div className="kg-entity-query-row">
+                            <div className="kg-entity-query-row kg-entity-query-row-primary">
                                 <label className="kg-field kg-env-field">
                                     <span>{t('operationIntelligence.environment')}</span>
                                     <select value={envCode} onChange={event => setEnvCode(event.target.value)}>
@@ -2154,7 +2494,7 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                                         ))}
                                     </select>
                                 </label>
-                                <label className="kg-field kg-field-wide">
+                                <label className="kg-field kg-entity-query-field">
                                     <span>{t('operationIntelligence.knowledgeGraph.entityQuery')}</span>
                                     <input
                                         value={entityQuery}
@@ -2204,13 +2544,7 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                                     {subgraph ? (
                                         <Button
                                             leadingIcon={<RefreshCw size={16} />}
-                                            onClick={() => {
-                                                setSubgraph(null)
-                                                setObservations([])
-                                                setSelectedEntityNodeId(null)
-                                                setExpandedEntityGraphNodeIds(new Set())
-                                                setEntityQuery('')
-                                            }}
+                                            onClick={handleResetSubgraphView}
                                             disabled={loading}
                                         >
                                             {t('operationIntelligence.knowledgeGraph.showFullGraph')}
@@ -2218,7 +2552,69 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                                     ) : null}
                                 </div>
                             </div>
+                            <div className="kg-entity-query-row kg-entity-query-row-call-chain">
+                                <label className="kg-field kg-call-chain-menu-field">
+                                    <span>{t('operationIntelligence.knowledgeGraph.callChainMenuId')}</span>
+                                    <input
+                                        value={callChainMenuId}
+                                        onChange={event => setCallChainMenuId(event.target.value)}
+                                        onKeyDown={event => {
+                                            if (event.key === 'Enter') {
+                                                void handleGenerateCallChainSubgraph()
+                                            }
+                                        }}
+                                        placeholder={t('operationIntelligence.knowledgeGraph.callChainMenuIdPlaceholder')}
+                                    />
+                                </label>
+                                <label className="kg-field kg-call-chain-solution-field">
+                                    <span>{t('operationIntelligence.knowledgeGraph.callChainSolutionType')}</span>
+                                    <input
+                                        value={callChainSolutionType}
+                                        onChange={event => setCallChainSolutionType(event.target.value)}
+                                        onKeyDown={event => {
+                                            if (event.key === 'Enter') {
+                                                void handleGenerateCallChainSubgraph()
+                                            }
+                                        }}
+                                        placeholder={t('operationIntelligence.knowledgeGraph.callChainSolutionTypePlaceholder')}
+                                    />
+                                </label>
+                                <label className="kg-field kg-call-chain-time-field">
+                                    <span>{t('operationIntelligence.knowledgeGraph.callChainTimeRange')}</span>
+                                    <button
+                                        type="button"
+                                        className="kg-datetime-trigger kg-datetime-range-trigger"
+                                        onClick={openCallChainDateTimeDialog}
+                                    >
+                                        {`${formatLocalDateTimeDisplay(callChainTimeRange.startTimeLocal)} ~ ${formatLocalDateTimeDisplay(callChainTimeRange.endTimeLocal)}`}
+                                    </button>
+                                </label>
+                                <div className="kg-query-actions">
+                                    <Button leadingIcon={<Radar size={16} />} onClick={handleGenerateCallChainSubgraph} disabled={loading}>
+                                        {t('operationIntelligence.knowledgeGraph.generateCallChainSubgraph')}
+                                    </Button>
+                                </div>
+                            </div>
                             <div className="kg-tab-actions kg-entity-actions">
+                                <label className="kg-field kg-call-chain-history-inline-field">
+                                    <span>{t('operationIntelligence.knowledgeGraph.callChainHistorySelect')}</span>
+                                    <select
+                                        value={selectedCallChainHistoryId}
+                                        onChange={event => void handleSelectCallChainHistory(event.target.value)}
+                                        disabled={callChainHistoryItems.length === 0 || loading}
+                                    >
+                                        <option value="">
+                                            {callChainHistoryItems.length === 0
+                                                ? t('operationIntelligence.knowledgeGraph.callChainHistoryEmpty')
+                                                : t('operationIntelligence.knowledgeGraph.callChainHistorySelectPlaceholder')}
+                                        </option>
+                                        {callChainHistoryItems.map(item => (
+                                            <option key={item.subgraphId} value={item.subgraphId}>
+                                                {`${item.menuId} | ${formatHistoryTimestamp(item.generatedAt)} | ${item.solutionType}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
                                 <Button
                                     leadingIcon={<Upload size={16} />}
                                     onClick={() => entitiesFileInputRef.current?.click()}
@@ -2239,34 +2635,84 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                             </div>
                         </div>
 
+                        {callChainDateTimeDraft ? (
+                            <DetailDialog
+                                title={t('operationIntelligence.knowledgeGraph.callChainTimeRange')}
+                                onClose={handleCancelCallChainDateTimeDialog}
+                                footer={(
+                                    <>
+                                        <Button variant="secondary" onClick={handleCancelCallChainDateTimeDialog}>
+                                            {t('common.cancel')}
+                                        </Button>
+                                        <Button variant="primary" onClick={handleConfirmCallChainDateTimeDialog}>
+                                            {t('common.confirm')}
+                                        </Button>
+                                    </>
+                                )}
+                            >
+                                <div className="kg-datetime-dialog-fields">
+                                    <label className="kg-field">
+                                        <span>{t('operationIntelligence.knowledgeGraph.callChainDate')}</span>
+                                        <input
+                                            type="date"
+                                            value={callChainDateTimeDraft.startDateValue}
+                                            onChange={event => setCallChainDateTimeDraft(previous => previous ? {
+                                                ...previous,
+                                                startDateValue: event.target.value,
+                                            } : previous)}
+                                        />
+                                    </label>
+                                    <label className="kg-field">
+                                        <span>{t('operationIntelligence.knowledgeGraph.callChainTime')}</span>
+                                        <input
+                                            type="time"
+                                            value={callChainDateTimeDraft.startTimeValue}
+                                            onChange={event => setCallChainDateTimeDraft(previous => previous ? {
+                                                ...previous,
+                                                startTimeValue: event.target.value,
+                                            } : previous)}
+                                        />
+                                    </label>
+                                    <label className="kg-field">
+                                        <span>{t('operationIntelligence.knowledgeGraph.callChainDate')}</span>
+                                        <input
+                                            type="date"
+                                            value={callChainDateTimeDraft.endDateValue}
+                                            onChange={event => setCallChainDateTimeDraft(previous => previous ? {
+                                                ...previous,
+                                                endDateValue: event.target.value,
+                                            } : previous)}
+                                        />
+                                    </label>
+                                    <label className="kg-field">
+                                        <span>{t('operationIntelligence.knowledgeGraph.callChainTime')}</span>
+                                        <input
+                                            type="time"
+                                            value={callChainDateTimeDraft.endTimeValue}
+                                            onChange={event => setCallChainDateTimeDraft(previous => previous ? {
+                                                ...previous,
+                                                endTimeValue: event.target.value,
+                                            } : previous)}
+                                        />
+                                    </label>
+                                </div>
+                            </DetailDialog>
+                        ) : null}
+
                         <GraphCanvas
                             nodes={activeEntityGraph.nodes}
                             edges={activeEntityGraph.edges}
                             selectedNodeId={selectedEntityNodeId}
                             onSelectNode={subgraph ? handleSelectEntityGraphNode : setSelectedEntityNodeId}
                             nodeTitle={t('operationIntelligence.knowledgeGraph.nodeProperties')}
-                            title={subgraph
-                                ? t('operationIntelligence.knowledgeGraph.subgraph')
-                                : t('operationIntelligence.knowledgeGraph.entityGraph')}
-                            subtitle={subgraph
-                                ? t('operationIntelligence.knowledgeGraph.subgraphSubtitle', {
-                                    entity: selectedEntity ? toDisplayName(selectedEntity) : entityId,
-                                    upstreamHops: subgraphUpstreamHops,
-                                    downstreamHops: subgraphDownstreamHops,
-                                    entities: totalEntities,
-                                    relations: totalRelations,
-                                    observations: totalObservations,
-                                })
-                                : t('operationIntelligence.knowledgeGraph.entityGraphSubtitle', {
-                                    entities: totalEntities,
-                                    relations: totalRelations,
-                                    observations: totalObservations,
-                                })}
+                            title={graphTitle}
+                            subtitle={graphSubtitle}
                             density="spacious"
-                            showNodeProperties={false}
                         />
 
-                        <SectionCard title={t('operationIntelligence.knowledgeGraph.observationTrace')}>
+                        <SectionCard title={subgraphMode === 'call-chain'
+                            ? t('operationIntelligence.knowledgeGraph.callChainObservationTrace')
+                            : t('operationIntelligence.knowledgeGraph.observationTrace')}>
                             <div className="kg-table">
                                 {observations.map(observation => (
                                     <div key={observation.id} className="kg-table-row">

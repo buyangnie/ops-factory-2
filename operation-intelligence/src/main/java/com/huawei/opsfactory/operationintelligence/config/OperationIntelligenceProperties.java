@@ -850,6 +850,12 @@ public class OperationIntelligenceProperties {
 
         private double minCallRatio = 3.0;
 
+        private String queryMode = "service";
+
+        private boolean mockQueryEnabled = false;
+
+        private String mockQueryFile = "";
+
         private TimeSplit timeSplit = new TimeSplit();
 
         /**
@@ -997,6 +1003,60 @@ public class OperationIntelligenceProperties {
         }
 
         /**
+         * Gets the query mode.
+         *
+         * @return the query mode
+         */
+        public String getQueryMode() {
+            return queryMode;
+        }
+
+        /**
+         * Sets the query mode.
+         *
+         * @param queryMode the query mode
+         */
+        public void setQueryMode(String queryMode) {
+            this.queryMode = queryMode;
+        }
+
+        /**
+         * Checks whether mock query is enabled.
+         *
+         * @return the result
+         */
+        public boolean isMockQueryEnabled() {
+            return mockQueryEnabled;
+        }
+
+        /**
+         * Sets whether mock query is enabled.
+         *
+         * @param mockQueryEnabled the mockQueryEnabled
+         */
+        public void setMockQueryEnabled(boolean mockQueryEnabled) {
+            this.mockQueryEnabled = mockQueryEnabled;
+        }
+
+        /**
+         * Gets the mock query file.
+         *
+         * @return the mock query file
+         */
+        public String getMockQueryFile() {
+            return mockQueryFile;
+        }
+
+        /**
+         * Sets the mock query file.
+         *
+         * @param mockQueryFile the mockQueryFile
+         */
+        public void setMockQueryFile(String mockQueryFile) {
+            this.mockQueryFile = mockQueryFile;
+        }
+
+        /**
          * Gets the time split.
          *
          * @return the time split
@@ -1073,6 +1133,20 @@ public class OperationIntelligenceProperties {
 
         private int snapshotRetention = 3;
 
+        private String callChainSubgraphDir = "call-chain-subgraphs";
+
+        private int callChainSubgraphRetention = 50;
+
+        private int callChainSubgraphTtlMinutes = 120;
+
+        private boolean resourceSubgraphEnabled = true;
+
+        private int resourceSubgraphMaxHops = 4;
+
+        private List<String> resourceSubgraphRelationTypes = List.of();
+
+        private List<String> resourceSubgraphEntityTypes = List.of();
+
         /**
          * Checks whether the enabled.
          *
@@ -1143,6 +1217,132 @@ public class OperationIntelligenceProperties {
          */
         public void setSnapshotRetention(int snapshotRetention) {
             this.snapshotRetention = snapshotRetention;
+        }
+
+        /**
+         * Gets the call chain subgraph directory.
+         *
+         * @return the result
+         */
+        public String getCallChainSubgraphDir() {
+            return callChainSubgraphDir;
+        }
+
+        /**
+         * Sets the call chain subgraph directory.
+         *
+         * @param callChainSubgraphDir the callChainSubgraphDir
+         */
+        public void setCallChainSubgraphDir(String callChainSubgraphDir) {
+            this.callChainSubgraphDir = callChainSubgraphDir;
+        }
+
+        /**
+         * Gets the call chain subgraph retention count.
+         *
+         * @return the result
+         */
+        public int getCallChainSubgraphRetention() {
+            return callChainSubgraphRetention;
+        }
+
+        /**
+         * Sets the call chain subgraph retention count.
+         *
+         * @param callChainSubgraphRetention the callChainSubgraphRetention
+         */
+        public void setCallChainSubgraphRetention(int callChainSubgraphRetention) {
+            this.callChainSubgraphRetention = callChainSubgraphRetention;
+        }
+
+        /**
+         * Gets the call chain subgraph ttl in minutes.
+         *
+         * @return the result
+         */
+        public int getCallChainSubgraphTtlMinutes() {
+            return callChainSubgraphTtlMinutes;
+        }
+
+        /**
+         * Sets the call chain subgraph ttl in minutes.
+         *
+         * @param callChainSubgraphTtlMinutes the callChainSubgraphTtlMinutes
+         */
+        public void setCallChainSubgraphTtlMinutes(int callChainSubgraphTtlMinutes) {
+            this.callChainSubgraphTtlMinutes = callChainSubgraphTtlMinutes;
+        }
+
+        /**
+         * Checks whether the resource subgraph extraction is enabled.
+         *
+         * @return the result
+         */
+        public boolean isResourceSubgraphEnabled() {
+            return resourceSubgraphEnabled;
+        }
+
+        /**
+         * Sets the resource subgraph extraction flag.
+         *
+         * @param resourceSubgraphEnabled the resourceSubgraphEnabled
+         */
+        public void setResourceSubgraphEnabled(boolean resourceSubgraphEnabled) {
+            this.resourceSubgraphEnabled = resourceSubgraphEnabled;
+        }
+
+        /**
+         * Gets the resource subgraph max hops.
+         *
+         * @return the result
+         */
+        public int getResourceSubgraphMaxHops() {
+            return resourceSubgraphMaxHops;
+        }
+
+        /**
+         * Sets the resource subgraph max hops.
+         *
+         * @param resourceSubgraphMaxHops the resourceSubgraphMaxHops
+         */
+        public void setResourceSubgraphMaxHops(int resourceSubgraphMaxHops) {
+            this.resourceSubgraphMaxHops = resourceSubgraphMaxHops;
+        }
+
+        /**
+         * Gets the resource subgraph relation types.
+         *
+         * @return the result
+         */
+        public List<String> getResourceSubgraphRelationTypes() {
+            return resourceSubgraphRelationTypes;
+        }
+
+        /**
+         * Sets the resource subgraph relation types.
+         *
+         * @param resourceSubgraphRelationTypes the resourceSubgraphRelationTypes
+         */
+        public void setResourceSubgraphRelationTypes(List<String> resourceSubgraphRelationTypes) {
+            this.resourceSubgraphRelationTypes = resourceSubgraphRelationTypes;
+        }
+
+        /**
+         * Gets the resource subgraph entity types.
+         *
+         * @return the result
+         */
+        public List<String> getResourceSubgraphEntityTypes() {
+            return resourceSubgraphEntityTypes;
+        }
+
+        /**
+         * Sets the resource subgraph entity types.
+         *
+         * @param resourceSubgraphEntityTypes the resourceSubgraphEntityTypes
+         */
+        public void setResourceSubgraphEntityTypes(List<String> resourceSubgraphEntityTypes) {
+            this.resourceSubgraphEntityTypes = resourceSubgraphEntityTypes;
         }
     }
 }

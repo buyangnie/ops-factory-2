@@ -32,6 +32,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +48,8 @@ import java.util.Map;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CallChainServiceTest {
+
+    private Path mockQueryFile;
 
     @Mock
     private OperationIntelligenceProperties properties;
@@ -70,6 +75,13 @@ class CallChainServiceTest {
     void setUp() {
         callChainService =
             new CallChainService(properties, dvClient, chainBuilder, chainStore, configStore, timeSplitStrategy);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() throws IOException {
+        if (mockQueryFile != null) {
+            Files.deleteIfExists(mockQueryFile);
+        }
     }
 
     @Test
@@ -164,5 +176,56 @@ class CallChainServiceTest {
 
         assertNotNull(result);
         assertNull(result.getChainType());
+    }
+
+    @Test
+    void testQueryCallChainLoadsMockResponseFile() throws IOException {
+        mockQueryFile = Files.createTempFile("call-chain-mock-", ".json");
+        Files.writeString(mockQueryFile, """
+            {
+              "chainType": "BES",
+              "totalCount": 1,
+              "flows": [
+                {
+                  "flowId": "mock-flow-1",
+                  "callCount": 1,
+                  "avgCost": 12,
+                  "minCost": 10,
+                  "maxCost": 15,
+                  "nodes": [
+                    {
+                      "seqNo": "1",
+                      "url": "https://example.com/query"
+                    },
+                    {
+                      "seqNo": "1.1",
+                      "serviceName": "mock.service",
+                      "operationName": "query",
+                      "cluster": ["mock-cluster"],
+                      "avgCost": 12,
+                      "minCost": 10,
+                      "maxCost": 15
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        OperationIntelligenceProperties.CallChain callChain = new OperationIntelligenceProperties.CallChain();
+        callChain.setMockQueryEnabled(true);
+        callChain.setMockQueryFile(mockQueryFile.toString());
+        when(properties.getCallChain()).thenReturn(callChain);
+        when(properties.getConfigDirectory()).thenReturn(Path.of("/tmp"));
+
+        CallChainTree result = callChainService.queryCallChain("DigitalCRM.sit",
+            List.of(Map.of("conditionKey", "menuId", "conditionValue", "6013101010007")), 1746057600000L,
+            1746058200000L);
+
+        assertNotNull(result);
+        assertEquals("BES", result.getChainType());
+        assertEquals(1L, result.getTotalCount());
+        assertEquals(1, result.getFlows().size());
+        assertEquals("mock-flow-1", result.getFlows().get(0).getFlowId());
+        assertEquals("menuId", result.getConditions().get(0).getConditionKey());
     }
 }

@@ -11,76 +11,192 @@
   "entityTypes": [
     {
       "type": "Business",
-      "requiredProperties": ["businessId", "businessName"],
-      "optionalProperties": ["description", "solutionId"]
+      "requiredProperties": [
+        "businessId",
+        "businessName"
+      ],
+      "optionalProperties": [
+        "description"
+      ]
     },
     {
       "type": "MicroService",
-      "requiredProperties": ["serviceKey", "serviceName"],
-      "optionalProperties": ["description", "category"]
+      "requiredProperties": [
+        "serviceName"
+      ],
+      "optionalProperties": [
+        "description",
+        "category",
+        "avgCostMs",
+        "minCostMs",
+        "maxCostMs"
+      ]
     },
     {
       "type": "MiddlewareCluster",
-      "requiredProperties": ["serviceKey", "serviceName"],
-      "optionalProperties": ["neType", "neName", "version", "parentDn", "dn", "category"]
+      "requiredProperties": [
+        "clusterName"
+      ],
+      "optionalProperties": [
+        "neType",
+        "neName",
+        "version",
+        "parentDn",
+        "clusterId",
+        "category"
+      ]
     },
     {
       "type": "ApplicationServiceCluster",
-      "requiredProperties": ["serviceKey", "serviceName"],
-      "optionalProperties": ["neType", "neName", "version", "parentDn", "dn", "category"]
+      "requiredProperties": [
+        "clusterName"
+      ],
+      "optionalProperties": [
+        "neType",
+        "neName",
+        "version",
+        "parentDn",
+        "clusterId",
+        "category"
+      ]
     },
     {
       "type": "K8sCluster",
-      "requiredProperties": ["clusterId", "clusterName"],
-      "optionalProperties": ["masterIp", "vmGroup"]
+      "requiredProperties": [
+        "clusterId",
+        "clusterName"
+      ],
+      "optionalProperties": [
+        "masterIp",
+        "vmGroup"
+      ]
+    },
+    {
+      "type": "K8sInstance",
+      "requiredProperties": [
+        "instanceId",
+        "instanceName"
+      ],
+      "optionalProperties": [
+        "ip",
+        "role",
+        "status",
+        "version",
+        "hostIp",
+        "os",
+        "authUsername",
+        "authMethod",
+        "credential",
+        "sshIp",
+        "sshPort"
+      ]
     },
     {
       "type": "WorkerNode",
-      "requiredProperties": ["nodeId", "hostIp"],
-      "optionalProperties": ["nodeName", "vmGroup"]
+      "requiredProperties": [
+        "nodeId",
+        "hostIp"
+      ],
+      "optionalProperties": [
+        "nodeName",
+        "vmGroup",
+        "hostname",
+        "sshIp",
+        "sshPort",
+        "businessAddress",
+        "os",
+        "authUsername",
+        "authMethod",
+        "credential"
+      ]
     },
     {
       "type": "Pod",
-      "requiredProperties": ["podName", "podIp"],
-      "optionalProperties": ["hostIp", "hostName", "parentDn", "dn"]
+      "requiredProperties": [
+        "podName",
+        "podIp"
+      ],
+      "optionalProperties": [
+        "hostName",
+        "parentDn",
+        "dn",
+        "namespace",
+        "healthStatus"
+      ]
     }
   ],
   "relationTypes": [
     {
       "type": "contains_service",
       "layer": "business",
-      "from": ["Business"],
-      "to": ["MicroService"]
+      "from": [
+        "Business"
+      ],
+      "to": [
+        "MicroService"
+      ]
     },
     {
-      "type": "runs_on_cluster",
+      "type": "runs_on",
       "layer": "deployment",
-      "from": ["MicroService"],
-      "to": ["ApplicationServiceCluster", "MiddlewareCluster"]
+      "from": [
+        "MicroService"
+      ],
+      "to": [
+        "ApplicationServiceCluster",
+        "MiddlewareCluster"
+      ]
     },
-{
+    {
       "type": "calls",
       "layer": "runtime",
-      "from": ["MicroService"],
-      "to": ["MicroService"]
+      "from": [
+        "MicroService"
+      ],
+      "to": [
+        "MicroService"
+      ]
     },
     {
       "type": "manages",
       "layer": "infrastructure",
-      "from": ["K8sCluster"],
-      "to": ["WorkerNode"]
+      "from": [
+        "K8sCluster"
+      ],
+      "to": [
+        "WorkerNode"
+      ]
     },
     {
-      "type": "runs_on_node",
-      "layer": "deployment",
-      "from": ["Pod"],
-      "to": ["WorkerNode"]
+      "type": "contains",
+      "layer": "infrastructure",
+      "from": [
+        "K8sCluster"
+      ],
+      "to": [
+        "K8sInstance"
+      ]
     },
     {
-      "type": "cluster_has_pod",
+      "type": "runs_on",
       "layer": "deployment",
-      "from": ["MiddlewareCluster", "ApplicationServiceCluster"],
-      "to": ["Pod"]
+      "from": [
+        "Pod"
+      ],
+      "to": [
+        "WorkerNode"
+      ]
+    },
+    {
+      "type": "contains",
+      "layer": "deployment",
+      "from": [
+        "MiddlewareCluster",
+        "ApplicationServiceCluster"
+      ],
+      "to": [
+        "Pod"
+      ]
     }
   ]
 }
