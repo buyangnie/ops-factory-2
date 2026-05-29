@@ -159,6 +159,10 @@
     font-weight: 600;
     font-family: var(--font-family-mono);
     border-radius: var(--radius-md);
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .memory-tag-untagged {

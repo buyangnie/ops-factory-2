@@ -271,6 +271,7 @@ export default function MemoryFileCard({ category, content, onSave, onDelete, au
                                                             key={tag}
                                                             className="memory-tag"
                                                             style={{ background: c.bg, color: c.fg }}
+                                                            title={tag}
                                                         >
                                                             {tag}
                                                         </span>
