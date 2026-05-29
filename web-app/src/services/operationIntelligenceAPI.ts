@@ -111,6 +111,54 @@ export interface RootCauseCandidate {
   evidence: GraphObservation
 }
 
+export interface CallChainSubgraphRequest {
+  menuId: string
+  envCode: string
+  solutionType: string
+  mode?: string
+  ontologyId?: string
+  startTime?: number
+  endTime?: number
+}
+
+export interface CallChainSubgraphSummary {
+  flowCount: number
+  entityCount: number
+  relationCount: number
+  observationCount: number
+  microserviceCount: number
+  clusterCount: number
+  resourceEntityCount: number
+  resourceRelationCount: number
+  matchedServiceCount: number
+  matchedClusterCount: number
+  unmatchedServiceCount: number
+  unmatchedServices: string[]
+}
+
+export interface CallChainSubgraphResult {
+  subgraphId: string
+  menuId: string
+  envCode: string
+  solutionType: string
+  ontologyId?: string
+  generatedAt: string
+  expiresAt: string
+  graph: GraphSnapshot
+  summary: CallChainSubgraphSummary
+}
+
+export interface CallChainSubgraphHistoryItem {
+  subgraphId: string
+  menuId: string
+  envCode: string
+  solutionType: string
+  ontologyId?: string
+  generatedAt: string
+  expiresAt: string
+  summary: Record<string, unknown>
+}
+
 async function request<T>(endpoint: string, body?: unknown, method = 'POST', userId?: string | null): Promise<T> {
   const url = `${runtime.OPERATION_INTELLIGENCE_SERVICE_URL}${endpoint}`;
   const response = await fetch(url, {
@@ -277,6 +325,39 @@ export async function querySubgraph(
     '/graph/subgraph',
     { ontologyId, envCode, entityId, upstreamHops, downstreamHops, maxHops },
     'POST',
+    userId,
+  )
+}
+
+export async function generateCallChainSubgraph(
+  payload: CallChainSubgraphRequest,
+  userId?: string | null,
+): Promise<{ result: CallChainSubgraphResult }> {
+  return request<{ result: CallChainSubgraphResult }>('/call-chain/subgraphs', payload, 'POST', userId)
+}
+
+export async function getCallChainSubgraph(
+  subgraphId: string,
+  userId?: string | null,
+): Promise<{ result: CallChainSubgraphResult }> {
+  return request<{ result: CallChainSubgraphResult }>(
+    `/call-chain/subgraphs/${encodeURIComponent(subgraphId)}`,
+    undefined,
+    'GET',
+    userId,
+  )
+}
+
+export async function listCallChainSubgraphs(
+  ontologyId: string,
+  envCode: string,
+  userId?: string | null,
+): Promise<{ result: CallChainSubgraphHistoryItem[] }> {
+  const query = `?ontologyId=${encodeURIComponent(ontologyId)}&envCode=${encodeURIComponent(envCode)}`
+  return request<{ result: CallChainSubgraphHistoryItem[] }>(
+    `/call-chain/subgraphs${query}`,
+    undefined,
+    'GET',
     userId,
   )
 }

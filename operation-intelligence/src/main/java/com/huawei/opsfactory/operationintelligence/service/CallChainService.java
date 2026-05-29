@@ -13,10 +13,16 @@ import com.huawei.opsfactory.operationintelligence.qos.parser.TimeSplitStrategy;
 import com.huawei.opsfactory.operationintelligence.qos.store.CallChainStore;
 import com.huawei.opsfactory.operationintelligence.qos.store.ChainTypeConfigStore;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -37,6 +43,8 @@ import java.util.stream.Collectors;
 public class CallChainService {
 
     private static final Logger log = LoggerFactory.getLogger(CallChainService.class);
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final OperationIntelligenceProperties properties;
 
@@ -82,6 +90,10 @@ public class CallChainService {
      */
     public CallChainTree queryCallChain(String solutionType, List<Map<String, String>> conditions, long startTime,
         long endTime) {
+        CallChainTree mockTree = loadMockTreeIfConfigured(conditions, startTime, endTime);
+        if (mockTree != null) {
+            return mockTree;
+        }
         return doQueryCallChain(solutionType, conditions, startTime, endTime);
     }
 
@@ -313,5 +325,65 @@ public class CallChainService {
         return Instant.ofEpochMilli(timestamp)
             .atZone(ZoneOffset.UTC)
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    private CallChainTree loadMockTreeIfConfigured(List<Map<String, String>> conditions, long startTime, long endTime) {
+        OperationIntelligenceProperties.CallChain callChain = properties.getCallChain();
+        if (callChain == null || !callChain.isMockQueryEnabled()) {
+            return null;
+        }
+        String configuredFile = callChain.getMockQueryFile();
+        if (configuredFile == null || configuredFile.isBlank()) {
+            throw new IllegalStateException("callChain.mockQueryFile must be configured when mockQueryEnabled=true");
+        }
+        Path file = resolveMockQueryFile(configuredFile);
+        try {
+            JsonNode root = MAPPER.readTree(file.toFile());
+            JsonNode dataNode = root.has("flows") ? root : root.path("result");
+            if (dataNode.isMissingNode() || dataNode.isNull() || !dataNode.has("flows")) {
+                throw new IllegalStateException("Mock call chain file must contain root.flows or result.flows");
+            }
+            CallChainTree tree = MAPPER.treeToValue(dataNode, CallChainTree.class);
+            if (tree.getConditions() == null || tree.getConditions().isEmpty()) {
+                tree.setConditions(toTreeConditions(conditions));
+            }
+            if (tree.getQueryTimeRange() == null) {
+                CallChainTree.QueryTimeRange timeRange = new CallChainTree.QueryTimeRange();
+                timeRange.setStartTime(formatTime(startTime));
+                timeRange.setEndTime(formatTime(endTime));
+                tree.setQueryTimeRange(timeRange);
+            }
+            if (tree.getTotalCount() == null) {
+                tree.setTotalCount((long) (tree.getFlows() == null ? 0 : tree.getFlows().size()));
+            }
+            if (tree.getChainType() == null || tree.getChainType().isBlank()) {
+                tree.setChainType(determineChainType(conditions));
+            }
+            chainStore.save(tree);
+            log.info("Loaded mock call chain response from file {}", file);
+            return tree;
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load mock call chain file: " + file, e);
+        }
+    }
+
+    private Path resolveMockQueryFile(String configuredFile) {
+        Path configuredPath = Path.of(configuredFile);
+        Path resolved = configuredPath.isAbsolute()
+            ? configuredPath.normalize()
+            : properties.getConfigDirectory().resolve(configuredPath).normalize();
+        if (!Files.isRegularFile(resolved)) {
+            throw new IllegalStateException("Mock call chain file does not exist: " + resolved);
+        }
+        return resolved;
+    }
+
+    private List<CallChainTree.Condition> toTreeConditions(List<Map<String, String>> conditions) {
+        return conditions.stream().map(cond -> {
+            CallChainTree.Condition treeCondition = new CallChainTree.Condition();
+            treeCondition.setConditionKey(cond.get("conditionKey"));
+            treeCondition.setConditionValue(cond.get("conditionValue"));
+            return treeCondition;
+        }).collect(Collectors.toList());
     }
 }
