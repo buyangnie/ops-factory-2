@@ -375,10 +375,10 @@ export default function FilesPage() {
                 closePreview()
             }
             setDeleteTarget(null)
-            showToast('success', `已删除 ${file.name}`)
+            showToast('success', t('files.deleteSuccess', { name: file.name }))
         } catch (err) {
             console.error('Failed to delete file:', err)
-            showToast('error', err instanceof Error ? err.message : '删除文件失败')
+            showToast('error', err instanceof Error ? err.message : t('files.deleteFailed'))
         } finally {
             setDeletingKey(null)
         }

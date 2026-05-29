@@ -1205,6 +1205,8 @@
     "noMatchFiles": "No files match \"{{term}}\"",
     "deleteTitle": "Delete File",
     "deleteConfirm": "This will permanently delete \"{{name}}\". This action cannot be undone.",
+    "deleteSuccess": "Deleted {{name}}",
+    "deleteFailed": "Failed to delete file",
     "categories": {
       "all": "All",
       "doc": "Doc",
