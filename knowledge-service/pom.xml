@@ -6,12 +6,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.huawei.msz</groupId>
-        <artifactId>ms-om-parent</artifactId>
+        <groupId>com.huawei.opsfactory</groupId>
+        <artifactId>ops-factory-parent</artifactId>
         <version>1.5.1.1-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.huawei.msz</groupId>
+    <groupId>com.huawei.opsfactory</groupId>
     <artifactId>knowledge-service</artifactId>
     <version>1.5.1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -118,6 +118,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Logback for testing -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
