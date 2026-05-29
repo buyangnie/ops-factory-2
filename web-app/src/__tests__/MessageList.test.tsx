@@ -488,6 +488,7 @@ describe('MessageList tool error rendering', () => {
             expect(postCall).toBeTruthy()
             const body = JSON.parse(String(postCall?.[1]?.body))
             expect(body.messageId).toBe('assistant-a')
+            expect(body.requestId).toBe('req-a')
         })
     })
 
@@ -674,6 +675,77 @@ describe('MessageList tool error rendering', () => {
         await waitFor(() => {
             expect(container.querySelector('.file-capsule')).toBeTruthy()
             expect(screen.getByText('goose-intro.md')).toBeTruthy()
+        })
+    })
+
+    it('restores output file capsules from persisted request-scoped entries', async () => {
+        const { fetchMock } = createFetchMock({
+            persistedEntries: {
+                'stale-message-id': [{
+                    path: 'goose-intro.md',
+                    name: 'goose-intro.md',
+                    ext: 'md',
+                    rootId: 'workingDir',
+                    displayPath: 'goose-intro.md',
+                    requestId: 'req-final',
+                }],
+            },
+        })
+        vi.stubGlobal('fetch', fetchMock)
+
+        const messages: ChatMessage[] = [
+            {
+                id: 'assistant-final',
+                role: 'assistant',
+                content: [{ type: 'text', text: 'Done' }],
+                metadata: { requestId: 'req-final' },
+            },
+        ]
+
+        const { container } = renderMessageListWithPreview(messages, {
+            agentId: 'universal-agent',
+            sessionId: 'session-1',
+        })
+
+        await waitFor(() => {
+            expect(container.querySelector('.file-capsule')).toBeTruthy()
+            expect(screen.getByText('goose-intro.md')).toBeTruthy()
+        })
+    })
+
+    it('restores output file capsules by matching file names when persisted message ids drift', async () => {
+        const { fetchMock } = createFetchMock({
+            persistedEntries: {
+                'stale-message-id': [{
+                    path: 'reports/system-health-analysis-20260528211302.md',
+                    name: 'system-health-analysis-20260528211302.md',
+                    ext: 'md',
+                    rootId: 'workingDir',
+                    displayPath: 'system-health-analysis-20260528211302.md',
+                }],
+            },
+        })
+        vi.stubGlobal('fetch', fetchMock)
+
+        const messages: ChatMessage[] = [
+            {
+                id: 'assistant-summary',
+                role: 'assistant',
+                content: [{
+                    type: 'text',
+                    text: '报告已生成，文件名为 system-health-analysis-20260528211302.md，可在 output 目录查看。',
+                }],
+            },
+        ]
+
+        const { container } = renderMessageListWithPreview(messages, {
+            agentId: 'universal-agent',
+            sessionId: 'session-legacy',
+        })
+
+        await waitFor(() => {
+            expect(container.querySelector('.file-capsule')).toBeTruthy()
+            expect(screen.getByText('system-health-analysis-20260528211302.md')).toBeTruthy()
         })
     })
 

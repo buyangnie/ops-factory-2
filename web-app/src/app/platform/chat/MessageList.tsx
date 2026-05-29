@@ -219,6 +219,100 @@ interface PendingOutputFilesEntry {
     receivedAt: number
 }
 
+interface PersistedDetectedFile extends DetectedFile {
+    requestId?: string
+}
+
+interface PersistedOutputFilesEntry {
+    messageId: string
+    requestId?: string
+    files: DetectedFile[]
+}
+
+const buildDisplayMessageId = (message: ChatMessage, index: number): string =>
+    message.id ?? `display-message-${index}`
+
+const getMessageSearchText = (message: ChatMessage): string => {
+    const parts: string[] = []
+    for (const content of message.content) {
+        if (content.type === 'text' && content.text) {
+            parts.push(content.text.toLowerCase())
+        }
+    }
+    return parts.join('\n')
+}
+
+const findAssistantMessageIdByFileMention = (
+    displayMessages: ChatMessage[],
+    files: DetectedFile[]
+): string | undefined => {
+    const needles = Array.from(new Set(
+        files.flatMap(file => [file.name, file.displayPath, file.path])
+            .filter((value): value is string => Boolean(value))
+            .map(value => value.toLowerCase())
+    ))
+
+    if (needles.length === 0) {
+        return undefined
+    }
+
+    for (let i = displayMessages.length - 1; i >= 0; i--) {
+        const message = displayMessages[i]
+        if (message.role !== 'assistant' || !hasDisplayTextContent(message)) {
+            continue
+        }
+
+        const haystack = getMessageSearchText(message)
+        if (needles.some(needle => haystack.includes(needle))) {
+            return buildDisplayMessageId(message, i)
+        }
+    }
+
+    return undefined
+}
+
+const parsePersistedOutputFiles = (
+    entries: Record<string, PersistedDetectedFile[]>
+): PersistedOutputFilesEntry[] => {
+    const persistedEntries: PersistedOutputFilesEntry[] = []
+
+    for (const [messageId, files] of Object.entries(entries)) {
+        if (!Array.isArray(files) || files.length === 0) {
+            continue
+        }
+
+        persistedEntries.push({
+            messageId,
+            requestId: files.find(file => typeof file.requestId === 'string' && file.requestId)?.requestId,
+            files: files.map(({ requestId: _requestId, ...file }) => file),
+        })
+    }
+
+    return persistedEntries
+}
+
+const resolvePersistedOutputFilesTargetMessageId = (
+    entry: PersistedOutputFilesEntry,
+    displayMessages: ChatMessage[],
+    assistantMessageIdByRequestId: Map<string, string>
+): string | undefined => {
+    if (entry.requestId) {
+        const matchedByRequestId = assistantMessageIdByRequestId.get(entry.requestId)
+        if (matchedByRequestId) {
+            return matchedByRequestId
+        }
+    }
+
+    for (let i = 0; i < displayMessages.length; i++) {
+        const message = displayMessages[i]
+        if (messageIdentityIds(message).includes(entry.messageId)) {
+            return buildDisplayMessageId(message, i)
+        }
+    }
+
+    return findAssistantMessageIdByFileMention(displayMessages, entry.files)
+}
+
 export default function MessageList({
     messages,
     isLoading = false,
@@ -298,7 +392,7 @@ export default function MessageList({
                 requestId &&
                 !next.has(requestId)
             ) {
-                next.set(requestId, msg.id ?? `display-message-${i}`)
+                next.set(requestId, buildDisplayMessageId(msg, i))
             }
         }
         return next
@@ -387,6 +481,7 @@ export default function MessageList({
                 headers: { ...gatewayHeaders(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sessionId: outputFilesEvent.sessionId,
+                    requestId: outputFilesEvent.requestId,
                     messageId: targetMessageId,
                     files: filesToPersist,
                 }),
@@ -429,7 +524,7 @@ export default function MessageList({
         const now = Date.now()
         const remaining = new Map<string, PendingOutputFilesEntry>()
         const nextMessageOutputFiles = new Map(messageOutputFiles)
-        const payloads: Array<{ sessionId: string; messageId: string; files: DetectedFile[] }> = []
+        const payloads: Array<{ sessionId: string; requestId?: string; messageId: string; files: DetectedFile[] }> = []
 
         for (const [pendingKey, entry] of pendingOutputFiles.entries()) {
             if (entry.event.sessionId !== sessionId) {
@@ -468,6 +563,7 @@ export default function MessageList({
             nextMessageOutputFiles.set(targetMessageId, filesToPersist)
             payloads.push({
                 sessionId: entry.event.sessionId,
+                requestId: entry.event.requestId,
                 messageId: targetMessageId,
                 files: filesToPersist,
             })
@@ -511,14 +607,24 @@ export default function MessageList({
                     { headers: gatewayHeaders() }
                 )
                 if (!res.ok || cancelled) return
-                const data = await res.json() as { entries?: Record<string, DetectedFile[]> }
+                const data = await res.json() as { entries?: Record<string, PersistedDetectedFile[]> }
                 if (!data.entries || cancelled) return
 
                 const map = new Map<string, DetectedFile[]>()
-                for (const [msgId, files] of Object.entries(data.entries)) {
-                    if (Array.isArray(files) && files.length > 0) {
-                        map.set(msgId, files)
+                for (const entry of parsePersistedOutputFiles(data.entries)) {
+                    const targetMessageId = resolvePersistedOutputFilesTargetMessageId(
+                        entry,
+                        displayMessages,
+                        assistantMessageIdByRequestId
+                    )
+                    if (!targetMessageId) {
+                        continue
                     }
+
+                    map.set(
+                        targetMessageId,
+                        mergeDetectedFiles(map.get(targetMessageId) ?? [], entry.files)
+                    )
                 }
                 if (map.size > 0) {
                     setMessageOutputFiles(prev => {
@@ -542,7 +648,7 @@ export default function MessageList({
 
         loadPersistedCapsules()
         return () => { cancelled = true }
-    }, [agentId, sessionId, isLoading, displayMessages.length, gatewayHeaders])
+    }, [agentId, sessionId, isLoading, displayMessages, assistantMessageIdByRequestId, gatewayHeaders])
 
     // Reset state when agent or session changes
     useEffect(() => {

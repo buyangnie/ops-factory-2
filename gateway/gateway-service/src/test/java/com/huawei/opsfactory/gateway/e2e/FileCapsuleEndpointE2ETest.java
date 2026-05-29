@@ -141,7 +141,29 @@ public class FileCapsuleEndpointE2ETest extends BaseE2ETest {
             .jsonPath("$.status")
             .isEqualTo("ok");
 
-        verify(fileService).persistOutputFiles(any(Path.class), eq("s1"), eq("msg_001"), any(List.class));
+        verify(fileService).persistOutputFiles(any(Path.class), eq("s1"), eq("msg_001"), eq((String) null), any(List.class));
+    }
+
+    /**
+     * Executes the save file capsule request id persists alongside files operation.
+     */
+    @Test
+    public void saveFileCapsule_requestIdPresent_persistsWithRequestId() {
+        webClient.post()
+            .uri("/gateway/agents/test-agent/file-capsules")
+            .header(HEADER_SECRET_KEY, SECRET_KEY)
+            .header(HEADER_USER_ID, "alice")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("{\"sessionId\":\"s1\",\"requestId\":\"req-123\",\"messageId\":\"msg_001\",\"files\":"
+                + "[{\"name\":\"out.csv\",\"path\":\"data/out.csv\"}]}")
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody()
+            .jsonPath("$.status")
+            .isEqualTo("ok");
+
+        verify(fileService).persistOutputFiles(any(Path.class), eq("s1"), eq("msg_001"), eq("req-123"), any(List.class));
     }
 
     /**

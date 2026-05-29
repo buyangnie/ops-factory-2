@@ -551,9 +551,10 @@ public class FileService {
      * @param workingDir agent working directory
      * @param sessionId session identifier
      * @param messageId message identifier for the capsule entry
+     * @param requestId request identifier bound to the output files, may be {@code null}
      * @param files files
      */
-    public void persistOutputFiles(Path workingDir, String sessionId, String messageId,
+    public void persistOutputFiles(Path workingDir, String sessionId, String messageId, String requestId,
         List<Map<String, String>> files) {
         Path dir = workingDir.resolve("data").resolve(sessionId);
         Path file = dir.resolve(CAPSULE_FILE);
@@ -561,13 +562,25 @@ public class FileService {
             Files.createDirectories(dir);
 
             Map<String, List<Map<String, String>>> entries = readCapsuleEntries(file);
-            entries.put(messageId, files);
+            entries.put(messageId, enrichCapsuleFiles(files, requestId));
             writeCapsuleEntries(file, entries);
 
             log.debug("Persisted {} file capsules for session {} message {}", files.size(), sessionId, messageId);
         } catch (IOException e) {
             log.warn("Failed to persist file capsules for session {}: {}", sessionId, e.getMessage());
         }
+    }
+
+    private List<Map<String, String>> enrichCapsuleFiles(List<Map<String, String>> files, String requestId) {
+        List<Map<String, String>> enriched = new ArrayList<>(files.size());
+        for (Map<String, String> file : files) {
+            Map<String, String> copy = new LinkedHashMap<>(file);
+            if (requestId != null && !requestId.isBlank()) {
+                copy.put("requestId", requestId);
+            }
+            enriched.add(copy);
+        }
+        return enriched;
     }
 
     /**
