@@ -51,7 +51,7 @@ export function validateMaxTokens(value: string): 'format' | 'range' | null {
     return null
 }
 
-export const VALID_CONTEXT_STRATEGIES = ['truncate', 'compact', 'hybrid'] as const
+export const VALID_CONTEXT_STRATEGIES = ['summarize', 'truncate', 'clear', 'prompt'] as const
 export type ContextStrategy = typeof VALID_CONTEXT_STRATEGIES[number]
 
 export function validateContextStrategy(value: string): 'invalid' | null {
@@ -69,12 +69,12 @@ export function validateAutoCompactThreshold(value: string): 'format' | 'range' 
     const trimmed = value.trim()
     if (!trimmed) return null
 
-    if (!/^\d+$/.test(trimmed)) {
+    if (!/^\d*\.?\d+$/.test(trimmed)) {
         return 'format'
     }
 
-    const num = parseInt(trimmed, 10)
-    if (num < 1 || num > 100) {
+    const num = parseFloat(trimmed)
+    if (isNaN(num) || num < 0 || num > 1) {
         return 'range'
     }
 
@@ -90,7 +90,7 @@ export function validateMaxTurns(value: string): 'format' | 'range' | null {
     }
 
     const num = parseInt(trimmed, 10)
-    if (num < 1 || num > 100) {
+    if (num < 1 || num > 10000) {
         return 'range'
     }
 

@@ -194,7 +194,7 @@ export default function ModelConfigSection({ config, onSave, onCreateProvider, o
                                             let value = event.target.value
 
                                             if (isNumericField) {
-                                                if (field.key === 'GOOSE_TEMPERATURE') {
+                                                if (field.key === 'GOOSE_TEMPERATURE' || field.key === 'GOOSE_AUTO_COMPACT_THRESHOLD') {
                                                     value = value.replace(/[^\d.]/g, '')
                                                     const parts = value.split('.')
                                                     if (parts.length > 2) {
