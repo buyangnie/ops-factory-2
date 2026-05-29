@@ -24,7 +24,6 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
 /**
  * Dv Ssl Context Factory.
@@ -52,11 +51,10 @@ public class DvSslContextFactory {
             if (strictSsl) {
                 throw new IllegalStateException("No SSL certificate configured and strict-ssl is enabled");
             }
-            log.warn(
-                "INSECURE SSL MODE: No certificate configured and strict-ssl=false. "
-                    + "Using insecure trust manager that accepts all certificates. "
-                    + "WARNING: This is acceptable ONLY for development environment. "
-                    + "Production environment MUST have strict-ssl=true and valid certificate.");
+            log.warn("INSECURE SSL MODE: No certificate configured and strict-ssl=false. "
+                + "Using insecure trust manager that accepts all certificates. "
+                + "WARNING: This is acceptable ONLY for development environment. "
+                + "Production environment MUST have strict-ssl=true and valid certificate.");
             return createInsecureSslContext();
         }
 
@@ -93,17 +91,16 @@ public class DvSslContextFactory {
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
             return sslContext;
-        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException | IOException |
-                CertificateException | UnrecoverableKeyException e) {
+        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException | IOException
+            | CertificateException | UnrecoverableKeyException e) {
             if (strictSsl) {
-                throw new IllegalStateException("Failed to create SSL context with certificate (strict-ssl enabled)", e);
+                throw new IllegalStateException("Failed to create SSL context with certificate (strict-ssl enabled)",
+                    e);
             }
             log.error(
-                "SSL context creation failed and strict-ssl=false. "
-                    + "FALLING BACK TO INSECURE MODE. "
+                "SSL context creation failed and strict-ssl=false. " + "FALLING BACK TO INSECURE MODE. "
                     + "This accepts ALL certificates and should ONLY be used in development. "
-                    + "Production environment requires strict-ssl=true and valid certificates. "
-                    + "Error: {}",
+                    + "Production environment requires strict-ssl=true and valid certificates. " + "Error: {}",
                 e.getMessage());
             return createInsecureSslContext();
         }
@@ -117,17 +114,17 @@ public class DvSslContextFactory {
     private SSLContext createInsecureSslContext() {
         try {
             SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[] {
-                new javax.net.ssl.X509TrustManager() {
-                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                        return new java.security.cert.X509Certificate[0];
-                    }
-                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-                    }
-                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-                    }
+            sslContext.init(null, new TrustManager[] {new javax.net.ssl.X509TrustManager() {
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return new java.security.cert.X509Certificate[0];
                 }
-            }, new SecureRandom());
+
+                public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                }
+
+                public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                }
+            }}, new SecureRandom());
             return sslContext;
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
             throw new IllegalStateException("Failed to create insecure SSL context", e);

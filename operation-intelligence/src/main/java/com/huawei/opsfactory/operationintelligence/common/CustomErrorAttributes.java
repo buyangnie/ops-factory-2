@@ -14,8 +14,8 @@ import java.util.Map;
 
 /**
  * Custom Error Attributes.
- *
- * <p>Includes detailed error messages from ResponseStatusException in error responses for non-production environments.
+ * <p>
+ * Includes detailed error messages from ResponseStatusException in error responses for non-production environments.
  *
  * @author x00000000
  * @since 2026-05-19

@@ -4,6 +4,17 @@
 
 package com.huawei.opsfactory.operationintelligence.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
 import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
 import com.huawei.opsfactory.operationintelligence.qos.dv.DvClient;
 import com.huawei.opsfactory.operationintelligence.qos.model.CallChainTree;
@@ -24,18 +35,6 @@ import org.mockito.quality.Strictness;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-import org.mockito.stubbing.Answer;
 
 /**
  * Call Chain Service Test.
@@ -69,8 +68,8 @@ class CallChainServiceTest {
 
     @BeforeEach
     void setUp() {
-        callChainService = new CallChainService(properties, dvClient, chainBuilder,
-            chainStore, configStore, timeSplitStrategy);
+        callChainService =
+            new CallChainService(properties, dvClient, chainBuilder, chainStore, configStore, timeSplitStrategy);
     }
 
     @Test
@@ -79,23 +78,17 @@ class CallChainServiceTest {
         callChain.setQuerySize(100);
         when(properties.getCallChain()).thenReturn(callChain);
         when(configStore.loadAll()).thenReturn(List.of());
-        when(dvClient.fetchTraceLogEntries(anyString(), anyString(), anyString(), anyList(), any(), anyLong(), anyLong(), anyInt()))
-            .thenReturn(List.of());
+        when(dvClient.fetchTraceLogEntries(anyString(), anyString(), anyString(), anyList(), any(), anyLong(),
+            anyLong(), anyInt())).thenReturn(List.of());
 
         CallChainTree tree = new CallChainTree();
         tree.setChainType(null);
         tree.setFlows(new ArrayList<>());
         tree.setTotalCount(0L);
-        when(chainBuilder.build(anyString(), anyString(), anyString(), anyList(), anyLong(), anyString()))
-            .thenReturn(tree);
+        when(chainBuilder.build(anyString(), anyString(), anyString(), anyList(), anyLong())).thenReturn(tree);
 
-        CallChainTree result = callChainService.queryCallChain(
-            "DigitalCRM.sit",
-            List.of(Map.of("conditionKey", "menuId", "conditionValue", "604015020")),
-            1746057600000L,
-            1746662400000L,
-            "method"
-        );
+        CallChainTree result = callChainService.queryCallChain("DigitalCRM.sit",
+            List.of(Map.of("conditionKey", "menuId", "conditionValue", "604015020")), 1746057600000L, 1746662400000L);
 
         assertNotNull(result);
         assertNull(result.getChainType());
@@ -120,8 +113,8 @@ class CallChainServiceTest {
         TraceLogRecord entryLog = new TraceLogRecord();
         entryLog.setTraceId("trace-123");
         entryLog.setSeqNo("1");
-        when(dvClient.fetchTraceLogEntries(anyString(), anyString(), anyString(), anyList(), any(), anyLong(), anyLong(), anyInt()))
-            .thenReturn(List.of(entryLog));
+        when(dvClient.fetchTraceLogEntries(anyString(), anyString(), anyString(), anyList(), any(), anyLong(),
+            anyLong(), anyInt())).thenReturn(List.of(entryLog));
 
         // Mock complete trace logs for the trace ID
         TraceLogRecord fullLog = new TraceLogRecord();
@@ -132,23 +125,16 @@ class CallChainServiceTest {
             .thenReturn(List.of(fullLog));
 
         // Mock chain builder to return a new tree for debugging
-        when(chainBuilder.build(anyString(), anyString(), anyString(), anyList(), anyLong(), anyString()))
-            .thenAnswer(invocation -> {
-                CallChainTree result = new CallChainTree();
-                result.setChainType("BES");
-                result.setFlows(List.of());
-                result.setTotalCount(1L);
-                return result;
-            });
+        when(chainBuilder.build(anyString(), anyString(), anyString(), anyList(), anyLong())).thenAnswer(invocation -> {
+            CallChainTree result = new CallChainTree();
+            result.setChainType("BES");
+            result.setFlows(List.of());
+            result.setTotalCount(1L);
+            return result;
+        });
 
-
-        CallChainTree result = callChainService.queryCallChain(
-            "DigitalCRM.sit",
-            List.of(Map.of("conditionKey", "menuId", "conditionValue", "604015020")),
-            1746057600000L,
-            1746662400000L,
-            "method"
-        );
+        CallChainTree result = callChainService.queryCallChain("DigitalCRM.sit",
+            List.of(Map.of("conditionKey", "menuId", "conditionValue", "604015020")), 1746057600000L, 1746662400000L);
 
         assertNotNull(result);
         assertEquals("BES", result.getChainType());
@@ -161,13 +147,8 @@ class CallChainServiceTest {
         callChain.setQuerySize(100);
         when(properties.getCallChain()).thenReturn(callChain);
 
-        CallChainTree result = callChainService.queryCallChain(
-            "DigitalCRM.sit",
-            List.of(),
-            1746057600000L,
-            1746662400000L,
-            "method"
-        );
+        CallChainTree result =
+            callChainService.queryCallChain("DigitalCRM.sit", List.of(), 1746057600000L, 1746662400000L);
 
         assertNotNull(result);
     }
@@ -178,13 +159,8 @@ class CallChainServiceTest {
         callChain.setQuerySize(100);
         when(properties.getCallChain()).thenReturn(callChain);
 
-        CallChainTree result = callChainService.queryCallChain(
-            "DigitalCRM.sit",
-            new ArrayList<>(),
-            1746057600000L,
-            1746662400000L,
-            "method"
-        );
+        CallChainTree result =
+            callChainService.queryCallChain("DigitalCRM.sit", new ArrayList<>(), 1746057600000L, 1746662400000L);
 
         assertNotNull(result);
         assertNull(result.getChainType());

@@ -5,9 +5,16 @@
     http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.huawei.opsfactory</groupId>
+    <parent>
+        <groupId>com.huawei.msz</groupId>
+        <artifactId>ms-om-parent</artifactId>
+        <version>1.5.1.1-SNAPSHOT</version>
+    </parent>
+
+
+    <groupId>com.huawei.msz</groupId>
     <artifactId>ops-gateway-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.5.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -45,16 +52,9 @@
 
             <!-- Internal modules -->
             <dependency>
-                <groupId>com.huawei.opsfactory</groupId>
+                <groupId>com.huawei.msz</groupId>
                 <artifactId>gateway-common</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-
-            <!-- Override transitive commons-lang3 from swagger-core -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.20.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -79,16 +79,13 @@
                     <version>${spotless-maven-plugin.version}</version>
                     <configuration>
                         <java>
-                            <eclipse>
-                                <file>${project.basedir}/../idea-coding-standards-guide/docs/development/configs/CodeFormatterFromEclipse.xml</file>
-                            </eclipse>
-                            <importOrder>
-                                <file>${project.basedir}/../idea-coding-standards-guide/docs/development/configs/eclipse.importorder</file>
-                            </importOrder>
-                            <removeUnusedImports />
+                            <googleJavaFormat>
+                                <version>${google-java-format.version}</version>
+                            </googleJavaFormat>
                         </java>
                     </configuration>
                 </plugin>
+
             </plugins>
         </pluginManagement>
         <plugins>

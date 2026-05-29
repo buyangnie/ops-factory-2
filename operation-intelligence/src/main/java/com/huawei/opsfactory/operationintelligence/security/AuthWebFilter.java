@@ -46,6 +46,15 @@ public class AuthWebFilter implements Filter {
     private final OperationIntelligenceProperties properties;
 
     /**
+     * Auth Web Filter.
+     *
+     * @param properties the properties
+     */
+    public AuthWebFilter(OperationIntelligenceProperties properties) {
+        this.properties = properties;
+    }
+
+    /**
      * Compares two strings in constant time to prevent timing attacks.
      *
      * @param a first string
@@ -75,20 +84,17 @@ public class AuthWebFilter implements Filter {
     }
 
     /**
-     * Auth Web Filter.
+     * doFilter.
      *
-     * @param properties the properties
-     */
-    public AuthWebFilter(OperationIntelligenceProperties properties) {
-        this.properties = properties;
-    }
-
-    /**
-     * {@inheritDoc}
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param chain chain
+     * @throws IOException ServletException
+     * @throws ServletException ServletException
      */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+        throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String path = httpRequest.getRequestURI();

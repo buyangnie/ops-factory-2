@@ -4,8 +4,9 @@
 
 package com.huawei.opsfactory.operationintelligence.qos.parser;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.huawei.opsfactory.operationintelligence.qos.model.TraceLogRecord;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,10 +114,8 @@ public class TraceLogParser {
             return false;
         }
         String upper = logMessage.toUpperCase();
-        return upper.startsWith("E") || upper.startsWith("END") ||
-               upper.startsWith("ER") || upper.startsWith("EBS") ||
-               upper.startsWith("EMQ") || upper.startsWith("EBPMP") ||
-               upper.startsWith("EBPMA");
+        return upper.startsWith("E") || upper.startsWith("END") || upper.startsWith("ER") || upper.startsWith("EBS")
+            || upper.startsWith("EMQ") || upper.startsWith("EBPMP") || upper.startsWith("EBPMA");
     }
 
     /**

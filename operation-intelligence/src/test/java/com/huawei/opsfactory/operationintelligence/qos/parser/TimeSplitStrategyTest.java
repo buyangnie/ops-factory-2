@@ -4,16 +4,16 @@
 
 package com.huawei.opsfactory.operationintelligence.qos.parser;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Time Split Strategy Test.
@@ -29,7 +29,8 @@ class TimeSplitStrategyTest {
     void setUp() {
         OperationIntelligenceProperties properties = new OperationIntelligenceProperties();
         OperationIntelligenceProperties.CallChain callChain = new OperationIntelligenceProperties.CallChain();
-        OperationIntelligenceProperties.CallChain.TimeSplit timeSplit = new OperationIntelligenceProperties.CallChain.TimeSplit();
+        OperationIntelligenceProperties.CallChain.TimeSplit timeSplit =
+            new OperationIntelligenceProperties.CallChain.TimeSplit();
         timeSplit.setInitialMinutes(30);
         timeSplit.setDegradeMinutes(List.of(15L, 5L, 1L));
         callChain.setTimeSplit(timeSplit);

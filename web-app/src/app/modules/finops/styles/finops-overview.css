@@ -1,0 +1,326 @@
+/* ── Visual Optimization Enhancements ── */
+
+/* 1. StatCard layout and quiet category accents */
+.finops-page .stat-card {
+    position: relative;
+    overflow: hidden;
+    gap: var(--spacing-3);
+    border-color: color-mix(in srgb, var(--color-border) 84%, transparent);
+    background: var(--color-bg-primary);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.finops-page .stat-card:hover {
+    border-color: var(--color-border-hover);
+    box-shadow: var(--shadow-sm);
+}
+
+.finops-page .stat-card-head {
+    position: relative;
+    width: 100%;
+}
+
+.finops-page .stat-card-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.finops-page .stat-card-icon-slot {
+    position: absolute;
+    right: 0;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    color: var(--color-text-secondary);
+    background: var(--color-bg-secondary);
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.finops-page .finops-stat-total-tokens .stat-card-icon-slot {
+    background: color-mix(in srgb, var(--chart-5) 10%, transparent);
+    color: var(--chart-5);
+}
+
+.finops-page .finops-stat-sessions .stat-card-icon-slot {
+    background: color-mix(in srgb, var(--chart-1) 10%, transparent);
+    color: var(--chart-1);
+}
+
+.finops-page .finops-stat-input-tokens .stat-card-icon-slot {
+    background: color-mix(in srgb, var(--chart-2) 10%, transparent);
+    color: var(--chart-2);
+}
+
+.finops-page .finops-stat-output-tokens .stat-card-icon-slot {
+    background: color-mix(in srgb, var(--chart-3) 10%, transparent);
+    color: var(--chart-3);
+}
+
+.finops-page .finops-stat-active-users .stat-card-icon-slot {
+    background: color-mix(in srgb, var(--chart-7) 10%, transparent);
+    color: var(--chart-7);
+}
+
+.finops-page .finops-stat-active-agents .stat-card-icon-slot {
+    background: color-mix(in srgb, var(--chart-8) 10%, transparent);
+    color: var(--chart-8);
+}
+
+/* 2. Task execution load styling */
+.finops-task-load-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--spacing-5);
+    width: 100%;
+}
+
+.finops-task-load-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--spacing-3);
+}
+
+.finops-task-load-head span {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.finops-task-load-head strong {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.finops-task-load-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.finops-task-load-row small {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.finops-task-load-bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-secondary);
+}
+
+/* 3. Model distribution list */
+.finops-model-distribution {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--spacing-2);
+    width: 100%;
+}
+
+.finops-model-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-lg);
+}
+
+.finops-model-row-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.finops-model-name {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    gap: var(--spacing-2);
+    overflow: hidden;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.finops-model-name .finops-color-dot {
+    width: 10px;
+    height: 10px;
+}
+
+.finops-model-row-head strong {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+.finops-model-provider {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.finops-model-bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-secondary);
+}
+
+.finops-model-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-3);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    line-height: 1.4;
+}
+
+/* 4. Top Users Leaderboard styling */
+.finops-leaderboard {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--spacing-2);
+    width: 100%;
+}
+
+.finops-leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+}
+
+.finops-leaderboard-rank {
+    flex: 0 0 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+}
+
+.rank-badge.rank-1 {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.rank-badge.rank-2 {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.rank-badge.rank-3 {
+    background: #ffedd5;
+    color: #ea580c;
+}
+
+.finops-leaderboard-avatar {
+    display: flex;
+    flex: 0 0 32px;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.finops-leaderboard-accent-1 {
+    background: color-mix(in srgb, var(--chart-5) 12%, transparent);
+    color: var(--chart-5);
+}
+
+.finops-leaderboard-accent-2 {
+    background: color-mix(in srgb, var(--chart-7) 12%, transparent);
+    color: var(--chart-7);
+}
+
+.finops-leaderboard-accent-3 {
+    background: color-mix(in srgb, var(--chart-8) 12%, transparent);
+    color: var(--chart-8);
+}
+
+.finops-leaderboard-accent-4 {
+    background: color-mix(in srgb, var(--chart-1) 12%, transparent);
+    color: var(--chart-1);
+}
+
+.finops-leaderboard-accent-5 {
+    background: color-mix(in srgb, var(--chart-2) 12%, transparent);
+    color: var(--chart-2);
+}
+
+.finops-leaderboard-info {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 0;
+}
+
+.info-top .user-id {
+    overflow: hidden;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.info-top .user-value {
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.info-bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-secondary);
+}

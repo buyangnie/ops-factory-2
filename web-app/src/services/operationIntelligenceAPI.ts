@@ -6,6 +6,7 @@
 import { gatewayHeaders, runtime } from '../config/runtime'
 
 import type { HealthIndicatorResponse, IndicatorDetailResponse } from '../types/operationIntelligence';
+import type { Host, HostTestResult } from '../types/host';
 
 export interface EnvironmentInfo {
   envCode: string
@@ -301,4 +302,77 @@ export async function getDiagnosisContext(
       rootCauseCandidates: RootCauseCandidate[]
     }
   }>('/graph/diagnosis/context', { ontologyId, envCode, entityId, maxHops: 2 }, 'POST', userId)
+}
+
+export async function getGraphEntity(
+  envCode: string,
+  entityId: string,
+  userId?: string | null,
+  ontologyId?: string,
+): Promise<{ result: GraphEntity }> {
+  const ontologyQuery = ontologyId ? `&ontologyId=${encodeURIComponent(ontologyId)}` : ''
+  return request<{ result: GraphEntity }>(
+    `/graph/entities/${encodeURIComponent(entityId)}?envCode=${encodeURIComponent(envCode)}${ontologyQuery}`,
+    undefined,
+    'GET',
+    userId,
+  )
+}
+
+export async function updateGraphEntity(
+  envCode: string,
+  entityId: string,
+  entity: GraphEntity,
+  userId?: string | null,
+  ontologyId?: string,
+): Promise<{ result: GraphEntity }> {
+  return request<{ result: GraphEntity }>(
+    `/graph/entities/${encodeURIComponent(entityId)}`,
+    { ontologyId, envCode, entity },
+    'PUT',
+    userId,
+  )
+}
+
+export async function deleteGraphEntity(
+  envCode: string,
+  entityId: string,
+  userId?: string | null,
+  ontologyId?: string,
+): Promise<{ result: { entityId: string; deleted: boolean } }> {
+  const ontologyQuery = ontologyId ? `&ontologyId=${encodeURIComponent(ontologyId)}` : ''
+  return request<{ result: { entityId: string; deleted: boolean } }>(
+    `/graph/entities/${encodeURIComponent(entityId)}?envCode=${encodeURIComponent(envCode)}${ontologyQuery}`,
+    undefined,
+    'DELETE',
+    userId,
+  )
+}
+
+function hostApiBase(): string {
+  return `${runtime.GATEWAY_URL}/hosts`
+}
+
+export async function findHostByIp(ip: string, userId?: string | null): Promise<Host> {
+  const response = await fetch(`${hostApiBase()}/by-ip?ip=${encodeURIComponent(ip)}`, {
+    method: 'GET',
+    headers: gatewayHeaders(userId),
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || `HTTP error! status: ${response.status}`)
+  }
+  return data.host as Host
+}
+
+export async function testHostConnection(hostId: string, userId?: string | null): Promise<HostTestResult> {
+  const response = await fetch(`${hostApiBase()}/${encodeURIComponent(hostId)}/test`, {
+    method: 'POST',
+    headers: gatewayHeaders(userId),
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(data.error || `HTTP error! status: ${response.status}`)
+  }
+  return data as HostTestResult
 }

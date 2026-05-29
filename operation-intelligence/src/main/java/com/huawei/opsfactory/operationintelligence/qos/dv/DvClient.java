@@ -9,9 +9,9 @@ import com.huawei.opsfactory.operationintelligence.qos.model.AlarmInfo;
 import com.huawei.opsfactory.operationintelligence.qos.model.PerformanceDataResult;
 import com.huawei.opsfactory.operationintelligence.qos.model.TraceLogRecord;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import jakarta.annotation.PreDestroy;
 
@@ -19,14 +19,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -34,13 +30,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 /**
  * Dv Client.
@@ -83,7 +75,7 @@ public class DvClient {
      * @param properties the properties
      */
     public DvClient(DvAuthService authService, DvSslContextFactory sslFactory,
-                    OperationIntelligenceProperties properties) {
+        OperationIntelligenceProperties properties) {
         this.authService = authService;
         this.sslFactory = sslFactory;
         this.properties = properties;
@@ -93,6 +85,12 @@ public class DvClient {
         this.requestTimeoutMs = 60000;
         this.queryLimit = properties.getCallChain().getQueryLimit();
     }
+
+    private static String textVal(JsonNode node, String field) {
+        return node.has(field) && !node.get(field).isNull() ? node.get(field).asText() : null;
+    }
+
+    // --- MO 查询（性能数据前置接口） ---
 
     /**
      * Get DV environment by solution type (envCode).
@@ -108,26 +106,13 @@ public class DvClient {
 
         for (var config : environments) {
             if (solutionType.equals(config.getAgentSolutionType())) {
-                return new DvEnvironmentInfo(
-                    config.getEnvCode(),
-                    config.getAgentSolutionType(),
-                    config.getServerUrl(),
-                    config.getUtmUser(),
-                    config.getUtmPassword(),
-                    config.getCrtContent(),
-                    config.getCrtFileName(),
-                    config.getDns()
-                );
+                return new DvEnvironmentInfo(config.getEnvCode(), config.getAgentSolutionType(), config.getServerUrl(),
+                    config.getUtmUser(), config.getUtmPassword(), config.getCrtContent(), config.getCrtFileName(),
+                    config.getDns());
             }
         }
 
         return null;
-    }
-
-    // --- MO 查询（性能数据前置接口） ---
-
-    private static String textVal(JsonNode node, String field) {
-        return node.has(field) && !node.get(field).isNull() ? node.get(field).asText() : null;
     }
 
     /**
@@ -164,7 +149,8 @@ public class DvClient {
 
             return parseChildren(response);
         } catch (IOException | IllegalStateException e) {
-            throw new IllegalStateException("Failed to fetch MOs from " + env.getServerUrl() + ": " + e.getMessage(), e);
+            throw new IllegalStateException("Failed to fetch MOs from " + env.getServerUrl() + ": " + e.getMessage(),
+                e);
         }
     }
 
@@ -267,7 +253,8 @@ public class DvClient {
 
             return parseAlarms(response);
         } catch (IOException | IllegalStateException e) {
-            throw new IllegalStateException("Failed to fetch alarms from " + env.getServerUrl() + ": " + e.getMessage(), e);
+            throw new IllegalStateException("Failed to fetch alarms from " + env.getServerUrl() + ": " + e.getMessage(),
+                e);
         }
     }
 
@@ -310,10 +297,12 @@ public class DvClient {
         return clientCache.computeIfAbsent(env.getServerUrl(), url -> {
             ClientHttpRequestFactory requestFactory;
             try {
-                SSLContext sslContext = sslFactory.createSslContext(env.getCrtContent(), env.getCrtFileName(), env.isStrictSsl());
+                SSLContext sslContext =
+                    sslFactory.createSslContext(env.getCrtContent(), env.getCrtFileName(), env.isStrictSsl());
                 requestFactory = new SimpleClientHttpRequestFactory() {
                     @Override
-                    protected void prepareConnection(java.net.HttpURLConnection conn, String httpMethod) throws IOException {
+                    protected void prepareConnection(java.net.HttpURLConnection conn, String httpMethod)
+                        throws IOException {
                         super.prepareConnection(conn, httpMethod);
                         if (conn instanceof javax.net.ssl.HttpsURLConnection httpsConn) {
                             httpsConn.setSSLSocketFactory(sslContext.getSocketFactory());
@@ -326,10 +315,7 @@ public class DvClient {
             } catch (IllegalStateException e) {
                 throw new IllegalStateException("Failed to create SSL context for " + url, e);
             }
-            return RestClient.builder()
-                .requestFactory(requestFactory)
-                .baseUrl(url)
-                .build();
+            return RestClient.builder().requestFactory(requestFactory).baseUrl(url).build();
         });
     }
 
@@ -512,14 +498,10 @@ public class DvClient {
      * @param querySize the query page size
      * @return list of trace log records
      */
-    public List<TraceLogRecord> fetchTraceLogEntries(String solutionType,
-                                                      String chainType,
-                                                      String conditionKey,
-                                                      List<Map<String, String>> conditions,
-                                                      com.huawei.opsfactory.operationintelligence.qos.model.ChainTypeConfig config,
-                                                      long startTime,
-                                                      long endTime,
-                                                      int querySize) {
+    public List<TraceLogRecord> fetchTraceLogEntries(String solutionType, String chainType, String conditionKey,
+        List<Map<String, String>> conditions,
+        com.huawei.opsfactory.operationintelligence.qos.model.ChainTypeConfig config, long startTime, long endTime,
+        int querySize) {
         DvEnvironmentInfo env = getDvEnvironment(solutionType);
         if (env == null) {
             throw new IllegalArgumentException("No DV environment found for solutionType: " + solutionType);
@@ -538,11 +520,8 @@ public class DvClient {
      * @param querySize the query page size
      * @return list of trace log records
      */
-    public List<TraceLogRecord> fetchByTraceId(String solutionType,
-                                               String traceId,
-                                               long startTime,
-                                               long endTime,
-                                               int querySize) {
+    public List<TraceLogRecord> fetchByTraceId(String solutionType, String traceId, long startTime, long endTime,
+        int querySize) {
         DvEnvironmentInfo env = getDvEnvironment(solutionType);
         if (env == null) {
             throw new IllegalArgumentException("No DV environment found for solutionType: " + solutionType);
@@ -554,14 +533,10 @@ public class DvClient {
     /**
      * Internal implementation of fetching trace log entries.
      */
-    private List<TraceLogRecord> doFetchTraceLogEntries(DvEnvironmentInfo env,
-                                                          String chainType,
-                                                          String conditionKey,
-                                                          List<Map<String, String>> conditions,
-                                                          com.huawei.opsfactory.operationintelligence.qos.model.ChainTypeConfig config,
-                                                          long startTime,
-                                                          long endTime,
-                                                          int querySize) {
+    private List<TraceLogRecord> doFetchTraceLogEntries(DvEnvironmentInfo env, String chainType, String conditionKey,
+        List<Map<String, String>> conditions,
+        com.huawei.opsfactory.operationintelligence.qos.model.ChainTypeConfig config, long startTime, long endTime,
+        int querySize) {
         try {
             RestClient webClient = getOrCreateRestClient(env);
             Map<String, String> headers = authService.buildAuthHeaders(env);
@@ -584,24 +559,23 @@ public class DvClient {
 
             return parseTraceLogResponse(response);
         } catch (IOException | IllegalStateException e) {
-            throw new IllegalStateException("Failed to fetch tracelog from " + env.getServerUrl() + ": " + e.getMessage(), e);
+            throw new IllegalStateException(
+                "Failed to fetch tracelog from " + env.getServerUrl() + ": " + e.getMessage(), e);
         }
     }
 
     /**
      * Internal implementation of fetching by trace ID.
      */
-    private List<TraceLogRecord> doFetchByTraceId(DvEnvironmentInfo env,
-                                                   String traceId,
-                                                   long startTime,
-                                                   long endTime,
-                                                   int querySize) {
+    private List<TraceLogRecord> doFetchByTraceId(DvEnvironmentInfo env, String traceId, long startTime, long endTime,
+        int querySize) {
         try {
             RestClient webClient = getOrCreateRestClient(env);
             Map<String, String> headers = authService.buildAuthHeaders(env);
 
             String url = env.getServerUrl() + "/cmp/api/logmatrix/v1/logdata/tracelog";
-            Map<String, Object> body = buildTraceLogQueryByTraceId(traceId, env.getAgentSolutionType(), startTime, endTime, querySize);
+            Map<String, Object> body =
+                buildTraceLogQueryByTraceId(traceId, env.getAgentSolutionType(), startTime, endTime, querySize);
 
             String jsonBody = MAPPER.writeValueAsString(body);
 
@@ -614,7 +588,8 @@ public class DvClient {
                 .retrieve()
                 .body(String.class);
 
-            log.info("[TraceLog Response] URL: {}, Status: {}", url, response != null && !response.isBlank() ? "OK" : "Empty");
+            log.info("[TraceLog Response] URL: {}, Status: {}", url,
+                response != null && !response.isBlank() ? "OK" : "Empty");
 
             if (response == null || response.isBlank()) {
                 return Collections.emptyList();
@@ -622,28 +597,22 @@ public class DvClient {
 
             return parseTraceLogResponse(response);
         } catch (IOException | IllegalStateException e) {
-            throw new IllegalStateException("Failed to fetch tracelog by traceId from " + env.getServerUrl() + ": " + e.getMessage(), e);
+            throw new IllegalStateException(
+                "Failed to fetch tracelog by traceId from " + env.getServerUrl() + ": " + e.getMessage(), e);
         }
     }
 
     /**
      * Build tracelog query request body.
      */
-    private Map<String, Object> buildTraceLogQuery(String chainType,
-                                                      String conditionKey,
-                                                      List<Map<String, String>> conditions,
-                                                      com.huawei.opsfactory.operationintelligence.qos.model.ChainTypeConfig config,
-                                                      String agentSolutionType,
-                                                      long startTime,
-                                                      long endTime,
-                                                      int querySize) {
-        List<Map<String, Object>> sort = List.of(
-            Map.of("fieldName", "Time", "order", "desc")
-        );
+    private Map<String, Object> buildTraceLogQuery(String chainType, String conditionKey,
+        List<Map<String, String>> conditions,
+        com.huawei.opsfactory.operationintelligence.qos.model.ChainTypeConfig config, String agentSolutionType,
+        long startTime, long endTime, int querySize) {
+        List<Map<String, Object>> sort = List.of(Map.of("fieldName", "Time", "order", "desc"));
 
-        List<Map<String, Object>> customIndex = List.of(
-            Map.of("solutionType", agentSolutionType, "logtype", "tracelog")
-        );
+        List<Map<String, Object>> customIndex =
+            List.of(Map.of("solutionType", agentSolutionType, "logtype", "tracelog"));
 
         Map<String, Object> fieldCondition = new LinkedHashMap<>();
         Map<String, Object> boolCondition = new LinkedHashMap<>();
@@ -706,14 +675,9 @@ public class DvClient {
     /**
      * Build tracelog query request body by TraceID.
      */
-    private Map<String, Object> buildTraceLogQueryByTraceId(String traceId,
-                                                             String agentSolutionType,
-                                                             long startTime,
-                                                             long endTime,
-                                                             int querySize) {
-        List<Map<String, Object>> sort = List.of(
-            Map.of("fieldName", "Time", "order", "desc")
-        );
+    private Map<String, Object> buildTraceLogQueryByTraceId(String traceId, String agentSolutionType, long startTime,
+        long endTime, int querySize) {
+        List<Map<String, Object>> sort = List.of(Map.of("fieldName", "Time", "order", "desc"));
 
         // Use LinkedHashMap to preserve field order
         Map<String, Object> customIndexItem = new LinkedHashMap<>();

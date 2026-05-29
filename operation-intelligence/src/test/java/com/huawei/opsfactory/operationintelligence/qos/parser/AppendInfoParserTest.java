@@ -4,18 +4,14 @@
 
 package com.huawei.opsfactory.operationintelligence.qos.parser;
 
-import com.huawei.opsfactory.operationintelligence.qos.model.TraceLogRecord;
-import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Append Info Parser Test.

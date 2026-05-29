@@ -42,12 +42,8 @@ public class AppendInfoParser {
             .filter(s -> s.contains("="))
             .map(s -> s.split("=", 2))
             .filter(parts -> parts.length == 2)
-            .collect(Collectors.toMap(
-                parts -> parts[0].trim(),
-                parts -> parts[1].trim(),
-                (a, b) -> a,
-                LinkedHashMap::new
-            ));
+            .collect(
+                Collectors.toMap(parts -> parts[0].trim(), parts -> parts[1].trim(), (a, b) -> a, LinkedHashMap::new));
     }
 
     /**

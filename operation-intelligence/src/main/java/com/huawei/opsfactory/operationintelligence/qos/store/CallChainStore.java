@@ -32,21 +32,13 @@ public class CallChainStore {
      * @param properties the properties
      */
     public CallChainStore(OperationIntelligenceProperties properties) {
-        Path dir = properties.resolveDataRoot()
-            .resolve("call-chain")
-            .resolve("normalize");
+        Path dir = properties.resolveDataRoot().resolve("call-chain").resolve("normalize");
 
         long rotationMs = properties.getCallChain().getRotationIntervalMs();
         long retentionMs = properties.getCallChain().getNormalizeDataRetentionDays() * 86400_000L;
 
-        this.store = new JsonFileStore<>(
-            dir,
-            "call_chain",
-            new TypeReference<List<CallChainTree>>() {},
-            true,
-            rotationMs,
-            retentionMs
-        );
+        this.store = new JsonFileStore<>(dir, "call_chain", new TypeReference<List<CallChainTree>>() {}, true,
+            rotationMs, retentionMs);
         this.store.init();
     }
 
@@ -88,7 +80,8 @@ public class CallChainStore {
      * @return list of call chain trees
      */
     public List<CallChainTree> queryByTypeAndTimeRange(String chainType, long startTime, long endTime) {
-        return store.loadRange(startTime, endTime).stream()
+        return store.loadRange(startTime, endTime)
+            .stream()
             .filter(tree -> chainType.equals(tree.getChainType()))
             .toList();
     }

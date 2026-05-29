@@ -210,12 +210,13 @@ public class InMemoryGraphStore {
             result.setEnvCode(envCode);
             result.setSnapshotId(envGraph.snapshotId);
             result.setSchemaVersion(envGraph.schemaVersion);
-            List<GraphEntity> entityList = selectedEntities.stream()
-                .map(id -> envGraph.entities.get(id)).toList();
-            List<GraphRelation> relationList = selectedRelations.stream()
-                .map(id -> envGraph.relations.get(id)).toList();
-            List<GraphObservation> observationList = envGraph.observations.values().stream()
-                .filter(obs -> selectedEntities.contains(obs.getEntityId())).toList();
+            List<GraphEntity> entityList = selectedEntities.stream().map(id -> envGraph.entities.get(id)).toList();
+            List<GraphRelation> relationList =
+                selectedRelations.stream().map(id -> envGraph.relations.get(id)).toList();
+            List<GraphObservation> observationList = envGraph.observations.values()
+                .stream()
+                .filter(obs -> selectedEntities.contains(obs.getEntityId()))
+                .toList();
             result.setEntities(entityList);
             result.setRelations(relationList);
             result.setObservations(observationList);
@@ -252,12 +253,13 @@ public class InMemoryGraphStore {
             result.setEnvCode(envCode);
             result.setSnapshotId(envGraph.snapshotId);
             result.setSchemaVersion(envGraph.schemaVersion);
-            List<GraphEntity> entityList = selection.entityIds().stream()
-                .map(id -> envGraph.entities.get(id)).toList();
-            List<GraphRelation> relationList = selection.relationIds().stream()
-                .map(id -> envGraph.relations.get(id)).toList();
-            List<GraphObservation> observationList = envGraph.observations.values().stream()
-                .filter(obs -> selection.entityIds().contains(obs.getEntityId())).toList();
+            List<GraphEntity> entityList = selection.entityIds().stream().map(id -> envGraph.entities.get(id)).toList();
+            List<GraphRelation> relationList =
+                selection.relationIds().stream().map(id -> envGraph.relations.get(id)).toList();
+            List<GraphObservation> observationList = envGraph.observations.values()
+                .stream()
+                .filter(obs -> selection.entityIds().contains(obs.getEntityId()))
+                .toList();
             result.setEntities(entityList);
             result.setRelations(relationList);
             result.setObservations(observationList);
@@ -359,8 +361,8 @@ public class InMemoryGraphStore {
         }
     }
 
-    private void processDirectionalNeighbors(EnvGraph envGraph, String current, boolean downstream,
-        int currentDistance, Map<String, Integer> distance, Queue<String> queue, Set<String> selectedEntities,
+    private void processDirectionalNeighbors(EnvGraph envGraph, String current, boolean downstream, int currentDistance,
+        Map<String, Integer> distance, Queue<String> queue, Set<String> selectedEntities,
         Set<String> selectedRelations) {
         for (String relationId : envGraph.entityRelations.getOrDefault(current, Set.of())) {
             GraphRelation relation = envGraph.relations.get(relationId);
@@ -535,12 +537,11 @@ public class InMemoryGraphStore {
                 request == null ? sourceSystem : firstNonBlank(request.getSourceSystem(), sourceSystem));
             snapshot.setImportMode("UPSERT");
             snapshot.setMetadata(request == null ? metadata : request.getMetadata());
-            snapshot.setEntities(entities.values().stream()
-                .sorted(Comparator.comparing(GraphEntity::getId)).toList());
-            snapshot.setRelations(relations.values().stream()
-                .sorted(Comparator.comparing(GraphRelation::getId)).toList());
-            snapshot.setObservations(observations.values().stream()
-                .sorted(Comparator.comparing(GraphObservation::getId)).toList());
+            snapshot.setEntities(entities.values().stream().sorted(Comparator.comparing(GraphEntity::getId)).toList());
+            snapshot
+                .setRelations(relations.values().stream().sorted(Comparator.comparing(GraphRelation::getId)).toList());
+            snapshot.setObservations(
+                observations.values().stream().sorted(Comparator.comparing(GraphObservation::getId)).toList());
             return snapshot;
         }
 

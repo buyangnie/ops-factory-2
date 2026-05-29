@@ -11,12 +11,11 @@ import static org.mockito.Mockito.verify;
 
 import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
 
+import jakarta.servlet.FilterChain;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-
-import jakarta.servlet.FilterChain;
-
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 

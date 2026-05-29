@@ -4,18 +4,17 @@
 
 package com.huawei.opsfactory.operationintelligence.qos.store;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
 import com.huawei.opsfactory.operationintelligence.qos.model.ChainTypeConfig;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Chain Type Config Store Test.
@@ -32,10 +31,8 @@ class ChainTypeConfigStoreTest {
 
         ChainTypeConfigStore store = new ChainTypeConfigStore(properties);
 
-        List<ChainTypeConfig> configs = List.of(
-            createConfig("BES", "Business Execution System", "menuId", "url"),
-            createConfig("API", "External Interface", "serviceName", "url,serviceName")
-        );
+        List<ChainTypeConfig> configs = List.of(createConfig("BES", "Business Execution System", "menuId", "url"),
+            createConfig("API", "External Interface", "serviceName", "url,serviceName"));
 
         store.importConfigs(configs);
 
@@ -81,7 +78,8 @@ class ChainTypeConfigStoreTest {
         assertTrue(enabledConfigs.get(0).getEnabled());
     }
 
-    private ChainTypeConfig createConfig(String chainType, String description, String conditionKey, String extractFields) {
+    private ChainTypeConfig createConfig(String chainType, String description, String conditionKey,
+        String extractFields) {
         ChainTypeConfig config = new ChainTypeConfig();
         config.setChainType(chainType);
         config.setDescription(description);

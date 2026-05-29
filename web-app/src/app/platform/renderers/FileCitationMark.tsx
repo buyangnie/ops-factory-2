@@ -1,3 +1,4 @@
+import type { RefObject } from 'react'
 import type { FileCitation } from '../../../utils/fileCitationParser'
 import { getFileCitationDisplayPath } from '../../../utils/fileCitation'
 import { useCitationCard } from './useCitationCard'
@@ -25,9 +26,10 @@ function getLineLabel(citation: FileCitation): string | null {
 export default function FileCitationMark({ citation }: FileCitationMarkProps) {
     const { markRef, show, hide, renderCard } = useCitationCard(citation)
     const lineLabel = getLineLabel(citation)
+    const wrapperRef = markRef as RefObject<HTMLSpanElement>
 
     return (
-        <span className="citation-mark-wrapper" ref={markRef}>
+        <span className="citation-mark-wrapper" ref={wrapperRef}>
             <span
                 className="citation-mark"
                 onMouseEnter={show}

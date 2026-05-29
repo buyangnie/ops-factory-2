@@ -4,15 +4,19 @@
 
 package com.huawei.opsfactory.operationintelligence.controller;
 
+import com.huawei.opsfactory.operationintelligence.knowledgegraph.model.GraphEntity;
 import com.huawei.opsfactory.operationintelligence.knowledgegraph.model.GraphOntology;
 import com.huawei.opsfactory.operationintelligence.knowledgegraph.model.GraphSnapshot;
 import com.huawei.opsfactory.operationintelligence.knowledgegraph.service.KnowledgeGraphService;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,6 +35,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/operation-intelligence/graph")
 public class KnowledgeGraphController {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final KnowledgeGraphService knowledgeGraphService;
 
     /**
@@ -128,8 +134,7 @@ public class KnowledgeGraphController {
      * @return the result
      */
     @DeleteMapping("/admin/entities")
-    public Map<String, Object> deleteEntities(
-        @RequestParam(value = "ontologyId", required = false) String ontologyId,
+    public Map<String, Object> deleteEntities(@RequestParam(value = "ontologyId", required = false) String ontologyId,
         @RequestParam("envCode") String envCode) {
         return ok("result", knowledgeGraphService.deleteEntities(ontologyId, envCode));
     }
@@ -159,6 +164,37 @@ public class KnowledgeGraphController {
         @RequestParam("envCode") String envCode,
         @RequestParam(value = "ontologyId", required = false) String ontologyId) {
         return ok("result", knowledgeGraphService.getEntity(ontologyId, envCode, entityId));
+    }
+
+    /**
+     * Updates one entity in the current environment snapshot.
+     *
+     * @param entityId the entityId
+     * @param request the request containing ontologyId, envCode and entity payload
+     * @return the updated entity
+     */
+    @PutMapping("/entities/{entityId}")
+    public Map<String, Object> updateEntity(@PathVariable("entityId") String entityId,
+        @RequestBody Map<String, Object> request) {
+        String envCode = stringValue(request.get("envCode"));
+        String ontologyId = stringValue(request.get("ontologyId"));
+        GraphEntity entity = OBJECT_MAPPER.convertValue(request.get("entity"), GraphEntity.class);
+        return ok("result", knowledgeGraphService.updateEntity(ontologyId, envCode, entityId, entity));
+    }
+
+    /**
+     * Deletes one entity in the current environment snapshot.
+     *
+     * @param entityId the entityId
+     * @param envCode the envCode
+     * @param ontologyId the ontologyId
+     * @return the deletion result
+     */
+    @DeleteMapping("/entities/{entityId}")
+    public Map<String, Object> deleteEntity(@PathVariable("entityId") String entityId,
+        @RequestParam("envCode") String envCode,
+        @RequestParam(value = "ontologyId", required = false) String ontologyId) {
+        return ok("result", knowledgeGraphService.deleteEntity(ontologyId, envCode, entityId));
     }
 
     /**
@@ -276,4 +312,5 @@ public class KnowledgeGraphController {
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid integer value: " + value);
     }
+
 }

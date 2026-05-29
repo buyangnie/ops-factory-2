@@ -4,26 +4,21 @@
 
 package com.huawei.opsfactory.operationintelligence.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
 import com.huawei.opsfactory.operationintelligence.qos.model.CallChainTree;
-import com.huawei.opsfactory.operationintelligence.qos.model.CallFlow;
-import com.huawei.opsfactory.operationintelligence.qos.model.FlowNode;
 import com.huawei.opsfactory.operationintelligence.qos.model.TraceLogRecord;
 import com.huawei.opsfactory.operationintelligence.qos.parser.AppendInfoParser;
 import com.huawei.opsfactory.operationintelligence.qos.parser.TraceLogParser;
-import com.huawei.opsfactory.operationintelligence.service.CallChainStatistics;
-import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Call Chain Builder Test.
@@ -34,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CallChainBuilderTest {
 
     private CallChainBuilder builder;
+
     private CallChainStatistics statistics;
 
     @BeforeEach

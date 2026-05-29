@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -32,6 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -245,6 +247,78 @@ public class KnowledgeGraphService {
     }
 
     /**
+     * Updates one entity and persists a new snapshot version for the environment.
+     *
+     * @param ontologyId the ontologyId
+     * @param envCode the envCode
+     * @param entityId the entityId
+     * @param request the updated entity payload
+     * @return updated entity
+     */
+    public GraphEntity updateEntity(String ontologyId, String envCode, String entityId, GraphEntity request) {
+        ensureEnabled();
+        ontologyId = resolveOntologyId(ontologyId);
+        requireSafeId(envCode, "envCode");
+        requireText(entityId, "entityId");
+        String lockKey = ontologyId + ":" + envCode;
+        ReentrantLock lock = ontologyLocks.computeIfAbsent(lockKey, key -> new ReentrantLock());
+        lock.lock();
+        try {
+            GraphSnapshot snapshot = getRequiredSnapshot(ontologyId, envCode);
+            GraphEntity existing = getEntity(ontologyId, envCode, entityId);
+            GraphEntity updated = mergeEntity(existing, request, entityId);
+            persistSnapshotModification(snapshot, next ->
+                next.setEntities(snapshot.getEntities().stream()
+                    .map(e -> entityId.equals(e.getId()) ? updated : e)
+                    .toList()));
+            return updated;
+        } finally {
+            lock.unlock();
+            ontologyLocks.remove(lockKey);
+        }
+    }
+
+    /**
+     * Deletes one entity and its related relations and observations from the current environment snapshot.
+     *
+     * @param ontologyId the ontologyId
+     * @param envCode the envCode
+     * @param entityId the entityId
+     * @return deletion result
+     */
+    public Map<String, Object> deleteEntity(String ontologyId, String envCode, String entityId) {
+        ensureEnabled();
+        ontologyId = resolveOntologyId(ontologyId);
+        requireSafeId(envCode, "envCode");
+        requireText(entityId, "entityId");
+        String lockKey = ontologyId + ":" + envCode;
+        ReentrantLock lock = ontologyLocks.computeIfAbsent(lockKey, key -> new ReentrantLock());
+        lock.lock();
+        try {
+            GraphSnapshot snapshot = getRequiredSnapshot(ontologyId, envCode);
+            getEntity(ontologyId, envCode, entityId);
+            persistSnapshotModification(snapshot, next -> {
+                next.setEntities(snapshot.getEntities().stream()
+                    .filter(e -> !entityId.equals(e.getId()))
+                    .toList());
+                next.setRelations(snapshot.getRelations().stream()
+                    .filter(r -> !entityId.equals(r.getFrom()) && !entityId.equals(r.getTo()))
+                    .toList());
+                next.setObservations(snapshot.getObservations().stream()
+                    .filter(o -> !entityId.equals(o.getEntityId()))
+                    .toList());
+            });
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("entityId", entityId);
+            result.put("deleted", true);
+            return result;
+        } finally {
+            lock.unlock();
+            ontologyLocks.remove(lockKey);
+        }
+    }
+
+    /**
      * Queries subgraph.
      *
      * @param envCode the envCode
@@ -406,8 +480,8 @@ public class KnowledgeGraphService {
         List<Map<String, Object>> candidates = snapshot.getObservations()
             .stream()
             .filter(observation -> entityScope.contains(observation.getEntityId()))
-            .filter(observation -> !"normal".equals(observation.getSeverity() == null
-                ? null : observation.getSeverity().toLowerCase(Locale.ROOT)))
+            .filter(observation -> !"normal"
+                .equals(observation.getSeverity() == null ? null : observation.getSeverity().toLowerCase(Locale.ROOT)))
             .map(observation -> toRootCauseCandidate(snapshot, observation))
             .filter(Objects::nonNull)
             .sorted(candidateComparator())
@@ -473,17 +547,11 @@ public class KnowledgeGraphService {
                 Map<String, Object> metadata = snapshot.getMetadata();
                 String envName = metadata != null ? stringValue(metadata.get("envName")) : null;
                 String envNameAlt = metadata != null ? stringValue(metadata.get("environmentName")) : null;
-                String entityEnvName = snapshot.getEntities()
-                    .stream()
-                    .map(entity -> {
-                        Map<String, Object> props = entity.getProperties();
-                        return props != null ? stringValue(props.get("environmentName")) : null;
-                    })
-                    .filter(value -> value != null && !value.isBlank())
-                    .findFirst()
-                    .orElse(null);
-                return firstNonBlank(
-                    Arrays.asList(envName, envNameAlt, entityEnvName, envCode));
+                String entityEnvName = snapshot.getEntities().stream().map(entity -> {
+                    Map<String, Object> props = entity.getProperties();
+                    return props != null ? stringValue(props.get("environmentName")) : null;
+                }).filter(value -> value != null && !value.isBlank()).findFirst().orElse(null);
+                return firstNonBlank(Arrays.asList(envName, envNameAlt, entityEnvName, envCode));
             })
             .orElse(envCode);
     }
@@ -494,6 +562,64 @@ public class KnowledgeGraphService {
         requireSafeId(envCode, "envCode");
         return graphStore.getSnapshot(ontologyId, envCode)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Graph snapshot not found"));
+    }
+
+    private GraphSnapshot copySnapshot(GraphSnapshot snapshot) {
+        GraphSnapshot copy = new GraphSnapshot();
+        copy.setFormatVersion(snapshot.getFormatVersion());
+        copy.setOntologyId(snapshot.getOntologyId());
+        copy.setEnvCode(snapshot.getEnvCode());
+        copy.setSchemaVersion(snapshot.getSchemaVersion());
+        copy.setSourceSystem(snapshot.getSourceSystem());
+        copy.setImportMode(snapshot.getImportMode());
+        copy.setSnapshotId(snapshot.getSnapshotId());
+        copy.setGeneratedAt(snapshot.getGeneratedAt());
+        copy.setMetadata(snapshot.getMetadata());
+        copy.setEntities(new ArrayList<>(snapshot.getEntities()));
+        copy.setRelations(new ArrayList<>(snapshot.getRelations()));
+        copy.setObservations(new ArrayList<>(snapshot.getObservations()));
+        return copy;
+    }
+
+    private void persistSnapshotModification(GraphSnapshot snapshot, Consumer<GraphSnapshot> modifier) {
+        GraphSnapshot nextSnapshot = copySnapshot(snapshot);
+        modifier.accept(nextSnapshot);
+        nextSnapshot.setSnapshotId(null);
+        nextSnapshot.setGeneratedAt(null);
+        prepareDefaults(nextSnapshot);
+        schemaRegistry.validate(nextSnapshot);
+        snapshotStore.save(nextSnapshot);
+        graphStore.loadSnapshot(nextSnapshot);
+    }
+
+    private GraphEntity mergeEntity(GraphEntity existing, GraphEntity request, String entityId) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "entity is required");
+        }
+        if (request.getId() != null && !request.getId().isBlank() && !entityId.equals(request.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "entity.id does not match path parameter");
+        }
+        if (request.getType() != null && !request.getType().isBlank()
+            && !existing.getType().equals(request.getType())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "entity.type cannot be changed");
+        }
+        GraphEntity updated = new GraphEntity();
+        updated.setId(existing.getId());
+        updated.setType(existing.getType());
+        updated.setName(normalizeOptionalText(request.getName(), existing.getName()));
+        updated.setDisplayName(normalizeOptionalText(request.getDisplayName(), existing.getDisplayName()));
+        updated.setStatus(normalizeOptionalText(request.getStatus(), existing.getStatus()));
+        updated.setLabels(existing.getLabels());
+        updated.setSource(existing.getSource());
+        updated.setProperties(request.getProperties() != null ? request.getProperties() : existing.getProperties());
+        return updated;
+    }
+
+    private String normalizeOptionalText(String value, String fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        return value.isBlank() ? null : value.trim();
     }
 
     private Map<String, Object> toResourceGroup(String type, List<GraphEntity> entities) {

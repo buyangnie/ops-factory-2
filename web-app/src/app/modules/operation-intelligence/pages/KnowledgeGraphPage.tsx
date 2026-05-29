@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import { FileDown, Network, RefreshCw, Search, Trash2, Upload } from 'lucide-react'
+import { FileDown, Network, Radar, RefreshCw, Save, Search, Trash2, Upload } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../../platform/ui/primitives/PageHeader'
 import SectionCard from '../../../platform/ui/primitives/SectionCard'
 import Button from '../../../platform/ui/primitives/Button'
+import DetailDialog from '../../../platform/ui/primitives/DetailDialog'
+import ResourceCard, {
+    ResourceCardAction,
+    ResourceCardActionGroup,
+    ResourceCardDeleteAction,
+    ResourceCardEditAction,
+    type ResourceCardMetric,
+    type ResourceStatusTone,
+} from '../../../platform/ui/primitives/ResourceCard'
 import { useUser } from '../../../platform/providers/UserContext'
 import { useToast } from '../../../platform/providers/ToastContext'
 import { useConfirmDialog } from '../../../platform/providers/ConfirmDialogContext'
@@ -15,7 +24,9 @@ import {
     type KnowledgeGraphResourceTreeHierarchyRule,
 } from '../../../../config/runtime'
 import {
+    deleteGraphEntity,
     exportGraph,
+    findHostByIp,
     getResourceTree,
     deleteEntities,
     deleteOntology,
@@ -25,6 +36,7 @@ import {
     listOntologies,
     queryObservations,
     querySubgraph,
+    testHostConnection,
     type GraphEnvironmentInfo,
     type GraphEntity,
     type GraphExportPackage,
@@ -32,6 +44,7 @@ import {
     type GraphObservation,
     type GraphSnapshot,
     type ResourceTreeGroup,
+    updateGraphEntity,
 } from '../../../../services/operationIntelligenceAPI'
 import '../styles/operation-intelligence.css'
 
@@ -53,6 +66,7 @@ const DEFAULT_GRAPH_ZOOM = 1
 const MIN_GRAPH_ZOOM = 0.5
 const MAX_GRAPH_ZOOM = 1.6
 const GRAPH_ZOOM_STEP = 0.1
+const ENTITY_MANAGEMENT_PAGE_SIZE = 6
 const NODE_STYLE_COLORS = [
     '#3b82f6',
     '#14b8a6',
@@ -143,8 +157,10 @@ interface GraphNodePosition {
 
 type GraphCssProperties = CSSProperties & Record<'--kg-node-color' | '--kg-edge-color' | '--kg-edge-dash' | '--kg-edge-width', string>
 
-type KnowledgeGraphTab = 'ontology' | 'entities'
+type KnowledgeGraphTab = 'ontology' | 'entities' | 'entity-management'
 type GraphCanvasDensity = 'compact' | 'spacious'
+type EntityEditableFieldKind = 'text' | 'number' | 'boolean' | 'json'
+type EntityEditableValue = string | boolean
 
 type ResourceTreeSelection =
     | { kind: 'group'; groupId: string }
@@ -176,6 +192,20 @@ interface KnowledgeGraphSelection {
     ontologyId?: string
     envCode?: string
     entityId?: string
+}
+
+interface EditableEntityTypeDefinition {
+    requiredProperties: string[]
+    optionalProperties: string[]
+}
+
+interface EntityEditableField {
+    key: string
+    label: string
+    section: 'core' | 'property'
+    required: boolean
+    kind: EntityEditableFieldKind
+    value: unknown
 }
 
 interface GraphSnapshotImportPackage {
@@ -427,6 +457,278 @@ function getResourceCardFields(entity: GraphEntity): Array<[string, unknown]> {
         status: entity.status,
         ...entity.properties,
     }).filter(([, value]) => value !== undefined && value !== null && value !== '').slice(0, 4)
+}
+
+function getEntityStatusTone(status?: string): ResourceStatusTone {
+    const normalizedStatus = status?.trim().toLowerCase()
+    if (!normalizedStatus) {
+        return 'neutral'
+    }
+    if (['normal', 'healthy', 'running', 'success', 'online', 'active'].includes(normalizedStatus)) {
+        return 'success'
+    }
+    if (['warning', 'degraded', 'unknown', 'pending'].includes(normalizedStatus)) {
+        return 'warning'
+    }
+    if (['error', 'failed', 'critical', 'offline', 'down'].includes(normalizedStatus)) {
+        return 'danger'
+    }
+    return 'configured'
+}
+
+function getEntityCardSummary(entity: GraphEntity, t: (key: string) => string): string {
+    if (entity.displayName && entity.name && entity.displayName !== entity.name) {
+        return `${t('operationIntelligence.knowledgeGraph.name')}: ${entity.name}`
+    }
+    return `${t('operationIntelligence.knowledgeGraph.id')}: ${entity.id}`
+}
+
+function getEntityCardMetrics(entity: GraphEntity, t: (key: string) => string): ResourceCardMetric[] {
+    const metrics: ResourceCardMetric[] = []
+    const addMetric = (label: string, value: unknown) => {
+        if (value === undefined || value === null || value === '') {
+            return
+        }
+        metrics.push({
+            label,
+            value: formatPropertyValue(value),
+        })
+    }
+    addMetric(t('operationIntelligence.knowledgeGraph.id'), entity.id)
+    if (entity.name && entity.name !== entity.displayName) {
+        addMetric(t('operationIntelligence.knowledgeGraph.name'), entity.name)
+    }
+    getResourceCardFields(entity).forEach(([key, value]) => {
+        if ((key === 'id') || (key === 'status')) {
+            return
+        }
+        addMetric(formatPropertyName(key), value)
+    })
+    return metrics.slice(0, 3)
+}
+
+function inferEditableFieldKind(key: string, value: unknown): EntityEditableFieldKind {
+    if (typeof value === 'boolean') {
+        return 'boolean'
+    }
+    if (typeof value === 'number') {
+        return 'number'
+    }
+    if (Array.isArray(value) || (value != null && typeof value === 'object')) {
+        return 'json'
+    }
+    if (/port$/i.test(key)) {
+        return 'number'
+    }
+    return 'text'
+}
+
+function editableFieldId(section: 'core' | 'property', key: string): string {
+    return `${section}:${key}`
+}
+
+function serializeEditableFieldValue(kind: EntityEditableFieldKind, value: unknown): EntityEditableValue {
+    if (kind === 'boolean') {
+        return value === true
+    }
+    if (kind === 'json') {
+        return value == null ? '' : JSON.stringify(value, null, 2)
+    }
+    if (value == null) {
+        return ''
+    }
+    return String(value)
+}
+
+function parseEditableFieldValue(
+    field: EntityEditableField,
+    value: EntityEditableValue | undefined,
+): { value?: unknown; error?: string } {
+    if (field.kind === 'boolean') {
+        return { value: value === true }
+    }
+    const textValue = String(value ?? '').trim()
+    if (!textValue) {
+        if (field.required) {
+            return { error: `${field.label} is required` }
+        }
+        return { value: undefined }
+    }
+    if (field.kind === 'number') {
+        const numberValue = Number(textValue)
+        if (Number.isNaN(numberValue)) {
+            return { error: `${field.label} must be a valid number` }
+        }
+        return { value: numberValue }
+    }
+    if (field.kind === 'json') {
+        try {
+            return { value: JSON.parse(textValue) }
+        } catch {
+            return { error: `${field.label} must be valid JSON` }
+        }
+    }
+    return { value: textValue }
+}
+
+function buildEntityEditableFields(
+    entity: GraphEntity,
+    entityTypeDefinition: EditableEntityTypeDefinition | null,
+    t: (key: string, options?: Record<string, unknown>) => string,
+): EntityEditableField[] {
+    const propertyNames = Array.from(new Set([
+        ...entityTypeDefinition?.requiredProperties ?? [],
+        ...entityTypeDefinition?.optionalProperties ?? [],
+        ...Object.keys(entity.properties ?? {}),
+    ]))
+    const requiredPropertySet = new Set(entityTypeDefinition?.requiredProperties ?? [])
+    return [
+        {
+            key: 'name',
+            label: t('operationIntelligence.knowledgeGraph.name'),
+            section: 'core',
+            required: false,
+            kind: inferEditableFieldKind('name', entity.name),
+            value: entity.name,
+        },
+        {
+            key: 'displayName',
+            label: t('operationIntelligence.knowledgeGraph.displayName'),
+            section: 'core',
+            required: false,
+            kind: inferEditableFieldKind('displayName', entity.displayName),
+            value: entity.displayName,
+        },
+        {
+            key: 'status',
+            label: t('operationIntelligence.knowledgeGraph.status'),
+            section: 'core',
+            required: false,
+            kind: inferEditableFieldKind('status', entity.status),
+            value: entity.status,
+        },
+        ...propertyNames.map(propertyName => ({
+            key: propertyName,
+            label: formatPropertyName(propertyName),
+            section: 'property' as const,
+            required: requiredPropertySet.has(propertyName),
+            kind: inferEditableFieldKind(propertyName, entity.properties?.[propertyName]),
+            value: entity.properties?.[propertyName],
+        })),
+    ]
+}
+
+function createEntityDraft(fields: EntityEditableField[]): Record<string, EntityEditableValue> {
+    return fields.reduce<Record<string, EntityEditableValue>>((result, field) => {
+        result[editableFieldId(field.section, field.key)] = serializeEditableFieldValue(field.kind, field.value)
+        return result
+    }, {})
+}
+
+function buildUpdatedGraphEntity(
+    entity: GraphEntity,
+    fields: EntityEditableField[],
+    draft: Record<string, EntityEditableValue>,
+): { entity?: GraphEntity; error?: string } {
+    const properties: Record<string, unknown> = {}
+    let name = entity.name
+    let displayName = entity.displayName
+    let status = entity.status
+    for (const field of fields) {
+        const parsed = parseEditableFieldValue(field, draft[editableFieldId(field.section, field.key)])
+        if (parsed.error) {
+            return { error: parsed.error }
+        }
+        if (field.section === 'core') {
+            if (field.key === 'name') {
+                name = parsed.value as string | undefined
+            } else if (field.key === 'displayName') {
+                displayName = parsed.value as string | undefined
+            } else if (field.key === 'status') {
+                status = parsed.value as string | undefined
+            }
+            continue
+        }
+        if (parsed.value !== undefined) {
+            properties[field.key] = parsed.value
+        }
+    }
+    return {
+        entity: {
+            id: entity.id,
+            type: entity.type,
+            name,
+            displayName,
+            status,
+            properties,
+        },
+    }
+}
+
+function updateSnapshotEntity(snapshot: GraphSnapshot | undefined, updatedEntity: GraphEntity): GraphSnapshot | undefined {
+    if (!snapshot) {
+        return snapshot
+    }
+    return {
+        ...snapshot,
+        entities: snapshot.entities.map(entity => entity.id === updatedEntity.id ? updatedEntity : entity),
+    }
+}
+
+function removeSnapshotEntity(snapshot: GraphSnapshot | undefined, entityId: string): GraphSnapshot | undefined {
+    if (!snapshot) {
+        return snapshot
+    }
+    return {
+        ...snapshot,
+        entities: snapshot.entities.filter(entity => entity.id !== entityId),
+        relations: snapshot.relations.filter(relation => relation.from !== entityId && relation.to !== entityId),
+        observations: snapshot.observations.filter(observation => observation.entityId !== entityId),
+    }
+}
+
+function updateResourceGroupsEntity(groups: ResourceTreeGroup[], updatedEntity: GraphEntity): ResourceTreeGroup[] {
+    return groups.map(group => ({
+        ...group,
+        children: group.children.map(entity => entity.id === updatedEntity.id
+            ? {
+                ...entity,
+                name: updatedEntity.name,
+                displayName: updatedEntity.displayName,
+                status: updatedEntity.status,
+            }
+            : entity),
+    }))
+}
+
+function removeResourceGroupsEntity(groups: ResourceTreeGroup[], entityId: string): ResourceTreeGroup[] {
+    return groups
+        .map(group => {
+            const nextChildren = group.children.filter(entity => entity.id !== entityId)
+            return {
+                ...group,
+                count: nextChildren.length,
+                children: nextChildren,
+            }
+        })
+        .filter(group => group.children.length > 0)
+}
+
+function resolveHostConnectionIp(entity: GraphEntity): string | null {
+    const properties = entity.properties ?? {}
+    const candidates = [
+        properties.hostIp,
+        properties.sshIp,
+        properties.ip,
+        properties.businessIp,
+        properties.businessAddress,
+        entity.name,
+    ]
+    return candidates.find(candidate => typeof candidate === 'string' && candidate.trim()) as string | undefined ?? null
+}
+
+function canTestEntityConnection(entityType: string, allowedEntityTypes: ReadonlySet<string>): boolean {
+    return allowedEntityTypes.has(entityType)
 }
 
 function findCollapsedRelationRule(
@@ -1018,6 +1320,8 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
     const [entityId, setEntityId] = useState(storedSelection.entityId || DEFAULT_ENTITY_ID)
     const [entityQuery, setEntityQuery] = useState('')
     const [resourceSearch, setResourceSearch] = useState('')
+    const [entityManagementSearch, setEntityManagementSearch] = useState('')
+    const [entityManagementPage, setEntityManagementPage] = useState(1)
     const [selectedResourceTreeItem, setSelectedResourceTreeItem] = useState<ResourceTreeSelection | null>(null)
     const [subgraphUpstreamHops, setSubgraphUpstreamHops] = useState(DEFAULT_SUBGRAPH_UPSTREAM_HOPS)
     const [subgraphDownstreamHops, setSubgraphDownstreamHops] = useState(DEFAULT_SUBGRAPH_DOWNSTREAM_HOPS)
@@ -1033,7 +1337,12 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
     const [expandedResourceGroupIds, setExpandedResourceGroupIds] = useState<Set<string>>(new Set())
     const [expandedResourceEntityIds, setExpandedResourceEntityIds] = useState<Set<string>>(new Set())
     const [selectedResourceEntity, setSelectedResourceEntity] = useState<GraphEntity | null>(null)
+    const [editingEntityId, setEditingEntityId] = useState<string | null>(null)
+    const [entityDraftValues, setEntityDraftValues] = useState<Record<string, EntityEditableValue>>({})
+    const [entityHostTestResults, setEntityHostTestResults] = useState<Record<string, { ok: boolean; msg: string }>>({})
+    const [testingEntityId, setTestingEntityId] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+    const [savingEntity, setSavingEntity] = useState(false)
     const ontologyFileInputRef = useRef<HTMLInputElement | null>(null)
     const entitiesFileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -1078,6 +1387,7 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
     const graphTabs: Array<{ key: KnowledgeGraphTab; label: string }> = [
         { key: 'ontology', label: t('operationIntelligence.knowledgeGraph.ontology') },
         { key: 'entities', label: t('operationIntelligence.knowledgeGraph.entities') },
+        { key: 'entity-management', label: t('operationIntelligence.knowledgeGraph.entityManagement') },
     ]
     const ontologyOptions = useMemo(() => {
         return ontologies.map(ontology => ({
@@ -1088,7 +1398,19 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
     const selectedEntity = useMemo(() => {
         return snapshot?.entities.find(entity => entity.id === entityId)
     }, [entityId, snapshot])
+    const entityTypeDefinitions = useMemo(() => {
+        return (selectedOntology?.entityTypes ?? []).reduce<Record<string, EditableEntityTypeDefinition>>((result, entityType) => {
+            result[entityType.type] = {
+                requiredProperties: entityType.requiredProperties ?? [],
+                optionalProperties: entityType.optionalProperties ?? [],
+            }
+            return result
+        }, {})
+    }, [selectedOntology])
     const resourceTreeHierarchyRules = runtime.OPERATION_INTELLIGENCE_KNOWLEDGE_GRAPH_RESOURCE_TREE_HIERARCHY_RULES
+    const testConnectionEntityTypeSet = useMemo(() => {
+        return new Set(runtime.OPERATION_INTELLIGENCE_KNOWLEDGE_GRAPH_TEST_CONNECTION_ENTITY_TYPES)
+    }, [])
     const resourceTreeViewGroups = useMemo(
         () => buildResourceTreeViewGroups(resourceGroups, snapshot, resourceTreeHierarchyRules, ontologyId),
         [ontologyId, resourceGroups, resourceTreeHierarchyRules, snapshot],
@@ -1130,16 +1452,33 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
         }
         return selectedResourceGroup?.name ?? t('operationIntelligence.knowledgeGraph.resourceInstances')
     }, [selectedResourceGroup, selectedResourceTreeItem, t])
-    const selectedResourceProperties = selectedResourceEntity
-        ? Object.entries({
-            id: selectedResourceEntity.id,
-            type: selectedResourceEntity.type,
-            name: selectedResourceEntity.name,
-            displayName: selectedResourceEntity.displayName,
-            status: selectedResourceEntity.status,
-            ...(selectedResourceEntity.properties ?? {}),
-        }).filter(([, value]) => value !== undefined && value !== null && value !== '')
-        : []
+    const normalizedEntityManagementSearch = entityManagementSearch.trim().toLowerCase()
+    const filteredEntityManagementCards = useMemo(() => {
+        if (!normalizedEntityManagementSearch) {
+            return resourceDetailEntities
+        }
+        return resourceDetailEntities.filter(entity => getEntitySearchText(entity).includes(normalizedEntityManagementSearch))
+    }, [normalizedEntityManagementSearch, resourceDetailEntities])
+    const entityManagementTotalPages = Math.max(1, Math.ceil(filteredEntityManagementCards.length / ENTITY_MANAGEMENT_PAGE_SIZE))
+    const safeEntityManagementPage = Math.min(entityManagementPage, entityManagementTotalPages)
+    const paginatedEntityManagementCards = useMemo(() => {
+        const startIndex = (safeEntityManagementPage - 1) * ENTITY_MANAGEMENT_PAGE_SIZE
+        return filteredEntityManagementCards.slice(startIndex, startIndex + ENTITY_MANAGEMENT_PAGE_SIZE)
+    }, [filteredEntityManagementCards, safeEntityManagementPage])
+    const editingEntity = useMemo(() => {
+        if (!editingEntityId) {
+            return null
+        }
+        return snapshot?.entities.find(entity => entity.id === editingEntityId)
+            ?? resourceDetailEntities.find(entity => entity.id === editingEntityId)
+            ?? null
+    }, [editingEntityId, resourceDetailEntities, snapshot])
+    const editingEntityFields = useMemo(() => {
+        if (!editingEntity) {
+            return []
+        }
+        return buildEntityEditableFields(editingEntity, entityTypeDefinitions[editingEntity.type] ?? null, t)
+    }, [editingEntity, entityTypeDefinitions, t])
 
     const alertApiError = useCallback((err: unknown) => {
         showToast('error', err instanceof Error ? err.message : t('operationIntelligence.loadFailed'))
@@ -1167,6 +1506,8 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
             setSelectedEntityNodeId(null)
             setSelectedResourceEntity(null)
             setSelectedResourceTreeItem(null)
+            setEditingEntityId(null)
+            setEntityDraftValues({})
             setExpandedEntityGraphNodeIds(new Set())
             setExpandedResourceGroupIds(new Set())
             setExpandedResourceEntityIds(new Set())
@@ -1202,6 +1543,8 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
         setSelectedEntityNodeId(null)
         setSelectedResourceEntity(null)
         setSelectedResourceTreeItem(null)
+        setEditingEntityId(null)
+        setEntityDraftValues({})
         setExpandedEntityGraphNodeIds(new Set())
         setExpandedResourceGroupIds(new Set())
         setExpandedResourceEntityIds(new Set())
@@ -1227,6 +1570,10 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
     useEffect(() => {
         window.localStorage.setItem(KG_SELECTION_STORAGE_KEY, JSON.stringify({ ontologyId, envCode, entityId }))
     }, [entityId, envCode, ontologyId])
+
+    useEffect(() => {
+        setEntityManagementPage(1)
+    }, [entityManagementSearch, resourceDetailTitle])
 
     useEffect(() => {
         let isMounted = true
@@ -1452,6 +1799,141 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
         setSelectedResourceEntity(null)
     }
 
+    const handleEntityDraftValueChange = (fieldId: string, value: EntityEditableValue) => {
+        setEntityDraftValues(previous => ({
+            ...previous,
+            [fieldId]: value,
+        }))
+    }
+
+    const handleStartEntityEdit = (entity: GraphEntity) => {
+        const fullEntity = snapshot?.entities.find(item => item.id === entity.id) ?? entity
+        const fields = buildEntityEditableFields(fullEntity, entityTypeDefinitions[fullEntity.type] ?? null, t)
+        setSelectedResourceEntity(fullEntity)
+        setEditingEntityId(fullEntity.id)
+        setEntityDraftValues(createEntityDraft(fields))
+    }
+
+    const handleCancelEntityEdit = () => {
+        setEditingEntityId(null)
+        setEntityDraftValues({})
+    }
+
+    const handleSaveEntity = async (entity: GraphEntity) => {
+        const fullEntity = snapshot?.entities.find(item => item.id === entity.id) ?? entity
+        const fields = buildEntityEditableFields(fullEntity, entityTypeDefinitions[fullEntity.type] ?? null, t)
+        const nextEntity = buildUpdatedGraphEntity(fullEntity, fields, entityDraftValues)
+        if (!nextEntity.entity) {
+            showToast('error', nextEntity.error ?? t('operationIntelligence.knowledgeGraph.entityUpdateFailed'))
+            return
+        }
+        setSavingEntity(true)
+        try {
+            const response = await updateGraphEntity(envCode, fullEntity.id, nextEntity.entity, userId, ontologyId)
+            setExportPackage(previous => {
+                if (!previous) {
+                    return previous
+                }
+                return {
+                    ...previous,
+                    snapshot: updateSnapshotEntity(previous.snapshot, response.result) ?? previous.snapshot,
+                }
+            })
+            setResourceGroups(previous => updateResourceGroupsEntity(previous, response.result))
+            setSelectedResourceEntity(response.result)
+            setEditingEntityId(null)
+            setEntityDraftValues({})
+            showToast('success', t('operationIntelligence.knowledgeGraph.entityUpdated'))
+        } catch (err) {
+            alertApiError(err)
+        } finally {
+            setSavingEntity(false)
+        }
+    }
+
+    const handleDeleteEntity = async (entity: GraphEntity) => {
+        const fullEntity = snapshot?.entities.find(item => item.id === entity.id) ?? entity
+        const confirmed = await requestConfirm({
+            message: t('operationIntelligence.knowledgeGraph.confirmDeleteEntity', {
+                entity: toDisplayName(fullEntity),
+            }),
+            variant: 'danger',
+            confirmLabel: t('common.delete'),
+        })
+        if (!confirmed) {
+            return
+        }
+        setSavingEntity(true)
+        try {
+            await deleteGraphEntity(envCode, fullEntity.id, userId, ontologyId)
+            setExportPackage(previous => {
+                if (!previous) {
+                    return previous
+                }
+                return {
+                    ...previous,
+                    snapshot: removeSnapshotEntity(previous.snapshot, fullEntity.id) ?? previous.snapshot,
+                }
+            })
+            setResourceGroups(previous => removeResourceGroupsEntity(previous, fullEntity.id))
+            setSelectedResourceEntity(previous => previous?.id === fullEntity.id ? null : previous)
+            setSelectedResourceTreeItem(previous => previous?.kind === 'entity' && previous.entityId === fullEntity.id ? null : previous)
+            setEditingEntityId(previous => previous === fullEntity.id ? null : previous)
+            setEntityDraftValues({})
+            setEntityHostTestResults(previous => {
+                const next = { ...previous }
+                delete next[fullEntity.id]
+                return next
+            })
+            showToast('success', t('operationIntelligence.knowledgeGraph.entityDeleted'))
+        } catch (err) {
+            alertApiError(err)
+        } finally {
+            setSavingEntity(false)
+        }
+    }
+
+    const handleTestHostEntity = async (entity: GraphEntity) => {
+        const hostIp = resolveHostConnectionIp(entity)
+        if (!hostIp) {
+            showToast('warning', t('operationIntelligence.knowledgeGraph.hostConnectionAddressMissing'))
+            return
+        }
+        setTestingEntityId(entity.id)
+        setEntityHostTestResults(previous => {
+            const next = { ...previous }
+            delete next[entity.id]
+            return next
+        })
+        try {
+            const host = await findHostByIp(hostIp, userId)
+            const result = await testHostConnection(host.id, userId)
+            const nextResult = result.success
+                ? {
+                    ok: true,
+                    msg: t('remoteDiagnosis.hosts.testSuccess', { latency: `${result.latency ?? ''}ms` }),
+                }
+                : {
+                    ok: false,
+                    msg: t('remoteDiagnosis.hosts.testFailed', { error: result.message || 'Unknown' }),
+                }
+            setEntityHostTestResults(previous => ({
+                ...previous,
+                [entity.id]: nextResult,
+            }))
+        } catch (err) {
+            setEntityHostTestResults(previous => ({
+                ...previous,
+                [entity.id]: {
+                    ok: false,
+                    msg: t('remoteDiagnosis.hosts.testFailed', { error: err instanceof Error ? err.message : 'Unknown' }),
+                },
+            }))
+        } finally {
+            setTestingEntityId(null)
+        }
+    }
+
     const handleDeleteOntology = async () => {
         const confirmed = await requestConfirm({
             message: t('operationIntelligence.knowledgeGraph.confirmDeleteOntology'),
@@ -1658,7 +2140,7 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                             <pre className="kg-export-preview">{exportPackage?.schemaDsl || t('common.noResults')}</pre>
                         </SectionCard>
                     </div>
-                ) : (
+                ) : activeGraphTab === 'entities' ? (
                     <div className="kg-tab-page">
                         <div className="kg-entity-control-panel">
                             <div className="kg-entity-query-row">
@@ -1784,6 +2266,39 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                             showNodeProperties={false}
                         />
 
+                        <SectionCard title={t('operationIntelligence.knowledgeGraph.observationTrace')}>
+                            <div className="kg-table">
+                                {observations.map(observation => (
+                                    <div key={observation.id} className="kg-table-row">
+                                        <span>{observation.name}</span>
+                                        <span>{observation.severity}</span>
+                                        <span>
+                                            {String(observation.value ?? '')}
+                                            {observation.unit ? ` ${observation.unit}` : ''}
+                                        </span>
+                                        <span>{observation.observedAt}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </SectionCard>
+                    </div>
+                ) : (
+                    <div className="kg-tab-page">
+                        <div className="kg-entity-control-panel kg-entity-management-control-panel">
+                            <div className="kg-entity-query-row">
+                                <label className="kg-field kg-env-field">
+                                    <span>{t('operationIntelligence.environment')}</span>
+                                    <select value={envCode} onChange={event => setEnvCode(event.target.value)}>
+                                        {environmentOptions.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+
                         <div className="kg-resource-layout">
                             <aside className="kg-resource-tree-panel">
                                 <div className="kg-resource-search">
@@ -1799,6 +2314,7 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                                             <button
                                                 type="button"
                                                 className="kg-tree-group-title"
+                                                title={group.name}
                                                 data-selected={selectedResourceTreeItem?.kind === 'group'
                                                     && selectedResourceTreeItem.groupId === group.id
                                                     && !selectedResourceEntity ? 'true' : undefined}
@@ -1838,6 +2354,7 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                                                                             <button
                                                                                 type="button"
                                                                                 className="kg-tree-group-title kg-tree-nested-title"
+                                                                                title={childGroup.name}
                                                                                 data-selected={selectedResourceTreeItem?.kind === 'nested-group'
                                                                                     && selectedResourceTreeItem.parentId === node.entity.id
                                                                                     && selectedResourceTreeItem.childType === childGroup.type ? 'true' : undefined}
@@ -1861,107 +2378,239 @@ export default function KnowledgeGraphPage({ embedded = false }: KnowledgeGraphP
                             </aside>
 
                             <section className="kg-resource-detail-panel">
-                                <div className="kg-resource-panel-header">
+                                <div className="kg-resource-panel-header kg-resource-panel-header-management">
                                     <div>
-                                        <h3>{selectedResourceEntity
-                                            ? t('operationIntelligence.knowledgeGraph.resourceDetail')
-                                            : resourceDetailTitle}</h3>
-                                        <p>{selectedResourceEntity
-                                            ? selectedResourceEntity.type
-                                            : t('operationIntelligence.knowledgeGraph.resourceInstanceCount', {
-                                                count: resourceDetailEntities.length,
-                                            })}</p>
+                                        <h3>{resourceDetailTitle}</h3>
+                                        <p>{t('operationIntelligence.knowledgeGraph.resourceInstanceCount', {
+                                            count: filteredEntityManagementCards.length,
+                                        })}</p>
                                     </div>
-                                    {resourceSearch ? (
-                                        <ListResultsMeta>
-                                            {t('common.resultsFound', { count: filteredResourceGroups.reduce((sum, group) => sum + group.children.length, 0) })}
-                                        </ListResultsMeta>
-                                    ) : null}
+                                    <div className="kg-resource-panel-tools">
+                                        <ListSearchInput
+                                            value={entityManagementSearch}
+                                            placeholder={t('operationIntelligence.knowledgeGraph.searchEntityCards')}
+                                            onChange={setEntityManagementSearch}
+                                        />
+                                        {entityManagementSearch ? (
+                                            <ListResultsMeta>
+                                                {t('common.resultsFound', { count: filteredEntityManagementCards.length })}
+                                            </ListResultsMeta>
+                                        ) : null}
+                                    </div>
                                 </div>
-                                {selectedResourceEntity ? (
-                                    <div className="kg-resource-detail-card">
-                                        <div className="kg-resource-card-header">
-                                            <div className="kg-resource-card-title-block">
-                                                <div className="kg-resource-card-tags">
-                                                    <span className="kg-resource-card-tag">{selectedResourceEntity.type}</span>
-                                                    {selectedResourceEntity.status ? (
-                                                        <span className="kg-resource-card-tag kg-resource-card-tag-status">
-                                                            {selectedResourceEntity.status}
-                                                        </span>
-                                                    ) : null}
-                                                </div>
-                                                <div className="kg-resource-card-title-line">
-                                                    <h3 className="kg-resource-card-name">{toDisplayName(selectedResourceEntity)}</h3>
+                                {paginatedEntityManagementCards.length > 0 ? (
+                                    <>
+                                        <div className="kg-resource-card-grid">
+                                            {paginatedEntityManagementCards.map(entity => {
+                                                const fullEntity = snapshot?.entities.find(item => item.id === entity.id) ?? entity
+                                                const isSelected = selectedResourceEntity?.id === entity.id
+                                                const hostTestResult = entityHostTestResults[entity.id]
+                                                return (
+                                                    <div
+                                                        key={entity.id}
+                                                        className={`kg-resource-card-shell ${isSelected ? 'kg-resource-card-selected' : ''}`}
+                                                        onClick={() => handleSelectResourceEntity(fullEntity)}
+                                                    >
+                                                        <ResourceCard
+                                                            className="kg-resource-card"
+                                                            title={toDisplayName(fullEntity)}
+                                                            statusLabel={fullEntity.status}
+                                                            statusTone={getEntityStatusTone(fullEntity.status)}
+                                                            tags={(
+                                                                <div className="resource-card-tags kg-resource-card-tags">
+                                                                    <span className="resource-card-tag kg-resource-card-tag">
+                                                                        {fullEntity.type}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            summary={(
+                                                                <div className="resource-card-summary-stack">
+                                                                    <p className="resource-card-summary-text">
+                                                                        {getEntityCardSummary(fullEntity, t)}
+                                                                    </p>
+                                                                    {hostTestResult ? (
+                                                                        <div className={`kg-resource-test-result ${hostTestResult.ok ? 'success' : 'error'}`}>
+                                                                            {hostTestResult.msg}
+                                                                        </div>
+                                                                    ) : null}
+                                                                </div>
+                                                            )}
+                                                            metrics={getEntityCardMetrics(fullEntity, t)}
+                                                            footer={(
+                                                                <ResourceCardActionGroup
+                                                                    className="kg-resource-card-actions"
+                                                                    onClick={event => event.stopPropagation()}
+                                                                >
+                                                                    {canTestEntityConnection(fullEntity.type, testConnectionEntityTypeSet) ? (
+                                                                        <ResourceCardAction
+                                                                            icon={Radar}
+                                                                            tone="success"
+                                                                            label={testingEntityId === fullEntity.id
+                                                                                ? t('remoteDiagnosis.hosts.testing')
+                                                                                : t('remoteDiagnosis.hosts.testConnection')}
+                                                                            disabled={testingEntityId === fullEntity.id || savingEntity}
+                                                                            onClick={() => void handleTestHostEntity(fullEntity)}
+                                                                        />
+                                                                    ) : null}
+                                                                    <ResourceCardEditAction
+                                                                        label={t('common.edit')}
+                                                                        disabled={savingEntity}
+                                                                        onClick={() => handleStartEntityEdit(fullEntity)}
+                                                                    />
+                                                                    <ResourceCardDeleteAction
+                                                                        label={t('common.delete')}
+                                                                        disabled={savingEntity}
+                                                                        onClick={() => void handleDeleteEntity(fullEntity)}
+                                                                    />
+                                                                </ResourceCardActionGroup>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                        {entityManagementTotalPages > 1 ? (
+                                            <div className="kg-resource-pagination">
+                                                <span className="kg-resource-pagination-info">
+                                                    {t('common.showing', {
+                                                        start: (safeEntityManagementPage - 1) * ENTITY_MANAGEMENT_PAGE_SIZE + 1,
+                                                        end: Math.min(
+                                                            safeEntityManagementPage * ENTITY_MANAGEMENT_PAGE_SIZE,
+                                                            filteredEntityManagementCards.length,
+                                                        ),
+                                                        total: filteredEntityManagementCards.length,
+                                                    })}
+                                                </span>
+                                                <div className="kg-resource-pagination-controls">
+                                                    <button
+                                                        type="button"
+                                                        className="kg-resource-pagination-btn"
+                                                        disabled={safeEntityManagementPage <= 1}
+                                                        onClick={() => setEntityManagementPage(safeEntityManagementPage - 1)}
+                                                    >
+                                                        {t('common.previousPage')}
+                                                    </button>
+                                                    <span className="kg-resource-pagination-page">
+                                                        {safeEntityManagementPage} / {entityManagementTotalPages}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        className="kg-resource-pagination-btn"
+                                                        disabled={safeEntityManagementPage >= entityManagementTotalPages}
+                                                        onClick={() => setEntityManagementPage(safeEntityManagementPage + 1)}
+                                                    >
+                                                        {t('common.nextPage')}
+                                                    </button>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="kg-resource-card-meta kg-resource-card-meta-detail">
-                                            {selectedResourceProperties.map(([key, value]) => (
-                                                <div key={key} className="kg-resource-card-meta-field">
-                                                    <span className="kg-resource-card-meta-label">{formatPropertyName(key)}</span>
-                                                    <span className="kg-resource-card-meta-value">{formatPropertyValue(value)}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ) : resourceDetailEntities.length > 0 ? (
-                                    <div className="kg-resource-card-grid">
-                                        {resourceDetailEntities.map(entity => (
-                                            <button
-                                                key={entity.id}
-                                                type="button"
-                                                className="kg-resource-card"
-                                                onClick={() => handleSelectResourceEntity(entity)}
-                                            >
-                                                <div className="kg-resource-card-header">
-                                                    <div className="kg-resource-card-title-block">
-                                                        <div className="kg-resource-card-tags">
-                                                            <span className="kg-resource-card-tag">{entity.type}</span>
-                                                            {entity.status ? (
-                                                                <span className="kg-resource-card-tag kg-resource-card-tag-status">
-                                                                    {entity.status}
-                                                                </span>
-                                                            ) : null}
-                                                        </div>
-                                                        <div className="kg-resource-card-title-line">
-                                                            <h3 className="kg-resource-card-name">{toDisplayName(entity)}</h3>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="kg-resource-card-meta">
-                                                    {getResourceCardFields(entity).map(([key, value]) => (
-                                                        <div key={key} className="kg-resource-card-meta-field">
-                                                            <span className="kg-resource-card-meta-label">{formatPropertyName(key)}</span>
-                                                            <span className="kg-resource-card-meta-value">{formatPropertyValue(value)}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
+                                        ) : null}
+                                    </>
                                 ) : (
                                     <div className="kg-empty-detail">
-                                        {t('operationIntelligence.knowledgeGraph.selectResourceHint')}
+                                        {resourceDetailEntities.length > 0
+                                            ? t('common.noResults')
+                                            : t('operationIntelligence.knowledgeGraph.selectResourceHint')}
                                     </div>
                                 )}
                             </section>
                         </div>
-
-                        <SectionCard title={t('operationIntelligence.knowledgeGraph.observationTrace')}>
-                            <div className="kg-table">
-                                {observations.map(observation => (
-                                    <div key={observation.id} className="kg-table-row">
-                                        <span>{observation.name}</span>
-                                        <span>{observation.severity}</span>
-                                        <span>
-                                            {String(observation.value ?? '')}
-                                            {observation.unit ? ` ${observation.unit}` : ''}
-                                        </span>
-                                        <span>{observation.observedAt}</span>
+                        {editingEntity ? (
+                            <DetailDialog
+                                title={`${t('common.edit')} ${toDisplayName(editingEntity)}`}
+                                onClose={handleCancelEntityEdit}
+                                variant="wide"
+                                className="kg-entity-edit-dialog"
+                                bodyClassName="kg-entity-edit-dialog-body"
+                                footer={(
+                                    <>
+                                        <Button tone="quiet" onClick={handleCancelEntityEdit} disabled={savingEntity}>
+                                            {t('common.cancel')}
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            leadingIcon={<Save size={14} />}
+                                            disabled={savingEntity}
+                                            onClick={() => void handleSaveEntity(editingEntity)}
+                                        >
+                                            {t('common.save')}
+                                        </Button>
+                                    </>
+                                )}
+                            >
+                                <div className="kg-entity-edit-intro">
+                                    <div className="kg-entity-edit-summary-card">
+                                        <div className="resource-card-tags kg-resource-card-tags">
+                                            <span className="resource-card-tag kg-resource-card-tag">{editingEntity.type}</span>
+                                            {editingEntity.status ? (
+                                                <span className="resource-card-tag kg-resource-card-tag-status">
+                                                    {editingEntity.status}
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                        <div className="kg-entity-edit-summary-meta">
+                                            <div className="kg-resource-card-meta-field">
+                                                <span className="kg-resource-card-meta-label">
+                                                    {t('operationIntelligence.knowledgeGraph.id')}
+                                                </span>
+                                                <span className="kg-resource-card-meta-value">{editingEntity.id}</span>
+                                            </div>
+                                            <div className="kg-resource-card-meta-field">
+                                                <span className="kg-resource-card-meta-label">
+                                                    {t('operationIntelligence.knowledgeGraph.type')}
+                                                </span>
+                                                <span className="kg-resource-card-meta-value">{editingEntity.type}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
-                        </SectionCard>
+                                </div>
+                                <div className="kg-resource-form-grid">
+                                    {editingEntityFields.map(field => {
+                                        const draftValue = entityDraftValues[editableFieldId(field.section, field.key)]
+                                        return (
+                                            <label key={editableFieldId(field.section, field.key)} className="kg-field">
+                                                <span>{field.label}{field.required ? ' *' : ''}</span>
+                                                {field.kind === 'boolean' ? (
+                                                    <select
+                                                        value={draftValue === true ? 'true' : 'false'}
+                                                        onChange={event => {
+                                                            handleEntityDraftValueChange(
+                                                                editableFieldId(field.section, field.key),
+                                                                event.target.value === 'true',
+                                                            )
+                                                        }}
+                                                    >
+                                                        <option value="true">true</option>
+                                                        <option value="false">false</option>
+                                                    </select>
+                                                ) : field.kind === 'json' ? (
+                                                    <textarea
+                                                        value={String(draftValue ?? '')}
+                                                        rows={6}
+                                                        onChange={event => {
+                                                            handleEntityDraftValueChange(
+                                                                editableFieldId(field.section, field.key),
+                                                                event.target.value,
+                                                            )
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <input
+                                                        type={field.kind === 'number' ? 'number' : 'text'}
+                                                        value={String(draftValue ?? '')}
+                                                        onChange={event => {
+                                                            handleEntityDraftValueChange(
+                                                                editableFieldId(field.section, field.key),
+                                                                event.target.value,
+                                                            )
+                                                        }}
+                                                    />
+                                                )}
+                                            </label>
+                                        )
+                                    })}
+                                </div>
+                            </DetailDialog>
+                        ) : null}
                     </div>
                 )}
             </div>

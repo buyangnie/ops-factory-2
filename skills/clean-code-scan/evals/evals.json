@@ -1,0 +1,43 @@
+{
+  "skill_name": "clean-code-scan",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm about to commit a JavaScript file that handles user input. Can you scan it for clean code violations? The file is at skills/clean-code-scan/evals/files/test_security.js",
+      "expected_output": "Should detect eval() usage as a severe security violation, innerHTML XSS risk, debugger statement, and HTTP (non-HTTPS) URL. Blocking issues should include eval and possibly innerHTML depending on rule severity.",
+      "files": ["skills/clean-code-scan/evals/files/test_security.js"],
+      "expectations": [
+        "The output identifies eval() as a violation",
+        "The output flags at least one issue as 致命 or 严重 severity",
+        "The output includes a fix suggestion for the eval violation",
+        "The output includes SCAN_RESULT: BLOCK because of severe issues",
+        "The output lists the rule name and rule ID for each violation"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "帮我把这个Python文件扫一下整洁代码问题: skills/clean-code-scan/evals/files/test_service.py",
+      "expected_output": "Should detect pickle.load (security), MD5 hashing (weak algorithm), os.system/shell=True (command injection), hardcoded secrets. Multiple severe security violations expected.",
+      "files": ["skills/clean-code-scan/evals/files/test_service.py"],
+      "expectations": [
+        "The output identifies pickle.load as a security violation",
+        "The output flags MD5 as a weak hashing algorithm",
+        "The output detects command injection risk from os.system or shell=True",
+        "The output flags hardcoded secrets (secret_key or db_password)",
+        "The output includes SCAN_RESULT: BLOCK because of severe issues"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Run /scan on this TypeScript file and tell me if there are any issues: skills/clean-code-scan/evals/files/test_handler.ts",
+      "expected_output": "Should detect use of `any` type (TypeScript best practice), console.log in production code, possibly empty catch block, and using array index as React key. Issues should be mostly 一般 or 提示 level.",
+      "files": ["skills/clean-code-scan/evals/files/test_handler.ts"],
+      "expectations": [
+        "The output identifies at least one TypeScript-related code quality issue",
+        "The output reports severity levels (e.g. 一般, 提示, 信息)",
+        "The output includes a Summary table with severity counts",
+        "The output ends with SCAN_RESULT: PASS or SCAN_RESULT: BLOCK"
+      ]
+    }
+  ]
+}

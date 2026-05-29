@@ -77,6 +77,7 @@ export default defineConfig(() => {
                 '/business-intelligence': 'http://127.0.0.1:8093',
                 '/skill-market': 'http://127.0.0.1:8095',
                 '/operation-intelligence': 'http://127.0.0.1:8096',
+                '/finops': 'http://127.0.0.1:8097',
             },
         },
     }

@@ -4,11 +4,11 @@
 
 package com.huawei.opsfactory.operationintelligence.qos.dv;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Dv Environment Info Test.
@@ -26,15 +26,8 @@ class DvEnvironmentInfoTest {
 
     @Test
     void testFullConstructor() {
-        DvEnvironmentInfo info = new DvEnvironmentInfo(
-            "test-env",
-            "test-type",
-            "https://example.com",
-            "testuser",
-            "testpass",
-            "crt-content",
-            "cert.pem"
-        );
+        DvEnvironmentInfo info = new DvEnvironmentInfo("test-env", "test-type", "https://example.com", "testuser",
+            "testpass", "crt-content", "cert.pem");
 
         assertEquals("test-env", info.getEnvCode());
         assertEquals("test-type", info.getAgentSolutionType());
@@ -47,16 +40,8 @@ class DvEnvironmentInfoTest {
 
     @Test
     void testConstructorWithDns() {
-        DvEnvironmentInfo info = new DvEnvironmentInfo(
-            "test-env",
-            "test-type",
-            "https://example.com",
-            "testuser",
-            "testpass",
-            "crt-content",
-            "cert.pem",
-            "8.8.8.8"
-        );
+        DvEnvironmentInfo info = new DvEnvironmentInfo("test-env", "test-type", "https://example.com", "testuser",
+            "testpass", "crt-content", "cert.pem", "8.8.8.8");
 
         assertEquals("test-env", info.getEnvCode());
         assertEquals("8.8.8.8", info.getDns());
@@ -89,15 +74,8 @@ class DvEnvironmentInfoTest {
 
     @Test
     void testToString() {
-        DvEnvironmentInfo info = new DvEnvironmentInfo(
-            "test-env",
-            "test-type",
-            "https://example.com",
-            "testuser",
-            "testpass",
-            "crt-content",
-            "cert.pem"
-        );
+        DvEnvironmentInfo info = new DvEnvironmentInfo("test-env", "test-type", "https://example.com", "testuser",
+            "testpass", "crt-content", "cert.pem");
 
         String str = info.toString();
         assertTrue(str.contains("test-env"));

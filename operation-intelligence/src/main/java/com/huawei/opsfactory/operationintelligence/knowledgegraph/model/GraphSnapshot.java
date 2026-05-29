@@ -277,7 +277,7 @@ public class GraphSnapshot {
 
     @Override
     public String toString() {
-        return "GraphSnapshot{ontologyId='" + ontologyId + "', envCode='" + envCode
-            + "', snapshotId='" + snapshotId + "'}";
+        return "GraphSnapshot{ontologyId='" + ontologyId + "', envCode='" + envCode + "', snapshotId='" + snapshotId
+            + "'}";
     }
 }

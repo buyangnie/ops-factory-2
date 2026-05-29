@@ -6,9 +6,6 @@ package com.huawei.opsfactory.operationintelligence.qos.dv;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
-import javax.net.ssl.SSLContext;
 
 import org.junit.jupiter.api.Test;
 

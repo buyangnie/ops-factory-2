@@ -52,6 +52,17 @@ control-center:
       auth:
         type: "none"
 
+    - id: finops
+      name: FinOps
+      base-url: "http://127.0.0.1:8097"
+      required: false
+      health-path: "/actuator/health"
+      ctl-component: "finops"
+      config-path: "finops/config.yaml"
+      log-path: "finops/logs/finops.log"
+      auth:
+        type: "none"
+
   langfuse:
     host: ""
     public-key: ""

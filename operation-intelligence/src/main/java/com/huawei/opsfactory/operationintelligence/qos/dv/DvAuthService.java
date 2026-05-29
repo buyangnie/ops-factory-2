@@ -6,7 +6,6 @@ package com.huawei.opsfactory.operationintelligence.qos.dv;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import jakarta.annotation.PreDestroy;
 
@@ -99,7 +98,8 @@ public class DvAuthService {
     private TokenInfo fetchNewToken(DvEnvironmentInfo env) {
         try {
             RestClient webClient = clientCache.computeIfAbsent(env.getServerUrl(), url -> {
-                SSLContext sslContext = sslFactory.createSslContext(env.getCrtContent(), env.getCrtFileName(), env.isStrictSsl());
+                SSLContext sslContext =
+                    sslFactory.createSslContext(env.getCrtContent(), env.getCrtFileName(), env.isStrictSsl());
                 ClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory() {
                     @Override
                     protected void prepareConnection(HttpURLConnection conn, String httpMethod) throws IOException {
@@ -112,10 +112,7 @@ public class DvAuthService {
                         }
                     }
                 };
-                return RestClient.builder()
-                    .requestFactory(requestFactory)
-                    .baseUrl(url)
-                    .build();
+                return RestClient.builder().requestFactory(requestFactory).baseUrl(url).build();
             });
 
             String loginBody = MAPPER.writeValueAsString(

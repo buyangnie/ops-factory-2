@@ -32,18 +32,10 @@ public class ChainTypeConfigStore {
      * @param properties the properties
      */
     public ChainTypeConfigStore(OperationIntelligenceProperties properties) {
-        Path dir = properties.resolveDataRoot()
-            .resolve("call-chain")
-            .resolve("config");
+        Path dir = properties.resolveDataRoot().resolve("call-chain").resolve("config");
 
-        this.store = new JsonFileStore<>(
-            dir,
-            "chain_type_config",
-            new TypeReference<List<ChainTypeConfig>>() {},
-            false,
-            0,
-            0
-        );
+        this.store =
+            new JsonFileStore<>(dir, "chain_type_config", new TypeReference<List<ChainTypeConfig>>() {}, false, 0, 0);
         this.store.init();
     }
 
@@ -72,7 +64,8 @@ public class ChainTypeConfigStore {
      * @return the configuration, or null if not found
      */
     public ChainTypeConfig getByChainType(String chainType) {
-        return store.loadAll().stream()
+        return store.loadAll()
+            .stream()
             .filter(config -> chainType.equals(config.getChainType()))
             .findFirst()
             .orElse(null);
@@ -84,8 +77,6 @@ public class ChainTypeConfigStore {
      * @return list of enabled configurations
      */
     public List<ChainTypeConfig> getEnabledConfigs() {
-        return store.loadAll().stream()
-            .filter(config -> Boolean.TRUE.equals(config.getEnabled()))
-            .toList();
+        return store.loadAll().stream().filter(config -> Boolean.TRUE.equals(config.getEnabled())).toList();
     }
 }

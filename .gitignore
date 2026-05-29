@@ -91,6 +91,13 @@ skill-market/logs/
 gateway/agents/*/artifacts/
 gateway/agents/*/state/logs/
 gateway/agents/*/data/sessions/
+gateway/agents/*/config/tls/
+
+# Operation Intelligence runtime artifacts
+operation-intelligence/data/
+operation-intelligence/*.log.gz
+operation-intelligence/scripts/mock_server.key
+operation-intelligence/scripts/mock_server.pem
 
 # Config backups
 *.bak

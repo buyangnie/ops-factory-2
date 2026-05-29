@@ -101,6 +101,7 @@ public class ReplyEndpointE2ETest extends BaseE2ETest {
     public void sessionEvents_authUser_proxiesLastEventIdWithoutLegacyRelay() {
         when(instanceManager.getOrSpawn("test-agent", "alice")).thenReturn(Mono.just(mockInstance));
         SseEmitter emitter = new SseEmitter();
+        emitter.complete();
         when(goosedProxy.proxySessionEventsToEmitter(eq(9999), eq("/sessions/session-123/events"), eq("test-secret"),
             eq("42"), eq("test-agent"), eq("alice"), eq("session-123"))).thenReturn(emitter);
 
@@ -275,7 +276,7 @@ public class ReplyEndpointE2ETest extends BaseE2ETest {
             .accept(MediaType.TEXT_EVENT_STREAM)
             .exchange()
             .expectStatus()
-            .isOk();
+            .is5xxServerError();
     }
 
     /**

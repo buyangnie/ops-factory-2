@@ -8,12 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-
-import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
 
 class DvClientTest {
 

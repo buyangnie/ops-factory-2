@@ -21,7 +21,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,10 +39,15 @@ public class CallChainService {
     private static final Logger log = LoggerFactory.getLogger(CallChainService.class);
 
     private final OperationIntelligenceProperties properties;
+
     private final DvClient dvClient;
+
     private final CallChainBuilder chainBuilder;
+
     private final CallChainStore chainStore;
+
     private final ChainTypeConfigStore configStore;
+
     private final TimeSplitStrategy timeSplitStrategy;
 
     /**
@@ -56,12 +60,9 @@ public class CallChainService {
      * @param configStore the config store
      * @param timeSplitStrategy the time split strategy
      */
-    public CallChainService(OperationIntelligenceProperties properties,
-                            DvClient dvClient,
-                            CallChainBuilder chainBuilder,
-                            CallChainStore chainStore,
-                            ChainTypeConfigStore configStore,
-                            TimeSplitStrategy timeSplitStrategy) {
+    public CallChainService(OperationIntelligenceProperties properties, DvClient dvClient,
+        CallChainBuilder chainBuilder, CallChainStore chainStore, ChainTypeConfigStore configStore,
+        TimeSplitStrategy timeSplitStrategy) {
         this.properties = properties;
         this.dvClient = dvClient;
         this.chainBuilder = chainBuilder;
@@ -77,28 +78,20 @@ public class CallChainService {
      * @param conditions the list of conditions (each containing conditionKey and conditionValue)
      * @param startTime the start time in milliseconds
      * @param endTime the end time in milliseconds
-     * @param mod the mode (method or service)
      * @return the call chain tree
      */
-    public CallChainTree queryCallChain(String solutionType,
-                                         List<Map<String, String>> conditions,
-                                         long startTime,
-                                         long endTime,
-                                         String mod) {
-        return doQueryCallChain(solutionType, conditions, startTime, endTime, mod);
+    public CallChainTree queryCallChain(String solutionType, List<Map<String, String>> conditions, long startTime,
+        long endTime) {
+        return doQueryCallChain(solutionType, conditions, startTime, endTime);
     }
 
     /**
      * Internal implementation of query call chain.
      */
-    private CallChainTree doQueryCallChain(String solutionType,
-                                          List<Map<String, String>> conditions,
-                                          long startTime,
-                                          long endTime,
-                                          String mod) {
-        log.info("Querying call chain with solutionType={}, {} conditions, timeRange=[{}, {}], mod={}",
-            solutionType, conditions.size(),
-            Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(endTime), mod);
+    private CallChainTree doQueryCallChain(String solutionType, List<Map<String, String>> conditions, long startTime,
+        long endTime) {
+        log.info("Querying call chain with solutionType={}, {} conditions, timeRange=[{}, {}]", solutionType,
+            conditions.size(), Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(endTime));
 
         // Determine chainType by matching conditionKey with config
         String chainType = determineChainType(conditions);
@@ -114,17 +107,15 @@ public class CallChainService {
         String conditionKey = config != null ? config.getConditionKey() : conditions.get(0).get("conditionKey");
 
         // Fetch entry logs (seqNo=1) with pagination and time splitting
-        List<TraceLogRecord> entryLogs = fetchEntryLogsWithSplit(solutionType, chainType,
-            conditionKey, conditions, config, startTime, endTime);
+        List<TraceLogRecord> entryLogs =
+            fetchEntryLogsWithSplit(solutionType, chainType, conditionKey, conditions, config, startTime, endTime);
 
         if (entryLogs.isEmpty()) {
             log.info("No entry logs found for query");
             return createEmptyTree(chainType, conditions, startTime, endTime);
         }
         // Extract TraceIDs
-        Set<String> traceIds = entryLogs.stream()
-            .map(TraceLogRecord::getTraceId)
-            .collect(Collectors.toSet());
+        Set<String> traceIds = entryLogs.stream().map(TraceLogRecord::getTraceId).collect(Collectors.toSet());
 
         log.info("Found {} unique TraceIDs", traceIds.size());
 
@@ -135,7 +126,8 @@ public class CallChainService {
         int querySize = properties.getCallChain().getQuerySize();
         for (String traceId : traceIds) {
             log.warn("Fetching logs for TraceID: {}", traceId);
-            List<TraceLogRecord> traceLogs = dvClient.fetchByTraceId(solutionType, traceId, startTime, endTime, querySize);
+            List<TraceLogRecord> traceLogs =
+                dvClient.fetchByTraceId(solutionType, traceId, startTime, endTime, querySize);
             allLogs.addAll(traceLogs);
         }
 
@@ -146,18 +138,15 @@ public class CallChainService {
         String conditionValue = primaryCondition.get("conditionValue");
 
         // Build call chain tree
-        CallChainTree tree = chainBuilder.build(chainType, conditionKey, conditionValue,
-            allLogs, allLogs.size(), mod);
+        CallChainTree tree = chainBuilder.build(chainType, conditionKey, conditionValue, allLogs, allLogs.size());
 
         // Set conditions
-        List<CallChainTree.Condition> treeConditions = conditions.stream()
-            .map(cond -> {
-                CallChainTree.Condition c = new CallChainTree.Condition();
-                c.setConditionKey(cond.get("conditionKey"));
-                c.setConditionValue(cond.get("conditionValue"));
-                return c;
-            })
-            .collect(Collectors.toList());
+        List<CallChainTree.Condition> treeConditions = conditions.stream().map(cond -> {
+            CallChainTree.Condition c = new CallChainTree.Condition();
+            c.setConditionKey(cond.get("conditionKey"));
+            c.setConditionValue(cond.get("conditionValue"));
+            return c;
+        }).collect(Collectors.toList());
         tree.setConditions(treeConditions);
 
         // Set query time range
@@ -205,40 +194,37 @@ public class CallChainService {
     /**
      * Fetch entry logs with time range splitting support.
      */
-    private List<TraceLogRecord> fetchEntryLogsWithSplit(String solutionType,
-                                                          String chainType,
-                                                          String conditionKey,
-                                                          List<Map<String, String>> conditions,
-                                                          ChainTypeConfig config,
-                                                          long startTime,
-                                                          long endTime) {
+    private List<TraceLogRecord> fetchEntryLogsWithSplit(String solutionType, String chainType, String conditionKey,
+        List<Map<String, String>> conditions, ChainTypeConfig config, long startTime, long endTime) {
         List<TraceLogRecord> allLogs = new ArrayList<>();
         int querySize = properties.getCallChain().getQuerySize();
 
         // Initial query
-        List<TraceLogRecord> initialLogs = dvClient.fetchTraceLogEntries(solutionType,
-            chainType, conditionKey, conditions, config, startTime, endTime, querySize);
+        List<TraceLogRecord> initialLogs = dvClient.fetchTraceLogEntries(solutionType, chainType, conditionKey,
+            conditions, config, startTime, endTime, querySize);
 
         allLogs.addAll(initialLogs);
 
         // Check if we hit the limit and need time splitting
         if (initialLogs.size() >= properties.getCallChain().getQueryLimit()) {
             log.warn("Query returned {} results (at limit), applying time splitting", initialLogs.size());
-            List<TimeSplitStrategy.TimeRange> ranges = timeSplitStrategy.splitIfNeeded(startTime, endTime, initialLogs.size());
+            List<TimeSplitStrategy.TimeRange> ranges =
+                timeSplitStrategy.splitIfNeeded(startTime, endTime, initialLogs.size());
 
             for (TimeSplitStrategy.TimeRange range : ranges) {
-                List<TraceLogRecord> rangeLogs = dvClient.fetchTraceLogEntries(solutionType,
-                    chainType, conditionKey, conditions, config, range.startTime(), range.endTime(), querySize);
+                List<TraceLogRecord> rangeLogs = dvClient.fetchTraceLogEntries(solutionType, chainType, conditionKey,
+                    conditions, config, range.startTime(), range.endTime(), querySize);
                 allLogs.addAll(rangeLogs);
 
                 // If still hitting limit, further degrade
-                if (rangeLogs.size() >= properties.getCallChain().getQueryLimit() && timeSplitStrategy.canDegradeFurther(range.duration())) {
+                if (rangeLogs.size() >= properties.getCallChain().getQueryLimit()
+                    && timeSplitStrategy.canDegradeFurther(range.duration())) {
                     long degradedSplitMs = timeSplitStrategy.getNextDegradeSplitMs(range.duration());
-                    List<TimeSplitStrategy.TimeRange> degradedRanges = timeSplitStrategy.split(
-                        range.startTime(), range.endTime(), degradedSplitMs);
+                    List<TimeSplitStrategy.TimeRange> degradedRanges =
+                        timeSplitStrategy.split(range.startTime(), range.endTime(), degradedSplitMs);
                     for (TimeSplitStrategy.TimeRange degradedRange : degradedRanges) {
-                        List<TraceLogRecord> degradedLogs = dvClient.fetchTraceLogEntries(solutionType,
-                                chainType, conditionKey, conditions, config,
+                        List<TraceLogRecord> degradedLogs =
+                            dvClient.fetchTraceLogEntries(solutionType, chainType, conditionKey, conditions, config,
                                 degradedRange.startTime(), degradedRange.endTime(), querySize);
                         allLogs.addAll(degradedLogs);
                     }
@@ -247,10 +233,7 @@ public class CallChainService {
         }
 
         // Filter to only seqNo=1 entry logs
-        return allLogs.stream()
-            .filter(log -> "1".equals(log.getSeqNo()))
-            .distinct()
-            .collect(Collectors.toList());
+        return allLogs.stream().filter(log -> "1".equals(log.getSeqNo())).distinct().collect(Collectors.toList());
     }
 
     /**
@@ -298,20 +281,18 @@ public class CallChainService {
     /**
      * Create empty call chain tree.
      */
-    private CallChainTree createEmptyTree(String chainType, List<Map<String, String>> conditions,
-                                          long startTime, long endTime) {
+    private CallChainTree createEmptyTree(String chainType, List<Map<String, String>> conditions, long startTime,
+        long endTime) {
         CallChainTree tree = new CallChainTree();
         tree.setChainType(chainType);
 
         // Convert conditions to tree format
-        List<CallChainTree.Condition> treeConditions = conditions.stream()
-            .map(cond -> {
-                CallChainTree.Condition c = new CallChainTree.Condition();
-                c.setConditionKey(cond.get("conditionKey"));
-                c.setConditionValue(cond.get("conditionValue"));
-                return c;
-            })
-            .collect(Collectors.toList());
+        List<CallChainTree.Condition> treeConditions = conditions.stream().map(cond -> {
+            CallChainTree.Condition c = new CallChainTree.Condition();
+            c.setConditionKey(cond.get("conditionKey"));
+            c.setConditionValue(cond.get("conditionValue"));
+            return c;
+        }).collect(Collectors.toList());
         tree.setConditions(treeConditions);
 
         tree.setFlows(new ArrayList<>());

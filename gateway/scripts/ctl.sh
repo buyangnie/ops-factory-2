@@ -167,9 +167,10 @@ gateway_url() {
 # --- Build ---
 build_gateway() {
     local jar="${SERVICE_DIR}/gateway-service/target/gateway-service.jar"
+    local lib_dir="${SERVICE_DIR}/gateway-service/target/lib"
 
-    # Skip build if JAR exists and no source changes
-    if [ -f "${jar}" ]; then
+    # Skip build if JAR and runtime dependencies exist and no source changes
+    if [ -f "${jar}" ] && [ -d "${lib_dir}" ]; then
         local jar_time
         jar_time="$(stat -f "%m" "${jar}" 2>/dev/null || stat -c "%Y" "${jar}" 2>/dev/null)"
         local newest_src

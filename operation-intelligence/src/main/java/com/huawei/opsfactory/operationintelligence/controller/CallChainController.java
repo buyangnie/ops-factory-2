@@ -46,7 +46,7 @@ public class CallChainController {
      * @param properties the properties
      */
     public CallChainController(CallChainService callChainService,
-                               com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties properties) {
+        com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties properties) {
         this.callChainService = callChainService;
         this.properties = properties;
     }
@@ -79,17 +79,15 @@ public class CallChainController {
             throw validationError;
         }
 
-        List<Map<String, String>> conditions = request.getCondition().stream()
-            .map(c -> {
-                Map<String, String> map = new LinkedHashMap<>();
-                map.put("conditionKey", c.getConditionKey());
-                map.put("conditionValue", c.getConditionValue());
-                return map;
-            })
-            .toList();
+        List<Map<String, String>> conditions = request.getCondition().stream().map(c -> {
+            Map<String, String> map = new LinkedHashMap<>();
+            map.put("conditionKey", c.getConditionKey());
+            map.put("conditionValue", c.getConditionValue());
+            return map;
+        }).toList();
 
         CallChainTree tree = callChainService.queryCallChain(request.getSolutionType(), conditions,
-                request.getStartTime(), request.getEndTime(), request.getMode());
+            request.getStartTime(), request.getEndTime());
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("chainType", tree.getChainType());
         response.put("conditions", tree.getConditions());
@@ -110,8 +108,7 @@ public class CallChainController {
                 "startTime and endTime are required and must be positive");
         }
         if (endTime <= startTime) {
-            return new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "endTime must be greater than startTime");
+            return new ResponseStatusException(HttpStatus.BAD_REQUEST, "endTime must be greater than startTime");
         }
 
         long maxSpanMs = properties.getCallChain().getMaxTimeRangeMs();

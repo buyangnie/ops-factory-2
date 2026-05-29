@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import type { RefObject } from 'react'
 import { runtime } from '../../../config/runtime'
 import type { Citation } from '../../../utils/citationParser'
 import { useCitationCard } from './useCitationCard'
@@ -13,6 +14,7 @@ const sourceNameCache = new Map<string, string>()
 export default function CitationMark({ citation }: CitationMarkProps) {
     const { markRef, show, hide, renderCard } = useCitationCard(citation)
     const [sourceName, setSourceName] = useState<string | null>(citation.sourceId || null)
+    const wrapperRef = markRef as RefObject<HTMLSpanElement>
 
     useEffect(() => {
         if (!citation.sourceId) {
@@ -49,7 +51,7 @@ export default function CitationMark({ citation }: CitationMarkProps) {
     }, [citation.sourceId])
 
     return (
-        <span className="citation-mark-wrapper" ref={markRef}>
+        <span className="citation-mark-wrapper" ref={wrapperRef}>
             <span
                 className="citation-mark"
                 onMouseEnter={show}

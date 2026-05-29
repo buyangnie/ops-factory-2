@@ -6,6 +6,7 @@ package com.huawei.opsfactory.gateway.filter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,6 +42,8 @@ public class UserContextFilterTest {
     private static final String TRACE_DOWNLOAD_PATH = "/gateway/session-traces/job-1/download";
 
     private static final String AGENTS_ENDPOINT = "/gateway/agents";
+
+    private static final String USAGE_SNAPSHOT_ENDPOINT = "/gateway/usage/session-snapshot";
 
     private UserContextFilter filter;
 
@@ -107,6 +110,42 @@ public class UserContextFilterTest {
         filter.doFilter(request, response, chain);
 
         assertNull(request.getAttribute(UserContextFilter.USER_ID_ATTR));
+    }
+
+    /**
+     * Tests that usage snapshot endpoint follows regular user context rules.
+     *
+     * @throws Exception if filter chain processing fails
+     */
+    @Test
+    public void testUsageSnapshotEndpointRequiresUserContext() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", USAGE_SNAPSHOT_ENDPOINT);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(request, response, chain);
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatus());
+        assertNull(request.getAttribute(UserContextFilter.USER_ID_ATTR));
+        verify(prewarmService, never()).onUserActivity(anyString());
+    }
+
+    /**
+     * Tests that usage snapshot endpoint accepts the standard x-user-id header.
+     *
+     * @throws Exception if filter chain processing fails
+     */
+    @Test
+    public void testUsageSnapshotEndpointUsesUserContextHeader() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", USAGE_SNAPSHOT_ENDPOINT);
+        request.addHeader("x-user-id", USER_ID);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(request, response, chain);
+
+        assertEquals(USER_ID, request.getAttribute(UserContextFilter.USER_ID_ATTR));
+        verify(prewarmService).onUserActivity(USER_ID);
     }
 
     /**

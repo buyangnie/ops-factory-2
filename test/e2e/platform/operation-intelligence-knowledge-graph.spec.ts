@@ -63,6 +63,7 @@ async function mockKnowledgeGraphApi(page: Page) {
               { type: 'BusinessCapability', requiredProperties: ['menuId'] },
               { type: 'Service', requiredProperties: ['serviceName'] },
               { type: 'Cluster', requiredProperties: ['clusterName'] },
+              { type: 'Host', requiredProperties: ['hostIp'], optionalProperties: ['sshIp'] },
             ],
             relationTypes: [
               { type: 'deployed_in', layer: 'deployment', from: ['Service'], to: ['Cluster'] },
@@ -79,7 +80,7 @@ async function mockKnowledgeGraphApi(page: Page) {
         success: true,
         result: {
           envCode: 'prod',
-          total: 3,
+          total: 4,
           roots: [
             {
               id: 'Service',
@@ -91,6 +92,20 @@ async function mockKnowledgeGraphApi(page: Page) {
                   id: 'svc-prod-b2b-query',
                   type: 'Service',
                   displayName: 'bes.business.common.SysParamBS',
+                  status: 'Normal',
+                },
+              ],
+            },
+            {
+              id: 'Host',
+              type: 'Host',
+              name: 'Host',
+              count: 1,
+              children: [
+                {
+                  id: 'host-prod-01',
+                  type: 'Host',
+                  displayName: 'prod-host-01',
                   status: 'Normal',
                 },
               ],
@@ -188,6 +203,69 @@ async function mockKnowledgeGraphApi(page: Page) {
       body: JSON.stringify({ success: true, result: { entityCount: 3, relationCount: 1, observationCount: 1 } }),
     })
   })
+  await page.route('**/gateway/operation-intelligence/graph/entities/*', async route => {
+    if (route.request().method() === 'DELETE') {
+      const url = new URL(route.request().url())
+      const entityId = url.pathname.split('/').pop() ?? ''
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          result: {
+            entityId,
+            deleted: true,
+          },
+        }),
+      })
+      return
+    }
+    if (route.request().method() !== 'PUT') {
+      await route.continue()
+      return
+    }
+    const body = route.request().postDataJSON() as {
+      entity: {
+        id: string
+        type: string
+        name?: string
+        displayName?: string
+        status?: string
+        properties?: Record<string, unknown>
+      }
+    }
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        result: body.entity,
+      }),
+    })
+  })
+  await page.route('**/gateway/hosts/by-ip?ip=*', async route => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        host: {
+          id: 'gateway-host-01',
+          name: 'prod-host-01',
+          ip: '192.168.200.42',
+          port: 22,
+          username: 'root',
+        },
+      }),
+    })
+  })
+  await page.route('**/gateway/hosts/*/test', async route => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        message: 'OK',
+        latency: '22',
+      }),
+    })
+  })
   await page.route('**/gateway/operation-intelligence/graph/admin/delete-ontology', async route => {
     await route.fulfill({
       contentType: 'application/json',
@@ -240,6 +318,13 @@ async function mockKnowledgeGraphApi(page: Page) {
                 status: 'Normal',
                 properties: { serviceName: 'bes.business.common.SysParamBS' },
               },
+              {
+                id: 'host-prod-01',
+                type: 'Host',
+                displayName: 'prod-host-01',
+                status: 'Normal',
+                properties: { hostIp: '192.168.200.42', sshIp: '192.168.200.42' },
+              },
             ],
             relations: [
               { id: 'rel-1', type: 'deployed_in', from: 'svc-prod-b2b-query', to: 'cluster-prod-rsp' },
@@ -264,6 +349,7 @@ test('operation intelligence knowledge graph page renders and imports sample', a
   await expect(page.getByRole('heading', { name: '知识图谱工作台' })).toHaveCount(0)
   await expect(page.getByRole('tab', { name: '本体' })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByRole('tab', { name: '实体' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: '实体管理' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '本体图' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Service' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'RSP' })).toHaveCount(0)
@@ -284,17 +370,14 @@ test('operation intelligence knowledge graph page renders and imports sample', a
   await expect(page.getByLabel('环境')).toHaveValue('test')
   await page.getByLabel('环境').selectOption('prod')
   await expect(page.getByText('根因候选')).toHaveCount(0)
-  await page.getByRole('button', { name: /Service 1/ }).click()
-  await expect(page.getByText('bes.business.common.SysParamBS').first()).toBeVisible()
-  await page.getByRole('button', { name: 'bes.business.common.SysParamBS Normal' }).click()
-  await expect(page.getByRole('heading', { name: '资源详情' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '实体总览图' })).toBeVisible()
 
   await page.getByLabel('实体 ID / 名称').fill('SysParamBS')
-  await page.getByLabel('跳数').fill('2')
+  await page.getByLabel('上游跳数').fill('0')
+  await page.getByLabel('下游跳数').fill('2')
   await page.getByRole('button', { name: '查询子图' }).click()
   await expect(page.getByRole('heading', { name: '实体子图' })).toBeVisible()
-  await expect(page.getByText('展示 bes.business.common.SysParamBS 周边 2 跳以内的实体和关系')).toBeVisible()
+  await expect(page.getByText('上游 0 跳、下游 2 跳以内')).toBeVisible()
   await expect(page.getByText('business_flow_success_rate').first()).toBeVisible()
 
   await page.getByRole('button', { name: 'bes.business.common.SysParamBS Service' }).click()
@@ -307,9 +390,26 @@ test('operation intelligence knowledge graph page renders and imports sample', a
   await expect(page.locator('.kg-graph-edge-selected')).toHaveCount(1)
   await expect(page.locator('.kg-graph-node[data-selected="true"]')).toHaveCount(0)
 
+  await page.getByRole('tab', { name: '实体管理' }).click()
+  await expect(page.getByRole('tab', { name: '实体管理' })).toHaveAttribute('aria-selected', 'true')
+  await page.getByRole('button', { name: /Host 1/ }).click()
+  await page.getByPlaceholder('搜索实体 ID、名称或属性').fill('prod-host')
+  const hostCard = page.locator('.kg-resource-card-shell').filter({ hasText: 'prod-host-01' }).first()
+  await hostCard.click()
+  await expect(page.getByRole('button', { name: '测试连接' })).toBeVisible()
+  await hostCard.getByRole('button', { name: '编辑' }).click()
+  const displayNameField = page.locator('.kg-resource-form-grid label').filter({ hasText: '显示名称' }).locator('input')
+  await displayNameField.fill('prod-host-01-updated')
+  await page.getByRole('button', { name: '保存' }).click()
+  await expect(page.getByText('实体已更新')).toBeVisible()
+  await expect(page.locator('.kg-resource-card-shell').filter({ hasText: 'prod-host-01-updated' })).toHaveCount(1)
+  await hostCard.getByRole('button', { name: '测试连接' }).click()
+  await expect(page.locator('.kg-resource-test-result')).toBeVisible()
+
   page.once('dialog', async dialog => {
     await dialog.accept()
   })
+  await page.getByRole('tab', { name: '实体' }).click()
   await page.getByRole('button', { name: '删除实体' }).click()
   await expect(page.getByText('实体已删除')).toBeVisible()
 })

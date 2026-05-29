@@ -22,8 +22,11 @@
                 "mode": "hierarchy",
                 "threshold": 1
             }
-        ]
+        ],
+        "testConnectionEntityTypes": ["Host", "WorkerNode", "K8sInstance"]
     },
+    "finopsServiceUrl": "http://127.0.0.1:8097",
+    "finopsSecretKey": "",
     "logging": {
         "level": "info",
         "consoleEnabled": true,

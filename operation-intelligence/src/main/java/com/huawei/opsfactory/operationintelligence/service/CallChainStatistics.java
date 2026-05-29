@@ -4,9 +4,9 @@
 
 package com.huawei.opsfactory.operationintelligence.service;
 
+import com.huawei.opsfactory.operationintelligence.qos.model.CallFlow;
 import com.huawei.opsfactory.operationintelligence.qos.model.FlowNode;
 import com.huawei.opsfactory.operationintelligence.qos.model.IpStat;
-import com.huawei.opsfactory.operationintelligence.qos.model.CallFlow;
 import com.huawei.opsfactory.operationintelligence.qos.model.TraceLogRecord;
 import com.huawei.opsfactory.operationintelligence.qos.parser.TraceLogParser;
 
@@ -60,8 +60,7 @@ public class CallChainStatistics {
      * @param flow the call flow
      * @param byTraceId trace logs grouped by trace ID
      */
-    public void calculateStatistics(CallFlow flow,
-                                   Map<String, List<TraceLogRecord>> byTraceId) {
+    public void calculateStatistics(CallFlow flow, Map<String, List<TraceLogRecord>> byTraceId) {
 
         // Calculate success statistics
         calculateSuccessStatistics(flow, byTraceId);
@@ -70,16 +69,15 @@ public class CallChainStatistics {
         calculateFlowCostStatistics(flow, byTraceId);
 
         // Get all unique seqNo positions
-        Set<String> seqNos = byTraceId.values().stream()
-            .flatMap(List::stream)
-            .map(TraceLogRecord::getSeqNo)
-            .collect(Collectors.toSet());
+        Set<String> seqNos =
+            byTraceId.values().stream().flatMap(List::stream).map(TraceLogRecord::getSeqNo).collect(Collectors.toSet());
 
         List<FlowNode> nodes = new ArrayList<>();
 
         // Build node for each seqNo position
         for (String seqNo : seqNos) {
-            List<TraceLogRecord> positionLogs = byTraceId.values().stream()
+            List<TraceLogRecord> positionLogs = byTraceId.values()
+                .stream()
                 .flatMap(List::stream)
                 .filter(log -> seqNo.equals(log.getSeqNo()))
                 .collect(Collectors.toList());
@@ -100,12 +98,10 @@ public class CallChainStatistics {
      * @param flow the call flow
      * @param byTraceId trace logs grouped by trace ID
      */
-    private void calculateSuccessStatistics(CallFlow flow,
-                                             Map<String, List<TraceLogRecord>> byTraceId) {
+    private void calculateSuccessStatistics(CallFlow flow, Map<String, List<TraceLogRecord>> byTraceId) {
         // Count successful traceIds (all logs in the trace are successful)
-        long totalSuccess = byTraceId.values().stream()
-            .filter(traceLogs -> traceLogs.stream().allMatch(parser::isSuccess))
-            .count();
+        long totalSuccess =
+            byTraceId.values().stream().filter(traceLogs -> traceLogs.stream().allMatch(parser::isSuccess)).count();
 
         flow.setSuccessCount(totalSuccess);
 
@@ -120,16 +116,13 @@ public class CallChainStatistics {
      * @param flow the call flow
      * @param byTraceId trace logs grouped by trace ID
      */
-    private void calculateFlowCostStatistics(CallFlow flow,
-                                              Map<String, List<TraceLogRecord>> byTraceId) {
+    private void calculateFlowCostStatistics(CallFlow flow, Map<String, List<TraceLogRecord>> byTraceId) {
         LongSummaryStatistics costStats = new LongSummaryStatistics();
 
         for (List<TraceLogRecord> traceLogs : byTraceId.values()) {
             // Sum all costs in this trace
-            long traceTotalCost = traceLogs.stream()
-                .filter(log -> log.getCost() != null)
-                .mapToLong(TraceLogRecord::getCost)
-                .sum();
+            long traceTotalCost =
+                traceLogs.stream().filter(log -> log.getCost() != null).mapToLong(TraceLogRecord::getCost).sum();
 
             if (traceTotalCost > 0) {
                 costStats.accept(traceTotalCost);
@@ -239,9 +232,7 @@ public class CallChainStatistics {
             }
         }
 
-        return byIp.values().stream()
-            .map(IpStatAccumulator::toIpStat)
-            .collect(Collectors.toList());
+        return byIp.values().stream().map(IpStatAccumulator::toIpStat).collect(Collectors.toList());
     }
 
     /**
@@ -279,10 +270,8 @@ public class CallChainStatistics {
      * @param logs the trace logs
      */
     private void calculateNodeCostStatistics(FlowNode node, List<TraceLogRecord> logs) {
-        LongSummaryStatistics costStats = logs.stream()
-            .filter(log -> log.getCost() != null)
-            .mapToLong(TraceLogRecord::getCost)
-            .summaryStatistics();
+        LongSummaryStatistics costStats =
+            logs.stream().filter(log -> log.getCost() != null).mapToLong(TraceLogRecord::getCost).summaryStatistics();
 
         if (costStats.getCount() > 0) {
             node.setAvgCost((long) costStats.getAverage());
@@ -299,8 +288,10 @@ public class CallChainStatistics {
      * @return comparison result
      */
     private int compareSeqNo(String s1, String s2) {
-        if (s1 == null) s1 = "0";
-        if (s2 == null) s2 = "0";
+        if (s1 == null)
+            s1 = "0";
+        if (s2 == null)
+            s2 = "0";
 
         String[] parts1 = s1.split("\\.");
         String[] parts2 = s2.split("\\.");
@@ -335,11 +326,17 @@ public class CallChainStatistics {
      */
     private static class IpStatAccumulator {
         private final String ip;
+
         private int totalCalls = 0;
+
         private int successCalls = 0;
+
         private long totalCost = 0;
+
         private int costCount = 0;
+
         private long minCost = Long.MAX_VALUE;
+
         private long maxCost = Long.MIN_VALUE;
 
         IpStatAccumulator(String ip) {

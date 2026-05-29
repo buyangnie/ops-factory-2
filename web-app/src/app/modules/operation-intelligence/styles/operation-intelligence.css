@@ -366,7 +366,8 @@
 }
 
 .kg-field input,
-.kg-field select {
+.kg-field select,
+.kg-field textarea {
     height: 36px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -377,6 +378,12 @@
 
 .kg-field select {
     padding-right: 32px;
+}
+
+.kg-field textarea {
+    min-height: 96px;
+    padding: var(--spacing-3);
+    resize: vertical;
 }
 
 .kg-hop-field input {
@@ -460,45 +467,48 @@
     font-size: var(--font-size-sm);
 }
 
+.kg-resource-panel-header-management {
+    align-items: flex-start;
+}
+
+.kg-resource-panel-tools {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-3);
+    flex: 1 1 320px;
+    min-width: 0;
+}
+
 .kg-resource-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-4, 16px);
 }
 
-.kg-resource-card,
-.kg-resource-detail-card {
-    border: 1px solid var(--color-border, var(--border-color, #e2e8f0));
-    border-radius: 10px;
-    background: var(--color-bg-secondary, var(--surface-background, #fff));
+.kg-resource-card-shell {
+    min-width: 0;
+    cursor: pointer;
 }
 
 .kg-resource-card {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 150px;
-    padding: 12px;
-    text-align: left;
-    cursor: pointer;
+    height: 100%;
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.kg-resource-card:hover {
+.kg-resource-card-shell:hover .kg-resource-card {
     border-color: var(--color-primary, #3b82f6);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
     transform: translateY(-1px);
 }
 
-.kg-resource-card-header {
-    min-width: 0;
+.kg-resource-card-selected .kg-resource-card {
+    border-color: var(--color-primary, #3b82f6);
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.12);
 }
 
-.kg-resource-card-title-block {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
+.kg-resource-card-actions {
+    margin-left: auto;
 }
 
 .kg-resource-card-tags {
@@ -508,47 +518,12 @@
 }
 
 .kg-resource-card-tag {
-    display: inline-flex;
-    align-items: center;
-    max-width: 100%;
-    min-height: 20px;
-    border: 1px solid color-mix(in srgb, var(--border-color, #cbd5e1) 92%, white);
-    border-radius: 999px;
-    padding: 2px 8px;
-    background: var(--color-fill-tertiary, #f8fafc);
-    color: var(--text-secondary, #475569);
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    background: var(--color-bg-secondary);
 }
 
 .kg-resource-card-tag-status {
-    border-color: #bbf7d0;
     background: #f0fdf4;
     color: #166534;
-}
-
-.kg-resource-card-title-line {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    min-width: 0;
-}
-
-.kg-resource-card-name {
-    flex: 0 1 auto;
-    min-width: 0;
-    margin: 0;
-    color: var(--text-primary, #0f172a);
-    font-size: var(--font-size-base);
-    font-weight: 700;
-    line-height: 1.3;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .kg-resource-card-meta {
@@ -557,9 +532,27 @@
     gap: 8px 12px;
 }
 
-.kg-resource-card-meta-detail {
+.kg-resource-form-grid {
+    display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    margin-top: var(--spacing-3);
+    gap: var(--spacing-3);
+}
+
+.kg-resource-test-result {
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+.kg-resource-test-result.success {
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.kg-resource-test-result.error {
+    background: #fef2f2;
+    color: #b91c1c;
 }
 
 .kg-resource-card-meta-field {
@@ -585,8 +578,37 @@
     word-break: break-word;
 }
 
-.kg-resource-detail-card {
-    padding: 12px;
+.kg-entity-edit-dialog {
+    max-width: min(960px, calc(100vw - 48px));
+}
+
+.kg-entity-edit-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    padding-bottom: var(--spacing-5);
+}
+
+.kg-entity-edit-intro {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.kg-entity-edit-summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    background: var(--color-bg-secondary);
+}
+
+.kg-entity-edit-summary-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--spacing-3);
 }
 
 .kg-workspace {
@@ -700,6 +722,10 @@
     align-self: end;
     flex: 0 0 auto;
     justify-content: flex-end;
+}
+
+.kg-entity-management-control-panel {
+    justify-content: flex-start;
 }
 
 .kg-summary-grid-ontology {
@@ -878,6 +904,19 @@
 
 .kg-tree-group-title[aria-expanded="true"]::after {
     transform: rotate(45deg);
+}
+
+.kg-tree-group-title > svg,
+.kg-tree-group-title > strong,
+.kg-tree-group-title::after {
+    flex-shrink: 0;
+}
+
+.kg-tree-group-title > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .kg-tree-children {
@@ -1334,6 +1373,55 @@
     color: var(--color-text-muted);
     background: var(--color-bg-secondary);
     font-size: var(--font-size-sm);
+    text-align: center;
+}
+
+.kg-resource-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-3);
+    border-top: 1px solid var(--color-border-subtle);
+    padding-top: var(--spacing-3);
+}
+
+.kg-resource-pagination-info {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.kg-resource-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.kg-resource-pagination-btn {
+    min-width: 72px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0 var(--spacing-3);
+    color: var(--color-text-secondary);
+    background: var(--color-bg-secondary);
+    cursor: pointer;
+}
+
+.kg-resource-pagination-btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.kg-resource-pagination-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.kg-resource-pagination-page {
+    min-width: 56px;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
     text-align: center;
 }
 

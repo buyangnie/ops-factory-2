@@ -4,12 +4,12 @@
 
 package com.huawei.opsfactory.operationintelligence.common.logging;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
 
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Request Logging Filter Test.

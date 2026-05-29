@@ -7,7 +7,6 @@ package com.huawei.opsfactory.operationintelligence.service;
 import com.huawei.opsfactory.operationintelligence.config.OperationIntelligenceProperties;
 import com.huawei.opsfactory.operationintelligence.qos.model.CallChainTree;
 import com.huawei.opsfactory.operationintelligence.qos.model.CallFlow;
-import com.huawei.opsfactory.operationintelligence.qos.model.FlowNode;
 import com.huawei.opsfactory.operationintelligence.qos.model.TraceLogRecord;
 
 import org.slf4j.Logger;
@@ -19,7 +18,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -60,21 +58,14 @@ public class CallChainBuilder {
      * @param totalCount the total count
      * @return the call chain tree
      */
-    public CallChainTree build(String chainType,
-                              String conditionType,
-                              String conditionValue,
-                              List<TraceLogRecord> logs,
-                              long totalCount,
-                              String mod) {
+    public CallChainTree build(String chainType, String conditionType, String conditionValue, List<TraceLogRecord> logs,
+        long totalCount) {
 
         // 1. 按 traceId 分组
-        Map<String, List<TraceLogRecord>> byTraceId = logs.stream()
-            .filter(log -> log.getTraceId() != null)
-            .collect(Collectors.groupingBy(
-                TraceLogRecord::getTraceId,
-                LinkedHashMap::new,
-                Collectors.toList()
-            ));
+        Map<String,
+            List<TraceLogRecord>> byTraceId = logs.stream()
+                .filter(log -> log.getTraceId() != null)
+                .collect(Collectors.groupingBy(TraceLogRecord::getTraceId, LinkedHashMap::new, Collectors.toList()));
 
         if (byTraceId.isEmpty()) {
             log.warn("No valid trace logs found for chainType={}", chainType);
@@ -85,25 +76,20 @@ public class CallChainBuilder {
         Map<String, List<List<TraceLogRecord>>> bySequence = groupBySequence(byTraceId);
 
         // 3. 构建 Flow 列表
-        List<CallFlow> flows = bySequence.entrySet().stream()
+        List<CallFlow> flows = bySequence.entrySet()
+            .stream()
             .map(entry -> buildFlow(entry.getKey(), entry.getValue(), totalCount))
             .filter(this::isValidFlow)
             .sorted(Comparator.comparing(CallFlow::getCallCount).reversed())
             .collect(Collectors.toList());
 
-        // 4. service 模式：执行两步合并
-        if ("service".equals(mod)) {
-            flows = statisticsCalculator.mergeFlowsByService(flows);
-        }
-
-        // 5. 构建 CallChainTree
+        // 4. 构建 CallChainTree
         CallChainTree tree = new CallChainTree();
         tree.setChainType(chainType);
         tree.setFlows(flows);
         tree.setTotalCount(totalCount);
 
-        log.info("Built call chain tree: chainType={}, flows={}, totalCount={}, mod={}",
-            chainType, flows.size(), totalCount, mod);
+        log.info("Built call chain tree: chainType={}, flows={}, totalCount={}", chainType, flows.size(), totalCount);
 
         return tree;
     }
@@ -114,8 +100,7 @@ public class CallChainBuilder {
      * @param byTraceId trace logs grouped by trace ID
      * @return map of sequence signature to list of trace log groups
      */
-    private Map<String, List<List<TraceLogRecord>>> groupBySequence(
-        Map<String, List<TraceLogRecord>> byTraceId) {
+    private Map<String, List<List<TraceLogRecord>>> groupBySequence(Map<String, List<TraceLogRecord>> byTraceId) {
 
         Map<String, List<List<TraceLogRecord>>> result = new LinkedHashMap<>();
 
@@ -123,10 +108,7 @@ public class CallChainBuilder {
             List<TraceLogRecord> traceLogs = entry.getValue();
 
             // 排序并生成序列签名
-            traceLogs.sort(Comparator.comparing(
-                TraceLogRecord::getSeqNo,
-                this::compareSeqNo
-            ));
+            traceLogs.sort(Comparator.comparing(TraceLogRecord::getSeqNo, this::compareSeqNo));
 
             // 验证 seqNo 完整性
             if (!isSeqNoSequenceValid(traceLogs)) {
@@ -135,8 +117,7 @@ public class CallChainBuilder {
             }
 
             String signature = generateSequenceSignature(traceLogs);
-            result.computeIfAbsent(signature, k -> new ArrayList<>())
-                .add(traceLogs);
+            result.computeIfAbsent(signature, k -> new ArrayList<>()).add(traceLogs);
         }
 
         return result;
@@ -144,38 +125,26 @@ public class CallChainBuilder {
 
     /**
      * Generate sequence signature for a trace log list.
-     * Uses SHA-256 hash for fixed-length signature.
      *
      * @param logs the trace logs
-     * @return the sequence signature (hash)
+     * @return the sequence signature
      */
     private String generateSequenceSignature(List<TraceLogRecord> logs) {
-        String signature = logs.stream()
-            .map(log -> {
-                if (log.getUrl() != null) {
-                    return "URL:" + log.getUrl();
-                } else if (log.getServiceName() != null) {
-                    return "SVC:" + log.getServiceName();
-                } else if (log.getTopic() != null) {
-                    return "MQ:" + log.getTopic();
-                } else if (log.getBusiCode() != null) {
-                    return "BPM:" + log.getBusiCode();
-                } else if (log.getJobDefinedId() != null) {
-                    return "JOB:" + log.getJobDefinedId();
-                } else {
-                    return "UNKNOWN";
-                }
-            })
-            .collect(Collectors.joining("->"));
-
-        // Use SHA-256 hash for fixed-length signature (16 chars)
-        try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(signature.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            return java.util.Base64.getEncoder().encodeToString(hash).substring(0, 16);
-        } catch (java.security.NoSuchAlgorithmException e) {
-            return signature; // Fallback to original signature
-        }
+        return logs.stream().map(log -> {
+            if (log.getUrl() != null) {
+                return "URL:" + log.getUrl();
+            } else if (log.getServiceName() != null) {
+                return "SVC:" + log.getServiceName();
+            } else if (log.getTopic() != null) {
+                return "MQ:" + log.getTopic();
+            } else if (log.getBusiCode() != null) {
+                return "BPM:" + log.getBusiCode();
+            } else if (log.getJobDefinedId() != null) {
+                return "JOB:" + log.getJobDefinedId();
+            } else {
+                return "UNKNOWN";
+            }
+        }).collect(Collectors.joining("->"));
     }
 
     /**
@@ -186,8 +155,10 @@ public class CallChainBuilder {
      * @return comparison result
      */
     int compareSeqNo(String s1, String s2) {
-        if (s1 == null) s1 = "0";
-        if (s2 == null) s2 = "0";
+        if (s1 == null)
+            s1 = "0";
+        if (s2 == null)
+            s2 = "0";
 
         String[] parts1 = s1.split("\\.");
         String[] parts2 = s2.split("\\.");
@@ -247,9 +218,7 @@ public class CallChainBuilder {
      * @param totalCount the total count
      * @return the call flow
      */
-    private CallFlow buildFlow(String signature,
-                              List<List<TraceLogRecord>> traceGroups,
-                              long totalCount) {
+    private CallFlow buildFlow(String signature, List<List<TraceLogRecord>> traceGroups, long totalCount) {
         CallFlow flow = new CallFlow();
         flow.setFlowId("flow_" + UUID.randomUUID().toString().substring(0, 8));
         flow.setCallCount((long) traceGroups.size());

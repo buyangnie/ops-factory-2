@@ -195,8 +195,8 @@ public class QosCollectionScheduler {
         List<IndicatorRawData> rawBatch = new ArrayList<>();
         List<IndicatorDetailData> detailBatch = new ArrayList<>();
         List<IndicatorNormalizeData> normalizeBatch = new ArrayList<>();
-        PerformanceCollectBatch batch = new PerformanceCollectBatch(envInfo, envCode, envScopes, neScoreSums,
-            rawBatch, detailBatch, startTime, endTime);
+        PerformanceCollectBatch batch = new PerformanceCollectBatch(envInfo, envCode, envScopes, neScoreSums, rawBatch,
+            detailBatch, startTime, endTime);
 
         for (DnCluster cluster : clusters) {
             collectForCluster(batch, cluster);
@@ -210,8 +210,7 @@ public class QosCollectionScheduler {
     }
 
     private void collectForCluster(PerformanceCollectBatch batch, DnCluster cluster) {
-        List<DnElement> elements =
-            cluster.getElements() != null ? cluster.getElements() : List.of();
+        List<DnElement> elements = cluster.getElements() != null ? cluster.getElements() : List.of();
         for (DnElement element : elements) {
             List<String> dns = buildDns(batch.envInfo, element);
             for (PerformanceIndicatorScope scope : batch.envScopes) {
@@ -258,11 +257,12 @@ public class QosCollectionScheduler {
             .orElse(null);
         int iMax = config != null && config.getAlarmScoreMax() != null ? config.getAlarmScoreMax() : 20;
         Map<String, BigDecimal> alarmWeights = resolveAlarmWeights(config);
-        Map<String, BigDecimal> alarmIdWeights = alarmWeightStore.loadAll()
-            .stream()
-            .filter(aw -> envInfo.getAgentSolutionType().equals(aw.getAgentSolutionType()))
-            .filter(aw -> aw.getAlarmId() != null && aw.getWeight() != null)
-            .collect(Collectors.toMap(AlarmWeight::getAlarmId, AlarmWeight::getWeight, (a, b) -> a));
+        Map<String,
+            BigDecimal> alarmIdWeights = alarmWeightStore.loadAll()
+                .stream()
+                .filter(aw -> envInfo.getAgentSolutionType().equals(aw.getAgentSolutionType()))
+                .filter(aw -> aw.getAlarmId() != null && aw.getWeight() != null)
+                .collect(Collectors.toMap(AlarmWeight::getAlarmId, AlarmWeight::getWeight, (a, b) -> a));
 
         List<DnCluster> clusters = loadClusters(envCode);
         List<AlarmInfo> allAlarms = collectAlarmsForClusters(envInfo, clusters, startTime, endTime);
@@ -281,12 +281,10 @@ public class QosCollectionScheduler {
         long startTime, long endTime) {
         List<AlarmInfo> allAlarms = new ArrayList<>();
         for (DnCluster cluster : clusters) {
-            List<DnElement> elements =
-                cluster.getElements() != null ? cluster.getElements() : List.of();
+            List<DnElement> elements = cluster.getElements() != null ? cluster.getElements() : List.of();
             for (DnElement element : elements) {
                 List<String> alarmDns = buildDns(envInfo, element);
-                List<AlarmInfo> alarms =
-                    dvClient.fetchCurrentAlarms(envInfo, startTime, endTime, null, alarmDns);
+                List<AlarmInfo> alarms = dvClient.fetchCurrentAlarms(envInfo, startTime, endTime, null, alarmDns);
                 if (alarms != null) {
                     allAlarms.addAll(alarms);
                 }
@@ -473,19 +471,24 @@ public class QosCollectionScheduler {
 
     private static final class PerformanceCollectBatch {
         final DvEnvironmentInfo envInfo;
+
         final String envCode;
+
         final List<PerformanceIndicatorScope> envScopes;
+
         final Map<String, Map<String, List<BigDecimal>>> neScoreSums;
+
         final List<IndicatorRawData> rawBatch;
+
         final List<IndicatorDetailData> detailBatch;
+
         final long startTime;
+
         final long endTime;
 
-        PerformanceCollectBatch(DvEnvironmentInfo envInfo, String envCode,
-            List<PerformanceIndicatorScope> envScopes,
-            Map<String, Map<String, List<BigDecimal>>> neScoreSums,
-            List<IndicatorRawData> rawBatch, List<IndicatorDetailData> detailBatch,
-            long startTime, long endTime) {
+        PerformanceCollectBatch(DvEnvironmentInfo envInfo, String envCode, List<PerformanceIndicatorScope> envScopes,
+            Map<String, Map<String, List<BigDecimal>>> neScoreSums, List<IndicatorRawData> rawBatch,
+            List<IndicatorDetailData> detailBatch, long startTime, long endTime) {
             this.envInfo = envInfo;
             this.envCode = envCode;
             this.envScopes = envScopes;

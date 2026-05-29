@@ -4,10 +4,19 @@
 
 package com.huawei.opsfactory.operationintelligence.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.huawei.opsfactory.operationintelligence.qos.model.CallChainTree;
 import com.huawei.opsfactory.operationintelligence.qos.model.QueryCallChainRequest;
 import com.huawei.opsfactory.operationintelligence.service.CallChainService;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,16 +26,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Map;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Call Chain Controller Test.
@@ -34,16 +33,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author call-chain
  * @since 2026-05-18
  */
-@WebMvcTest(
-    controllers = CallChainController.class,
-    properties = {
-        "operation-intelligence.secret-key=test",
-        "operation-intelligence.call-chain.max-time-range-ms=1800000"
-    }
-)
+@WebMvcTest(controllers = CallChainController.class, properties = {"operation-intelligence.secret-key=test",
+    "operation-intelligence.call-chain.max-time-range-ms=1800000"})
 class CallChainControllerTest {
 
     private static final String SECRET_KEY = "test";
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Autowired
@@ -59,8 +54,7 @@ class CallChainControllerTest {
         tree.setTotalCount(100L);
         tree.setFlows(List.of());
 
-        when(callChainService.queryCallChain(anyString(), anyList(), anyLong(), anyLong(), anyString()))
-            .thenReturn(tree);
+        when(callChainService.queryCallChain(anyString(), anyList(), anyLong(), anyLong())).thenReturn(tree);
 
         QueryCallChainRequest request = new QueryCallChainRequest();
         request.setSolutionType("DigitalCRM.sit");
@@ -70,10 +64,9 @@ class CallChainControllerTest {
         request.setCondition(List.of(condition));
         request.setStartTime(1746057600000L);
         request.setEndTime(1746058000000L);
-        request.setMode("method");
 
-        mockMvc.perform(post("/operation-intelligence/call-chain/query")
-                .header("x-secret-key", SECRET_KEY)
+        mockMvc
+            .perform(post("/operation-intelligence/call-chain/query").header("x-secret-key", SECRET_KEY)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(MAPPER.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -91,11 +84,9 @@ class CallChainControllerTest {
         request.setStartTime(1746057600000L);
         request.setEndTime(1746662400000L);
 
-        mockMvc.perform(post("/operation-intelligence/call-chain/query")
-                .header("x-secret-key", SECRET_KEY)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(MAPPER.writeValueAsString(request)))
-            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/operation-intelligence/call-chain/query").header("x-secret-key", SECRET_KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(MAPPER.writeValueAsString(request))).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -106,11 +97,9 @@ class CallChainControllerTest {
         request.setStartTime(1746057600000L);
         request.setEndTime(1746058000000L);
 
-        mockMvc.perform(post("/operation-intelligence/call-chain/query")
-                .header("x-secret-key", SECRET_KEY)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(MAPPER.writeValueAsString(request)))
-            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/operation-intelligence/call-chain/query").header("x-secret-key", SECRET_KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(MAPPER.writeValueAsString(request))).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -124,11 +113,9 @@ class CallChainControllerTest {
         request.setStartTime(1746662400000L);
         request.setEndTime(1746057600000L);
 
-        mockMvc.perform(post("/operation-intelligence/call-chain/query")
-                .header("x-secret-key", SECRET_KEY)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(MAPPER.writeValueAsString(request)))
-            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/operation-intelligence/call-chain/query").header("x-secret-key", SECRET_KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(MAPPER.writeValueAsString(request))).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -142,9 +129,7 @@ class CallChainControllerTest {
         request.setStartTime(1746057600000L);
         request.setEndTime(1746662400000L);
 
-        mockMvc.perform(post("/operation-intelligence/call-chain/query")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(MAPPER.writeValueAsString(request)))
-            .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/operation-intelligence/call-chain/query").contentType(MediaType.APPLICATION_JSON)
+            .content(MAPPER.writeValueAsString(request))).andExpect(status().isUnauthorized());
     }
 }
