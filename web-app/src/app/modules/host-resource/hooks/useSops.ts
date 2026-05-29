@@ -46,19 +46,22 @@ export function useSops() {
 
     const createSop = useCallback(async (req: SopCreateRequest): Promise<Sop | null> => {
         try {
+            console.log('[createSop] Request:', JSON.stringify(req, null, 2))
             const res = await fetch(`${runtime.GATEWAY_URL}/sops`, {
                 method: 'POST',
                 headers: gatewayHeaders(userId),
                 body: JSON.stringify(req),
                 signal: AbortSignal.timeout(10000),
             })
+            console.log('[createSop] Response status:', res.status)
+            const text = await res.text()
+            console.log('[createSop] Response body:', text)
             if (!res.ok) {
-                const text = await res.text()
                 let msg = text
                 try { msg = JSON.parse(text).error || text } catch { /* use raw text */ }
                 throw new Error(msg)
             }
-            const data = await res.json()
+            const data = JSON.parse(text)
             await fetchSops()
             return data as Sop
         } catch (err) {

@@ -46,6 +46,7 @@ public class TraceLogParser {
         record.setTraceId(textVal(logEntry, "TraceID"));
         record.setIp(textVal(logEntry, "ServerIP"));
         record.setCluster(textVal(logEntry, "ClusterType"));
+        record.setClusterId(textVal(logEntry, "ClusterId"));
         record.setLogMessage(textVal(logEntry, "LogMessage"));
         record.setLogTime(textVal(logEntry, "Time"));
         record.setCost(parseCost(textVal(logEntry, "cost")));

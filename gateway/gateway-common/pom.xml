@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.huawei.opsfactory</groupId>
         <artifactId>ops-gateway-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.5.1.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>gateway-common</artifactId>
@@ -25,6 +25,13 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
+        </dependency>
+
+        <!-- Apache POI for Excel file processing -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.4.1</version>
         </dependency>
 
         <!-- Test -->

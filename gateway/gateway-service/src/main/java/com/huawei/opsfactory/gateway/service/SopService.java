@@ -251,6 +251,9 @@ public class SopService {
         if (!(nodesObj instanceof List<?> nodes)) {
             return;
         }
+
+        // Collect all validation errors before throwing
+        List<String> allErrors = new ArrayList<>();
         for (int i = 0; i < nodes.size(); i++) {
             if (!(nodes.get(i) instanceof Map<?, ?>)) {
                 continue;
@@ -262,9 +265,13 @@ public class SopService {
             }
             List<String> rejected = commandWhitelistService.validateCommand(cmdObj.toString());
             if (!rejected.isEmpty()) {
-                throw new IllegalArgumentException(
-                    "Node " + (i + 1) + " contains non-whitelisted commands: " + String.join(", ", rejected));
+                allErrors.add("Node " + (i + 1) + ": " + String.join(", ", rejected));
             }
+        }
+
+        // Throw with all errors collected
+        if (!allErrors.isEmpty()) {
+            throw new IllegalArgumentException("Command is not on Trustlist, " + String.join("; ", allErrors));
         }
     }
 

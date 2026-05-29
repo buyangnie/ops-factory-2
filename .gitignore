@@ -116,3 +116,4 @@ langfuse/pgdata/
 
 .claude/
 */.dbg/
+.python-deps/

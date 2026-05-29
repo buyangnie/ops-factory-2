@@ -48,7 +48,7 @@ export default function TypeFormModal<T extends BaseFormData>({
                         />
                     </div>
                     <div className="form-group">
-                        <label className="form-label">{t('hostResource.typeCode')}</label>
+                        <label className="form-label">{t('hostResource.typeCode')}{requiredStar}</label>
                         <input
                             className="form-input"
                             value={form.code}
@@ -93,7 +93,7 @@ export default function TypeFormModal<T extends BaseFormData>({
                     <button
                         className="btn btn-primary"
                         onClick={onSave}
-                        disabled={saving || !form.name.trim()}
+                        disabled={saving || !form.name.trim() || !form.code.trim()}
                     >
                         {saving ? t('common.saving') : t('common.save')}
                     </button>

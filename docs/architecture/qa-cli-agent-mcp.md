@@ -27,12 +27,17 @@
 
 - `gateway/agents/qa-cli-agent/AGENTS.md`
 - `gateway/agents/qa-cli-agent/config/config.yaml`
-- `gateway/agents/qa-cli-agent/config/mcp/knowledge-cli/src/index.ts`
-- `gateway/agents/qa-cli-agent/config/mcp/knowledge-cli/src/handlers.ts`
+- `gateway/agents/qa-cli-agent/config/mcp/knowledge-cli/server.py`
+- `gateway/agents/qa-cli-agent/config/mcp/knowledge-cli/core.py`
 
 运行入口：
 
-- `config/mcp/knowledge-cli/dist/index.js`
+- `config/mcp/knowledge-cli/server.py`
+
+Python 依赖：
+
+- `gateway/agents/qa-cli-agent/config/mcp/knowledge-cli/requirements.txt`
+- 启动脚本会安装到 `gateway/agents/qa-cli-agent/config/mcp/knowledge-cli/.python-deps`
 
 ## 4. 配置
 

@@ -61,9 +61,25 @@ export default function BusinessTypeTab({ businessTypes, loading, onCreate, onUp
     }, [])
 
     const handleSave = useCallback(async () => {
-        if (!form.name.trim()) return
+        if (!form.name.trim() || !form.code.trim()) return
         setSaving(true)
         try {
+            // Check for duplicate name
+            const duplicateName = businessTypes.find(bt => bt.name === form.name && bt.id !== editing?.id)
+            if (duplicateName) {
+                showToast('error', t('hostResource.duplicateName', { name: form.name }))
+                setSaving(false)
+                return
+            }
+
+            // Check for duplicate code
+            const duplicateCode = businessTypes.find(bt => bt.code === form.code && bt.id !== editing?.id)
+            if (duplicateCode) {
+                showToast('error', t('hostResource.duplicateCode', { code: form.code }))
+                setSaving(false)
+                return
+            }
+
             if (editing) {
                 await onUpdate(editing.id, form)
             } else {
@@ -75,7 +91,7 @@ export default function BusinessTypeTab({ businessTypes, loading, onCreate, onUp
         } finally {
             setSaving(false)
         }
-    }, [editing, form, onCreate, onUpdate, showToast])
+    }, [editing, form, businessTypes, onCreate, onUpdate, showToast, t])
 
     const handleDelete = useCallback(async (item: BusinessType) => {
         const confirmed = await requestConfirm({

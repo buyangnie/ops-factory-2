@@ -20,7 +20,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -150,10 +152,13 @@ public class CallChainStatistics {
         setNodeFieldsFromSample(node, sample);
 
         // Calculate IP statistics
-        node.setIp(calculateIpStatistics(logs));
+        node.setIpList(calculateIpStatistics(logs));
 
-        // Extract cluster list
-        node.setCluster(extractClusters(logs));
+        // Extract cluster type id string (comma-separated)
+        node.setClusterTypeId(extractClusterTypes(logs));
+
+        // Extract cluster id string (comma-separated)
+        node.setClusterId(extractClusterIds(logs));
 
         // Calculate node-level cost statistics
         calculateNodeCostStatistics(node, logs);
@@ -231,17 +236,31 @@ public class CallChainStatistics {
     }
 
     /**
-     * Extract unique cluster values from logs.
+     * Extract unique cluster type values from logs.
      *
      * @param logs the trace logs
-     * @return list of cluster values
+     * @return first cluster type value
      */
-    private List<String> extractClusters(List<TraceLogRecord> logs) {
+    private String extractClusterTypes(List<TraceLogRecord> logs) {
         return logs.stream()
             .map(TraceLogRecord::getCluster)
             .filter(cluster -> cluster != null && !cluster.isEmpty())
-            .distinct()
-            .collect(Collectors.toList());
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
+     * Extract unique cluster id values from logs.
+     *
+     * @param logs the trace logs
+     * @return first cluster id value
+     */
+    private String extractClusterIds(List<TraceLogRecord> logs) {
+        return logs.stream()
+            .map(TraceLogRecord::getClusterId)
+            .filter(clusterId -> clusterId != null && !clusterId.isEmpty())
+            .findFirst()
+            .orElse(null);
     }
 
     /**
@@ -329,6 +348,392 @@ public class CallChainStatistics {
             stat.setIp(ip);
             stat.setCallCount((long) totalCalls);
             stat.setSuccessCount((long) successCalls);
+
+            if (totalCalls > 0) {
+                stat.setSuccessPercent(successCalls * 100.0 / totalCalls);
+            }
+
+            if (costCount > 0) {
+                stat.setAvgCost(totalCost / costCount);
+                stat.setMinCost(minCost);
+                stat.setMaxCost(maxCost);
+            }
+
+            return stat;
+        }
+    }
+
+    /**
+     * Merge flows by service name (service mode).
+     * Merges flows that have the same node sequence after service-level node merging.
+     *
+     * @param flows the list of flows
+     * @return merged list of flows
+     */
+    public List<CallFlow> mergeFlowsByService(List<CallFlow> flows) {
+        // Step 1: Merge nodes within each flow by serviceName
+        List<CallFlow> mergedNodeFlows = flows.stream()
+            .map(this::mergeNodesByServiceName)
+            .collect(Collectors.toList());
+
+        // Step 2: Group flows by node sequence signature
+        Map<String, List<CallFlow>> byNodeSequence = new LinkedHashMap<>();
+        for (CallFlow flow : mergedNodeFlows) {
+            String sequenceSig = generateNodeSequenceSignature(flow.getNodes());
+            byNodeSequence.computeIfAbsent(sequenceSig, k -> new ArrayList<>()).add(flow);
+        }
+
+        // Step 3: Merge flows with same node sequence
+        List<CallFlow> result = new ArrayList<>();
+        for (Map.Entry<String, List<CallFlow>> entry : byNodeSequence.entrySet()) {
+            List<CallFlow> flowList = entry.getValue();
+            if (flowList.size() == 1) {
+                result.add(flowList.get(0));
+            } else {
+                result.add(mergeFlows(flowList));
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Merge nodes within a flow by service name.
+     *
+     * @param flow the call flow
+     * @return merged flow
+     */
+    private CallFlow mergeNodesByServiceName(CallFlow flow) {
+        Map<String, List<FlowNode>> byServiceName = new LinkedHashMap<>();
+
+        for (FlowNode node : flow.getNodes()) {
+            String serviceName = node.getServiceName() != null ? node.getServiceName() :
+                              node.getUrl() != null ? "URL:" + node.getUrl() :
+                              "UNKNOWN";
+            byServiceName.computeIfAbsent(serviceName, k -> new ArrayList<>()).add(node);
+        }
+
+        List<FlowNode> mergedNodes = new ArrayList<>();
+        for (Map.Entry<String, List<FlowNode>> entry : byServiceName.entrySet()) {
+            List<FlowNode> serviceNodes = entry.getValue();
+            FlowNode merged = mergeServiceNodes(serviceNodes);
+            mergedNodes.add(merged);
+        }
+
+        CallFlow mergedFlow = new CallFlow();
+        mergedFlow.setFlowId(flow.getFlowId());
+        mergedFlow.setCallCount(flow.getCallCount());
+        mergedFlow.setCallRatio(flow.getCallRatio());
+        mergedFlow.setSuccessCount(flow.getSuccessCount());
+        mergedFlow.setSuccessPercent(flow.getSuccessPercent());
+        mergedFlow.setNodes(mergedNodes);
+
+        // Merge flow-level cost statistics
+        if (flow.getAvgCost() != null) {
+            mergedFlow.setAvgCost(flow.getAvgCost());
+        }
+        if (flow.getMinCost() != null) {
+            mergedFlow.setMinCost(flow.getMinCost());
+        }
+        if (flow.getMaxCost() != null) {
+            mergedFlow.setMaxCost(flow.getMaxCost());
+        }
+
+        return mergedFlow;
+    }
+
+    /**
+     * Merge multiple service nodes into one.
+     *
+     * @param serviceNodes list of nodes with the same service
+     * @return merged node
+     */
+    private FlowNode mergeServiceNodes(List<FlowNode> serviceNodes) {
+        FlowNode merged = new FlowNode();
+
+        // Use first node as template for basic fields
+        FlowNode first = serviceNodes.get(0);
+        merged.setServiceName(first.getServiceName());
+        merged.setOperationName(first.getOperationName());
+        merged.setUrl(first.getUrl());
+        merged.setTopic(first.getTopic());
+        merged.setEventName(first.getEventName());
+        // BPM-specific fields
+        if (first.getBusiCode() != null) {
+            merged.setBusiCode(first.getBusiCode());
+        }
+        if (first.getProcessName() != null) {
+            merged.setProcessName(first.getProcessName());
+        }
+        if (first.getElementName() != null) {
+            merged.setElementName(first.getElementName());
+        }
+        if (first.getElementType() != null) {
+            merged.setElementType(first.getElementType());
+        }
+
+        // Merge operationNames (deduplicate and join with comma)
+        Set<String> opNames = serviceNodes.stream()
+            .map(FlowNode::getOperationName)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        if (!opNames.isEmpty()) {
+            merged.setOperationName(String.join(",", opNames));
+        }
+
+        // Collect all unique seqNos from merged nodes and select minimum
+        Set<String> seqNos = serviceNodes.stream()
+            .map(FlowNode::getSeqNo)
+            .collect(Collectors.toSet());
+        if (!seqNos.isEmpty()) {
+            String minSeqNo = seqNos.stream()
+                .min(this::compareSeqNo)
+                .orElse(seqNos.iterator().next());
+            merged.setSeqNo(minSeqNo);
+        }
+
+        // Merge IP statistics
+        merged.setIpList(mergeIpStatisticsFromNodes(serviceNodes));
+
+        // Merge cost statistics
+        merged.setAvgCost(mergeCostStatsFromNodes(serviceNodes, "avg"));
+        merged.setMinCost(mergeCostStatsFromNodes(serviceNodes, "min"));
+        merged.setMaxCost(mergeCostStatsFromNodes(serviceNodes, "max"));
+
+        // Merge clusterId and clusterTypeId (comma-separated strings)
+        merged.setClusterId(mergeClusterIdsFromNodes(serviceNodes));
+        merged.setClusterTypeId(mergeClusterTypeIdsFromNodes(serviceNodes));
+
+        return merged;
+    }
+
+    /**
+     * Merge multiple flows into one.
+     *
+     * @param flows list of flows to merge
+     * @return merged flow
+     */
+    private CallFlow mergeFlows(List<CallFlow> flows) {
+        CallFlow merged = new CallFlow();
+        merged.setFlowId("flow_" + UUID.randomUUID().toString().substring(0, 8));
+
+        // Sum call counts
+        long totalCallCount = flows.stream().mapToLong(CallFlow::getCallCount).sum();
+        merged.setCallCount(totalCallCount);
+
+        // Calculate call ratio
+        long totalCount = flows.stream().mapToLong(CallFlow::getCallCount).sum();
+        if (totalCount > 0) {
+            merged.setCallRatio(totalCallCount * 100.0 / totalCount);
+        }
+
+        // Sum success counts
+        long totalSuccessCount = flows.stream().mapToLong(CallFlow::getSuccessCount).sum();
+        merged.setSuccessCount(totalSuccessCount);
+
+        // Calculate success percent
+        if (totalCallCount > 0) {
+            merged.setSuccessPercent(totalSuccessCount * 100.0 / totalCallCount);
+        }
+
+        // Merge cost statistics
+        List<Long> avgCosts = flows.stream()
+            .map(CallFlow::getAvgCost)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+        if (!avgCosts.isEmpty()) {
+            merged.setAvgCost(avgCosts.stream().mapToLong(Long::longValue).sum() / avgCosts.size());
+        }
+
+        List<Long> minCosts = flows.stream()
+            .map(CallFlow::getMinCost)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+        if (!minCosts.isEmpty()) {
+            merged.setMinCost(minCosts.stream().min(Long::compare).orElse(null));
+        }
+
+        List<Long> maxCosts = flows.stream()
+            .map(CallFlow::getMaxCost)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+        if (!maxCosts.isEmpty()) {
+            merged.setMaxCost(maxCosts.stream().max(Long::compare).orElse(null));
+        }
+
+        // Merge nodes by service name again (across flows)
+        List<FlowNode> allNodes = flows.stream()
+            .flatMap(flow -> flow.getNodes().stream())
+            .collect(Collectors.toList());
+
+        Map<String, List<FlowNode>> byServiceName = new LinkedHashMap<>();
+        for (FlowNode node : allNodes) {
+            String serviceName = node.getServiceName() != null ? node.getServiceName() :
+                              node.getUrl() != null ? "URL:" + node.getUrl() :
+                              "UNKNOWN";
+            byServiceName.computeIfAbsent(serviceName, k -> new ArrayList<>()).add(node);
+        }
+
+        List<FlowNode> finalNodes = new ArrayList<>();
+        for (Map.Entry<String, List<FlowNode>> entry : byServiceName.entrySet()) {
+            finalNodes.add(mergeServiceNodes(entry.getValue()));
+        }
+
+        merged.setNodes(finalNodes);
+        return merged;
+    }
+
+    /**
+     * Generate node sequence signature for flow merging.
+     *
+     * @param nodes the flow nodes
+     * @return the sequence signature
+     */
+    private String generateNodeSequenceSignature(List<FlowNode> nodes) {
+        String sequence = nodes.stream()
+            .map(node -> node.getServiceName() != null ? node.getServiceName() :
+                          node.getUrl() != null ? node.getUrl() : "UNKNOWN")
+            .collect(Collectors.joining("->"));
+
+        // Use SHA-256 hash for fixed-length signature
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(sequence.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.Base64.getEncoder().encodeToString(hash).substring(0, 16);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            return sequence;
+        }
+    }
+
+    /**
+     * Merge IP statistics from multiple nodes.
+     *
+     * @param nodes list of flow nodes
+     * @return merged IP statistics list
+     */
+    private List<IpStat> mergeIpStatisticsFromNodes(List<FlowNode> nodes) {
+        Map<String, IpMergeAccumulator> byIp = new LinkedHashMap<>();
+
+        for (FlowNode node : nodes) {
+            if (node.getIpList() == null) {
+                continue;
+            }
+            for (IpStat ipStat : node.getIpList()) {
+                String ip = ipStat.getIp();
+                IpMergeAccumulator acc = byIp.computeIfAbsent(ip, k -> new IpMergeAccumulator(ip));
+                acc.totalCalls += ipStat.getCallCount();
+                acc.successCalls += ipStat.getSuccessCount();
+
+                if (ipStat.getAvgCost() != null) {
+                    acc.totalCost += ipStat.getAvgCost() * ipStat.getCallCount();
+                    acc.costCount += ipStat.getCallCount();
+                }
+
+                if (ipStat.getMinCost() != null) {
+                    acc.minCost = Math.min(acc.minCost, ipStat.getMinCost());
+                }
+                if (ipStat.getMaxCost() != null) {
+                    acc.maxCost = Math.max(acc.maxCost, ipStat.getMaxCost());
+                }
+            }
+        }
+
+        return byIp.values().stream()
+            .map(IpMergeAccumulator::toIpStat)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Merge cost statistics from multiple nodes.
+     *
+     * @param nodes list of flow nodes
+     * @param statType the stat type (avg, min, max)
+     * @return merged cost value
+     */
+    private Long mergeCostStatsFromNodes(List<FlowNode> nodes, String statType) {
+        if ("avg".equals(statType)) {
+            long totalCost = 0;
+            long totalCount = 0;
+            for (FlowNode node : nodes) {
+                if (node.getAvgCost() != null && node.getIpList() != null) {
+                    // Calculate total calls from IP statistics
+                    long nodeCalls = node.getIpList().stream()
+                        .mapToLong(IpStat::getCallCount)
+                        .sum();
+                    totalCost += node.getAvgCost() * nodeCalls;
+                    totalCount += nodeCalls;
+                }
+            }
+            return totalCount > 0 ? totalCost / totalCount : null;
+        } else if ("min".equals(statType)) {
+            long min = Long.MAX_VALUE;
+            for (FlowNode node : nodes) {
+                if (node.getMinCost() != null && node.getMinCost() < min) {
+                    min = node.getMinCost();
+                }
+            }
+            return min != Long.MAX_VALUE ? min : null;
+        } else if ("max".equals(statType)) {
+            long max = Long.MIN_VALUE;
+            for (FlowNode node : nodes) {
+                if (node.getMaxCost() != null && node.getMaxCost() > max) {
+                    max = node.getMaxCost();
+                }
+            }
+            return max != Long.MIN_VALUE ? max : null;
+        }
+        return null;
+    }
+
+    /**
+     * Merge cluster IDs from multiple nodes.
+     *
+     * @param nodes list of flow nodes
+     * @return first cluster ID from all nodes
+     */
+    private String mergeClusterIdsFromNodes(List<FlowNode> nodes) {
+        return nodes.stream()
+            .filter(node -> node.getClusterId() != null && !node.getClusterId().isEmpty())
+            .map(FlowNode::getClusterId)
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
+     * Merge cluster type IDs from multiple nodes.
+     *
+     * @param nodes list of flow nodes
+     * @return first cluster type ID from all nodes
+     */
+    private String mergeClusterTypeIdsFromNodes(List<FlowNode> nodes) {
+        return nodes.stream()
+            .filter(node -> node.getClusterTypeId() != null && !node.getClusterTypeId().isEmpty())
+            .map(FlowNode::getClusterTypeId)
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
+     * Accumulator for IP merge.
+     */
+    private static class IpMergeAccumulator {
+        private final String ip;
+        private long totalCalls = 0;
+        private long successCalls = 0;
+        private long totalCost = 0;
+        private long costCount = 0;
+        private long minCost = Long.MAX_VALUE;
+        private long maxCost = Long.MIN_VALUE;
+
+        IpMergeAccumulator(String ip) {
+            this.ip = ip;
+        }
+
+        IpStat toIpStat() {
+            IpStat stat = new IpStat();
+            stat.setIp(ip);
+            stat.setCallCount(totalCalls);
+            stat.setSuccessCount(successCalls);
 
             if (totalCalls > 0) {
                 stat.setSuccessPercent(successCalls * 100.0 / totalCalls);

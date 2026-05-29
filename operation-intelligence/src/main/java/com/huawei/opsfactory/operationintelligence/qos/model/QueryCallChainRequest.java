@@ -25,6 +25,8 @@ public class QueryCallChainRequest {
 
     private Long endTime;
 
+    private String mode;
+
     /**
      * Gets the solution type.
      *
@@ -95,6 +97,24 @@ public class QueryCallChainRequest {
      */
     public void setEndTime(Long endTime) {
         this.endTime = endTime;
+    }
+
+    /**
+     * Gets the mode.
+     *
+     * @return the mode (method or service)
+     */
+    public String getMode() {
+        return mode;
+    }
+
+    /**
+     * Sets the mode.
+     *
+     * @param mod the mode (method or service)
+     */
+    public void setMode(String mode) {
+        this.mode = mode;
     }
 
     /**

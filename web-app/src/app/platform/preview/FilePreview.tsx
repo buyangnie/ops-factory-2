@@ -14,6 +14,7 @@ import './FilePreview.css'
 import { inferFileType, needsTextContent } from '../../../utils/filePreview'
 import OnlyOfficePreview from './OnlyOfficePreview'
 import { runtime, gatewayHeaders } from '../../../config/runtime'
+import { getFilenameFromDisposition, triggerDownload } from '../../../utils/fileDownload'
 
 const MAX_LOG_LINE_NUMBER_LINES = 12000
 const MAX_LOG_LINE_NUMBER_CHARS = 1200000
@@ -312,6 +313,24 @@ export default function FilePreview({ embedded = false }: { embedded?: boolean }
         if (userId) url += `&uid=${encodeURIComponent(userId)}`
         return url
     }, [previewFile, userId])
+
+    const handleDownload = useCallback(async () => {
+        const baseUrl = getDownloadUrl()
+        const url = previewFile?.downloadUrl ? baseUrl : `${baseUrl}&download=true`
+        if (!url) return
+        try {
+            const response = await fetch(url, { headers: previewFile?.downloadUrl ? undefined : gatewayHeaders(userId) })
+            if (!response.ok) throw new Error(response.statusText)
+            const blob = await response.blob()
+            const filename = getFilenameFromDisposition(
+                response.headers.get('Content-Disposition'),
+                previewFile?.downloadFilename || previewFile?.name || 'download'
+            )
+            triggerDownload(blob, filename)
+        } catch {
+            showToast('error', t('files.downloadFailed', { defaultValue: t('errors.unknown') }))
+        }
+    }, [getDownloadUrl, previewFile, showToast, t, userId])
 
     const loadKnowledgeSources = useCallback(async () => {
         const requestId = knowledgeSourcesRequestRef.current + 1
@@ -612,18 +631,18 @@ export default function FilePreview({ embedded = false }: { embedded?: boolean }
                                 </button>
                             )}
                             {canDownload && (
-                                <a
-                                    href={previewFile.downloadUrl ? getDownloadUrl() : `${getDownloadUrl()}&download=true`}
+                                <button
+                                    type="button"
                                     className="file-preview-btn"
                                     title={t('files.download')}
-                                    download
+                                    onClick={handleDownload}
                                 >
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                         <polyline points="7 10 12 15 17 10" />
                                         <line x1="12" y1="15" x2="12" y2="3" />
                                     </svg>
-                                </a>
+                                </button>
                             )}
                             <button
                                 className={`file-preview-btn ${isPreviewFullscreen ? 'active' : ''}`}

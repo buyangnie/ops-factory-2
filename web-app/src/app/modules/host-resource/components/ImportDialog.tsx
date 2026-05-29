@@ -1,7 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import DetailDialog from '../../../platform/ui/primitives/DetailDialog'
 import type { ImportType, ImportResult, ImportProgress } from '../hooks/useResourceImport'
+import { generateSampleXlsx, downloadWorkbook, readXlsxFile } from '../../../../utils/xlsxHelper'
+import { validateSheetStructure, type SheetValidationError } from '../../../../utils/xlsxValidator'
 
 const IMPORT_TYPES: ImportType[] = [
     'ClusterTypes',
@@ -15,45 +17,12 @@ const IMPORT_TYPES: ImportType[] = [
     'Whitelist',
 ]
 
-// Sample CSV content for each import type
-const SAMPLE_CSVS: Record<ImportType, string> = {
-    ClusterTypes: `name,code,description,knowledge,commandPrefix,envVariables
-Web Cluster,web-cluster,Web service cluster,Common commands: nginx,tomcat,/usr/bin/,JAVA_HOME=/opt/java;NODE_ENV=production
-Database Cluster,db-cluster,Database service cluster,Common commands: mysql,postgres,/usr/bin/,DB_PORT=3306`,
-    BusinessTypes: `name,code,description,knowledge
-Payment Service,payment,Payment related services,Standard payment flow
-User Service,user,User management services,User registration, login, authentication`,
-    HostGroups: `name,code,parentGroup,description
-Production Environment,prod,,Production servers
-Production-Web,web,Production Environment,Production Web servers
-Production-DB,db,Production Environment,Production database servers`,
-    Clusters: `name,type,purpose,group,description
-Web01,Web Cluster,Frontend services,Production-Web,Web frontend server cluster
-DB01,Database Cluster,Data storage,Production-DB,MySQL database cluster`,
-    Hosts: `name,hostname,ip,businessIp,port,os,location,username,authType,credential,business,cluster,purpose,tags,description
-web-server-01,web01,192.168.1.10,,22,Linux,Beijing Datacenter,root,password,,Web01,Web Server,web;prod,Primary Web Server
-web-server-02,web02,192.168.1.11,,22,Linux,Beijing Datacenter,root,password,,Web01,Web Server,web;prod,Backup Web Server`,
-    BusinessServices: `name,code,group,businessType,description,tags,priority,contactInfo
-Payment Service,payment-svc,Production Environment,Payment Service,Online payment interface,payment;prod,High,Ops Team
-User Service,user-svc,Production Environment,User Service,User management features,user;prod,Medium,Dev Team`,
-    Relations: `sourceNode,destNode,description
-web-server-01,db-server-01,Web server accessing database
-web-server-02,db-server-01,Backup web server accessing database`,
-    SOPs: `name,description,version,triggerCondition,enabled,mode,stepsDescription,tags
-Server Restart,Regularly restart servers to free resources,v1.0,Memory usage over 90%,true,structured,1.Check current memory usage;2.Notify相关人员;3.Execute restart;4.Verify service recovery,restart;ops
-Log Cleanup,Regularly clean up log files,v1.1,Disk usage over 80%,true,structured,1.Check log directory;2.Delete logs older than 7 days;3.Verify disk space,cleanup;ops`,
-    Whitelist: `pattern,description,enabled
-ls -la,List files,true
-ps aux,View processes,true
-cat /var/log/*,View logs,false`,
-}
-
 interface ImportDialogProps {
     open: boolean
     onClose: () => void
     importing: boolean
     progress: ImportProgress | null
-    onImport: (type: ImportType, csvText: string) => Promise<ImportResult>
+    onImport: (type: ImportType, file: File) => Promise<ImportResult>
 }
 
 export default function ImportDialog({ open, onClose, importing, progress, onImport }: ImportDialogProps) {
@@ -61,43 +30,101 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
     const [selectedType, setSelectedType] = useState<ImportType | null>(null)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [result, setResult] = useState<ImportResult | null>(null)
+    const [fileValidation, setFileValidation] = useState<{ valid: boolean; message: string } | null>(null)
+    const [validatingFile, setValidatingFile] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
-
-    if (!open) return null
 
     const handleTypeSelect = (type: ImportType) => {
         setSelectedType(type)
         setSelectedFile(null)
         setResult(null)
+        setFileValidation(null)
         if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+
+    const validateFile = async (file: File, type: ImportType) => {
+        setValidatingFile(true)
+        setFileValidation(null)
+        try {
+            const workbook = await readXlsxFile(file)
+            const structureValidation = validateSheetStructure(workbook, type)
+
+            if (!structureValidation.valid) {
+                const sheetError = structureValidation.sheetErrors[0]
+                setFileValidation({
+                    valid: false,
+                    message: translateSheetError(sheetError, type)
+                })
+                return
+            }
+
+            setFileValidation({
+                valid: true,
+                message: t('hostResource.importFileValid')
+            })
+        } catch (error) {
+            setFileValidation({
+                valid: false,
+                message: t('hostResource.importErrorFileReadError', { message: error instanceof Error ? error.message : String(error) })
+            })
+        } finally {
+            setValidatingFile(false)
+        }
+    }
+
+    const translateSheetError = (error: SheetValidationError, resourceType: ImportType): string => {
+        switch (error.code) {
+            case 'import.sheetNotFound':
+                return t('hostResource.importErrorSheetNotFound', { sheet: error.params?.sheet })
+            case 'import.wrongColumnCount':
+                return t('hostResource.importErrorWrongColumnCount', {
+                    expected: error.params?.expected || '0',
+                    actual: error.params?.actual || '0'
+                })
+            case 'import.missingColumns':
+                return t('hostResource.importErrorMissingColumns', {
+                    type: error.params?.type || resourceType,
+                    columns: error.params?.columns || ''
+                })
+            case 'import.extraColumns':
+                return t('hostResource.importErrorExtraColumns', {
+                    type: error.params?.type || resourceType,
+                    columns: error.params?.columns || ''
+                })
+            default:
+                return error.code
+        }
     }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         setSelectedFile(file ?? null)
         setResult(null)
+        setFileValidation(null)
+
+        if (file && selectedType) {
+            validateFile(file, selectedType)
+        }
     }
+
+    // Trigger validation when type changes with a file selected
+    useEffect(() => {
+        if (selectedFile && selectedType) {
+            validateFile(selectedFile, selectedType)
+        }
+    }, [selectedType])
 
     const handleImport = async () => {
         if (!selectedType || !selectedFile) return
-        // Read file as text with UTF-8 encoding
-        // Note: For non-UTF-8 CSV files (like GBK), please convert them to UTF-8 first
-        // using a tool like Notepad++ or VSCode (File -> Save with Encoding -> UTF-8)
-        const text = await selectedFile.text()
-        const res = await onImport(selectedType, text)
+        const res = await onImport(selectedType, selectedFile)
         setResult(res)
     }
 
     const downloadSample = () => {
         if (!selectedType) return
-        const csv = SAMPLE_CSVS[selectedType]
-        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${selectedType.toLowerCase()}_sample.csv`
-        a.click()
-        URL.revokeObjectURL(url)
+        const workbook = generateSampleXlsx(selectedType, t)
+        const filename = selectedType === 'Whitelist' ? 'trustlist_sample.xlsx' : `${selectedType.toLowerCase()}_sample.xlsx`
+        downloadWorkbook(workbook, filename)
     }
 
     const handleClose = () => {
@@ -122,6 +149,12 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
         switch (err.code) {
             case 'import.noDataRows':
                 return t('hostResource.importErrorNoDataRows')
+            case 'import.invalidFile':
+                return t('hostResource.importErrorInvalidFile', { message: err.params?.message })
+            case 'import.parseError':
+                return t('hostResource.importErrorParseError', { message: err.params?.message })
+            case 'import.fileReadError':
+                return t('hostResource.importErrorFileReadError', { message: err.params?.message })
             case 'import.missingRequiredColumns':
                 return t('hostResource.importErrorMissingRequiredColumns', {
                     type: err.params?.type,
@@ -137,10 +170,22 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
                 return t('hostResource.importErrorGroupNotFound', { group: err.params?.group })
             case 'import.clusterNotFound':
                 return t('hostResource.importErrorClusterNotFound', { cluster: err.params?.cluster })
+            case 'import.clusterNameRequired':
+                return t('hostResource.importErrorClusterNameRequired')
+            case 'import.clusterNameTooLong':
+                return t('hostResource.importErrorClusterNameTooLong', { length: err.params?.length })
+            case 'import.clusterTypeNotFound':
+                return t('hostResource.importErrorClusterTypeNotFound', { type: err.params?.type })
+            case 'import.purposeTooLong':
+                return t('hostResource.importErrorPurposeTooLong', { length: err.params?.length })
+            case 'import.descriptionTooLong':
+                return t('hostResource.importErrorDescriptionTooLong', { length: err.params?.length })
             case 'import.targetHostNotFound':
                 return t('hostResource.importErrorTargetHostNotFound', { host: err.params?.host })
             case 'import.sourceNodeNotFound':
                 return t('hostResource.importErrorSourceNodeNotFound', { node: err.params?.node })
+            case 'import.invalidNodes':
+                return t('hostResource.importErrorInvalidNodes', { name: err.params?.name })
             case 'import.rowError':
                 return t('hostResource.importErrorRowError', { message: err.params?.message })
             case 'import.hostNameRequired':
@@ -154,15 +199,98 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
             case 'import.hostUsernameRequired':
                 return t('hostResource.importErrorHostUsernameRequired')
             case 'import.duplicate':
-                return t('hostResource.importErrorDuplicate', { type: err.params?.type, name: err.params?.name })
+                return t('hostResource.importErrorDuplicate', {
+                    type: err.params?.type === 'Whitelist' ? t('hostResource.importType_Whitelist') :
+                          err.params?.type === 'ClusterType' || err.params?.type === 'ClusterTypes' ? t('hostResource.importType_ClusterTypes') :
+                          err.params?.type === 'BusinessType' || err.params?.type === 'BusinessTypes' ? t('hostResource.importType_BusinessTypes') :
+                          err.params?.type === 'HostGroup' || err.params?.type === 'HostGroups' ? t('hostResource.importType_HostGroups') :
+                          err.params?.type === 'Cluster' || err.params?.type === 'Clusters' ? t('hostResource.importType_Clusters') :
+                          err.params?.type === 'Host' || err.params?.type === 'Hosts' ? t('hostResource.importType_Hosts') :
+                          err.params?.type === 'BusinessService' || err.params?.type === 'BusinessServices' ? t('hostResource.importType_BusinessServices') :
+                          err.params?.type === 'Relation' || err.params?.type === 'Relations' ? t('hostResource.importType_Relations') :
+                          err.params?.type === 'SOP' || err.params?.type === 'SOPs' ? t('hostResource.importType_SOPs') :
+                          err.params?.type || '',
+                    name: err.params?.name
+                })
+            case 'import.duplicateCode':
+                return t('hostResource.importErrorDuplicateCode', {
+                    type: err.params?.type === 'ClusterType' || err.params?.type === 'ClusterTypes' ? t('hostResource.importType_ClusterTypes') :
+                          err.params?.type === 'BusinessType' || err.params?.type === 'BusinessTypes' ? t('hostResource.importType_BusinessTypes') :
+                          err.params?.type === 'HostGroup' || err.params?.type === 'HostGroups' ? t('hostResource.importType_HostGroups') :
+                          err.params?.type === 'Cluster' || err.params?.type === 'Clusters' ? t('hostResource.importType_Clusters') :
+                          err.params?.type === 'Host' || err.params?.type === 'Hosts' ? t('hostResource.importType_Hosts') :
+                          err.params?.type === 'BusinessService' || err.params?.type === 'BusinessServices' ? t('hostResource.importType_BusinessServices') :
+                          err.params?.type === 'Relation' || err.params?.type === 'Relations' ? t('hostResource.importType_Relations') :
+                          err.params?.type === 'SOP' || err.params?.type === 'SOPs' ? t('hostResource.importType_SOPs') :
+                          err.params?.type || '',
+                    code: err.params?.code
+                })
+            case 'import.whitelistInvalidPattern':
+                return t('hostResource.importErrorWhitelistInvalidPattern', { pattern: err.params?.pattern })
+            case 'import.invalidChars':
+                return t('hostResource.importErrorInvalidChars', { field: err.params?.field })
+            case 'import.usernameInvalidChars':
+                return t('hostResource.importErrorUsernameInvalidChars')
+            case 'import.credentialInvalidChars':
+                return t('hostResource.importErrorCredentialInvalidChars')
+            case 'import.businessIpInvalid':
+                return t('hostResource.importErrorBusinessIpInvalid', { ip: err.params?.ip })
             case 'import.setParentFailed':
                 return t('hostResource.importErrorSetParentFailed', { message: err.params?.message })
             case 'import.importFailed':
                 return t('hostResource.importErrorImportFailed', { message: err.params?.message })
+            case 'import.clusterTypeNameRequired':
+                return t('hostResource.importErrorClusterTypeNameRequired')
+            case 'import.clusterTypeNameTooLong':
+                return t('hostResource.importErrorClusterTypeNameTooLong', { length: err.params?.length })
+            case 'import.clusterTypeCodeRequired':
+                return t('hostResource.importErrorClusterTypeCodeRequired')
+            case 'import.clusterTypeCodeTooLong':
+                return t('hostResource.importErrorClusterTypeCodeTooLong', { length: err.params?.length })
+            case 'import.clusterTypeInvalidMode':
+                return t('hostResource.importErrorClusterTypeInvalidMode', { mode: err.params?.mode })
+            case 'import.businessTypeNameRequired':
+                return t('hostResource.importErrorBusinessTypeNameRequired')
+            case 'import.businessTypeNameTooLong':
+                return t('hostResource.importErrorBusinessTypeNameTooLong', { length: err.params?.length })
+            case 'import.businessTypeCodeTooLong':
+                return t('hostResource.importErrorBusinessTypeCodeTooLong', { length: err.params?.length })
+            case 'import.businessTypeRequired':
+                return t('hostResource.importErrorBusinessTypeRequired')
+            case 'import.businessTypeNotFound':
+                return t('hostResource.importErrorBusinessTypeNotFound', { type: err.params?.type })
+            case 'import.hostGroupNameRequired':
+                return t('hostResource.importErrorHostGroupNameRequired')
+            case 'import.hostGroupNameTooLong':
+                return t('hostResource.importErrorHostGroupNameTooLong', { length: err.params?.length })
+            case 'import.hostGroupCodeTooLong':
+                return t('hostResource.importErrorHostGroupCodeTooLong', { length: err.params?.length })
+            case 'import.businessServiceNameRequired':
+                return t('hostResource.importErrorBusinessServiceNameRequired')
+            case 'import.businessServiceNameTooLong':
+                return t('hostResource.importErrorBusinessServiceNameTooLong', { length: err.params?.length })
+            case 'import.businessServiceCodeTooLong':
+                return t('hostResource.importErrorBusinessServiceCodeTooLong', { length: err.params?.length })
+            case 'import.sopNameRequired':
+                return t('hostResource.importErrorSopNameRequired')
+            case 'import.sopNameTooLong':
+                return t('hostResource.importErrorSopNameTooLong', { length: err.params?.length })
+            case 'import.sopVersionTooLong':
+                return t('hostResource.importErrorSopVersionTooLong', { length: err.params?.length })
+            case 'import.sopInvalidMode':
+                return t('hostResource.importErrorSopInvalidMode', { mode: err.params?.mode })
+            case 'import.sopTriggerConditionTooLong':
+                return t('hostResource.importErrorSopTriggerConditionTooLong', { length: err.params?.length })
+            case 'import.sopStepsDescriptionTooLong':
+                return t('hostResource.importErrorSopStepsDescriptionTooLong', { length: err.params?.length })
+            case 'import.whitelistPatternRequired':
+                return t('hostResource.importErrorWhitelistPatternRequired')
             default:
                 return err.code
         }
     }
+
+    if (!open) return null
 
     return (
         <DetailDialog
@@ -189,7 +317,7 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
                             <button
                                 className="btn btn-primary btn-sm"
                                 onClick={handleImport}
-                                disabled={!selectedType || !selectedFile || importing}
+                                disabled={!selectedType || !selectedFile || importing || !fileValidation?.valid || validatingFile}
                             >
                                 {importing ? t('hostResource.importing', { current: progress?.current ?? 0, total: progress?.total ?? 0 }) : t('hostResource.importStart')}
                             </button>
@@ -198,7 +326,6 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
                 </div>
             }
         >
-            {/* Step 1: Select import type */}
             {!result && (
                 <div className="hr-import-step">
                     <div className="hr-import-step-label">
@@ -220,34 +347,27 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
                 </div>
             )}
 
-            {/* Step 2: Select CSV file */}
             {!result && selectedType && (
                 <div className="hr-import-step">
                     <div className="hr-import-step-label">
                         {t('hostResource.importStep2')}
                     </div>
-                    <div className="hr-import-encoding-hint">
-                        {t('hostResource.importEncodingHint')}
-                    </div>
                     <div className="hr-import-sample-area">
-                        <div className="hr-import-sample-header">
-                            <span>{t('hostResource.importSampleTitle')}</span>
-                            <button
-                                type="button"
-                                className="btn btn-secondary btn-xs"
-                                onClick={downloadSample}
-                                disabled={importing}
-                            >
-                                {t('hostResource.importDownloadSample')}
-                            </button>
-                        </div>
-                        <pre className="hr-import-sample-content">{SAMPLE_CSVS[selectedType]}</pre>
+                        <button
+                            type="button"
+                            className="btn btn-secondary btn-xs"
+                            onClick={downloadSample}
+                            disabled={importing}
+                            style={{ marginLeft: 'auto' }}
+                        >
+                            {t('hostResource.importDownloadSample')}
+                        </button>
                     </div>
                     <div className="hr-import-file-area">
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept=".csv"
+                            accept=".xlsx"
                             onChange={handleFileChange}
                             disabled={importing}
                             className="hr-import-file-input"
@@ -266,10 +386,21 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
                             <div className="hr-import-file-placeholder">{t('hostResource.importNoFileSelected')}</div>
                         )}
                     </div>
+
+                    {validatingFile && (
+                        <div className="hr-import-validating">
+                            {t('hostResource.importValidatingFile')}
+                        </div>
+                    )}
+
+                    {fileValidation && !validatingFile && (
+                        <div className={`hr-import-file-validation ${fileValidation.valid ? 'hr-import-validation-success' : 'hr-import-validation-error'}`}>
+                            {fileValidation.message}
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Progress */}
             {importing && progress && (
                 <div className="hr-import-progress">
                     <div className="hr-import-progress-bar-track">
@@ -284,7 +415,6 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
                 </div>
             )}
 
-            {/* Result */}
             {result && (
                 <div className="hr-import-result">
                     <div className="hr-import-result-summary">

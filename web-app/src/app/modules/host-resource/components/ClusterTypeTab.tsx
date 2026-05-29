@@ -74,16 +74,34 @@ export default function ClusterTypeTab({ clusterTypes, clusters, loading, onCrea
     }, [])
 
     const handleSave = useCallback(async () => {
-        if (!form.name.trim()) return
+        if (!form.name.trim() || !form.code.trim()) return
         setSaving(true)
         try {
             const cleanedForm = {
                 ...form,
                 envVariables: form.envVariables.filter(ev => ev.key.trim() !== ''),
             }
+
+            // Check for duplicate name
+            const duplicateName = clusterTypes.find(ct => ct.name === form.name && ct.id !== editing?.id)
+            if (duplicateName) {
+                showToast('error', t('hostResource.duplicateName', { name: form.name }))
+                setSaving(false)
+                return
+            }
+
+            // Check for duplicate code
+            const duplicateCode = clusterTypes.find(ct => ct.code === form.code && ct.id !== editing?.id)
+            if (duplicateCode) {
+                showToast('error', t('hostResource.duplicateCode', { code: form.code }))
+                setSaving(false)
+                return
+            }
+
             if (editing) {
                 const inUseByName = clusters.filter(c => c.type === form.name)
-                const inUseByCode = clusters.filter(c => c.type === editing.code)
+                // Only check code if it's not empty (empty string is not a valid type identifier)
+                const inUseByCode = editing.code ? clusters.filter(c => c.type === editing.code) : []
                 const nameChanged = form.name !== editing.name
                 const codeChanged = form.code !== editing.code
 
@@ -111,13 +129,17 @@ export default function ClusterTypeTab({ clusterTypes, clusters, loading, onCrea
         } finally {
             setSaving(false)
         }
-    }, [editing, form, onCreate, onUpdate, showToast, t])
+    }, [editing, form, clusterTypes, clusters, onCreate, onUpdate, showToast, t])
 
     const handleDelete = useCallback(async (item: ClusterType) => {
         const inUseByName = clusters.filter(c => c.type === item.name)
-        const inUseByCode = clusters.filter(c => c.type === item.code)
+        // Only check code if it's not empty (empty string is not a valid type identifier)
+        const inUseByCode = item.code ? clusters.filter(c => c.type === item.code) : []
         if (inUseByName.length > 0 || inUseByCode.length > 0) {
-            showToast('warning', t('hostResource.clusterTypeInUse', { name: item.name, clusters: inUseByName.map(c => c.name).join(', ') }))
+            // Combine both sets of clusters, avoiding duplicates
+            const allInUse = [...inUseByName, ...inUseByCode.filter(c => !inUseByName.includes(c))]
+            const clusterNames = allInUse.map(c => c.name).join(', ')
+            showToast('warning', t('hostResource.clusterTypeInUse', { name: item.name, clusters: clusterNames }))
             return
         }
         const confirmed = await requestConfirm({

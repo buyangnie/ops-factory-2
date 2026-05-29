@@ -5,9 +5,15 @@
     http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.huawei.opsfactory</groupId>
+    <parent>
+        <groupId>com.huawei.msz</groupId>
+        <artifactId>ms-om-parent</artifactId>
+        <version>1.5.1.1-SNAPSHOT</version>
+    </parent>
+
+    <groupId>com.huawei.msz</groupId>
     <artifactId>knowledge-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.5.1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>

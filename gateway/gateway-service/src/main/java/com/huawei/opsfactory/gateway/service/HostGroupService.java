@@ -202,6 +202,18 @@ public class HostGroupService {
      * @return the result
      */
     public Map<String, Object> createGroup(Map<String, Object> body) {
+        String code = body.get("code") != null ? String.valueOf(body.get("code")).trim() : "";
+        if (code.isEmpty()) {
+            throw new IllegalArgumentException("环境编码不能为空");
+        }
+
+        List<Map<String, Object>> allGroups = listGroups();
+        boolean duplicate = allGroups.stream()
+            .anyMatch(g -> code.equalsIgnoreCase(String.valueOf(g.get("code"))));
+        if (duplicate) {
+            throw new IllegalArgumentException("环境编码已存在：" + code);
+        }
+
         String id = UUID.randomUUID().toString();
         String now = Instant.now().toString();
 
@@ -210,13 +222,13 @@ public class HostGroupService {
         group.put("name", body.getOrDefault("name", ""));
         group.put("parentId", body.get("parentId"));
         group.put("description", body.getOrDefault("description", ""));
-        group.put("code", body.getOrDefault("code", ""));
+        group.put("code", code);
         group.put("enabled", body.getOrDefault("enabled", true));
         group.put("createdAt", now);
         group.put("updatedAt", now);
 
         writeEntityFile(id, group);
-        log.info("Created host group: id={}, name={}", id, group.get("name"));
+        log.info("Created host group: id={}, name={}, code={}", id, group.get("name"), code);
         return group;
     }
 
@@ -234,6 +246,21 @@ public class HostGroupService {
             throw new IllegalArgumentException("Host group not found: " + id);
         }
 
+        if (body.containsKey("code")) {
+            String newCode = body.get("code") != null ? String.valueOf(body.get("code")).trim() : "";
+            if (newCode.isEmpty()) {
+                throw new IllegalArgumentException("环境编码不能为空");
+            }
+
+            List<Map<String, Object>> allGroups = listGroups();
+            boolean duplicate = allGroups.stream()
+                .filter(g -> !id.equals(g.get("id")))
+                .anyMatch(g -> newCode.equalsIgnoreCase(String.valueOf(g.get("code"))));
+            if (duplicate) {
+                throw new IllegalArgumentException("环境编码已存在：" + newCode);
+            }
+            group.put("code", newCode);
+        }
         if (body.containsKey("name")) {
             group.put("name", body.get("name"));
         }
@@ -242,9 +269,6 @@ public class HostGroupService {
         }
         if (body.containsKey("description")) {
             group.put("description", body.get("description"));
-        }
-        if (body.containsKey("code")) {
-            group.put("code", body.get("code"));
         }
         if (body.containsKey("enabled")) {
             group.put("enabled", body.get("enabled"));

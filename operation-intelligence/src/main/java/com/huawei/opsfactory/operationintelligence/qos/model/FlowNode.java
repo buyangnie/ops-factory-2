@@ -37,9 +37,11 @@ public class FlowNode {
 
     private String elementType;
 
-    private List<IpStat> ip;
+    private List<IpStat> ipList;
 
-    private List<String> cluster;
+    private String clusterTypeId;
+
+    private String clusterId;
 
     private String clusterId;
 
@@ -230,39 +232,57 @@ public class FlowNode {
     }
 
     /**
-     * Gets the ip.
+     * Gets the ip list.
      *
      * @return the ip statistics list
      */
-    public List<IpStat> getIp() {
-        return ip;
+    public List<IpStat> getIpList() {
+        return ipList;
     }
 
     /**
-     * Sets the ip.
+     * Sets the ip list.
      *
-     * @param ip the ip statistics list
+     * @param ipList the ip statistics list
      */
-    public void setIp(List<IpStat> ip) {
-        this.ip = ip;
+    public void setIpList(List<IpStat> ipList) {
+        this.ipList = ipList;
     }
 
     /**
-     * Gets the cluster.
+     * Gets the cluster type id.
      *
-     * @return the cluster list
+     * @return the cluster type id string (first value if multiple)
      */
-    public List<String> getCluster() {
-        return cluster;
+    public String getClusterTypeId() {
+        return clusterTypeId;
     }
 
     /**
-     * Sets the cluster.
+     * Sets the cluster type id.
      *
-     * @param cluster the cluster list
+     * @param clusterTypeId the cluster type id string
      */
-    public void setCluster(List<String> cluster) {
-        this.cluster = cluster;
+    public void setClusterTypeId(String clusterTypeId) {
+        this.clusterTypeId = clusterTypeId;
+    }
+
+    /**
+     * Gets the cluster id.
+     *
+     * @return the cluster id string (first value if multiple)
+     */
+    public String getClusterId() {
+        return clusterId;
+    }
+
+    /**
+     * Sets the cluster id.
+     *
+     * @param clusterId the cluster id string
+     */
+    public void setClusterId(String clusterId) {
+        this.clusterId = clusterId;
     }
 
     /**

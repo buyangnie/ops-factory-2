@@ -328,7 +328,7 @@ knowledge-service
 
 ### 10.2 默认知识源
 
-如果 Agent 没有显式传 `sourceIds`，MCP 会回退到配置中的 `KNOWLEDGE_DEFAULT_SOURCE_ID`。
+如果 Agent 没有显式传 `sourceIds`，MCP 会回退到 `config.yaml` 中的 `extensions.knowledge-service.x-opsfactory.knowledgeScope.sourceId`。
 
 这意味着 QA Agent 当前默认服务于一个主知识库，而不是自动做多知识库路由。
 
@@ -345,7 +345,7 @@ search without sourceIds?
  +--+--+                              |
     |                                 |
     v                                 |
-use KNOWLEDGE_DEFAULT_SOURCE_ID       |
+use configured knowledgeScope.sourceId |
     |                                 |
     +---------------> search ---------+
                       |

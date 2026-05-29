@@ -740,6 +740,7 @@ public class DvClient {
                 record.setTraceId(textVal(item, "TraceID"));
                 record.setIp(textVal(item, "ServerIP"));
                 record.setCluster(textVal(item, "ClusterType"));
+                record.setClusterId(textVal(item, "ClusterId"));
                 record.setLogMessage(textVal(item, "LogMessage"));
                 record.setLogTime(textVal(item, "Time"));
                 record.setCost(parseCost(textVal(item, "cost")));

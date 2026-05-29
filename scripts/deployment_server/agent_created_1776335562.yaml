@@ -32,13 +32,13 @@ instructions: |
       - 检查编译是否成功(errorlevel 为0表示成功)
       - 验证文件存在: C:\zhulin\ops-factory\knowledge-service\target\knowledge-service.jar
       
-  3. 编译 Agents MCP 服务
-     - 以下3个MCP服务需要执行 npm install && npm run build（编译TypeScript为JavaScript）:
-       a. cd C:\zhulin\ops-factory\gateway\agents\qa-agent\config\mcp\knowledge-service && npm install && npm run build
-       b. cd C:\zhulin\ops-factory\gateway\agents\qa-cli-agent\config\mcp\knowledge-cli && npm install && npm run build
+  3. 准备 Agents MCP 服务
+     - QA Agent 和 QA CLI Agent 的 MCP 使用 Python SDK:
+       a. cd C:\zhulin\ops-factory\gateway\agents\qa-agent\config\mcp\knowledge-service && python -m pip install --target .python-deps -r requirements.txt
+       b. cd C:\zhulin\ops-factory\gateway\agents\qa-cli-agent\config\mcp\knowledge-cli && python -m pip install --target .python-deps -r requirements.txt
+     - sop-executor 仍需要执行 npm install && npm run build（编译TypeScript为JavaScript）:
        c. cd C:\zhulin\ops-factory\gateway\agents\qos-agent\config\mcp\sop-executor && npm install && npm run build
-     - 检查每个编译是否成功(errorlevel 为0表示成功)
-     - 编译产物为各目录下的 dist/ 子目录
+     - 检查每个命令是否成功(errorlevel 为0表示成功)
 
   4. 编译 webapp 项目
      - 进入目录 C:\zhulin\ops-factory\webapp

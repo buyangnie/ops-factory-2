@@ -31,6 +31,7 @@ class TraceLogParserTest {
         node.put("TraceID", "BES1234567890");
         node.put("ServerIP", "10.0.0.1");
         node.put("ClusterType", "ClusterA");
+        node.put("ClusterId", "123");
         node.put("LogMessage", "ER");
         node.put("Time", "2025-01-01 00:00:00.000");
         node.put("cost", "100ms");
@@ -55,6 +56,7 @@ class TraceLogParserTest {
         node.put("TraceID", "API1234567890");
         node.put("ServerIP", "10.0.0.2");
         node.put("ClusterType", "ClusterB");
+        node.put("ClusterId", "456");
         node.put("LogMessage", "ER");
         node.put("serviceName", "TestService");
         node.put("operationName", "testMethod");
@@ -75,6 +77,7 @@ class TraceLogParserTest {
         node.put("TraceID", "MQ1234567890");
         node.put("ServerIP", "10.0.0.3");
         node.put("ClusterType", "ClusterC");
+        node.put("ClusterId", "789");
         node.put("LogMessage", "ER");
         node.put("AppendInfo", "seqNo=1,type=producer,topic=testTopic,eventName=testEvent");
 
@@ -92,6 +95,7 @@ class TraceLogParserTest {
         node.put("TraceID", "BPM1234567890");
         node.put("ServerIP", "10.0.0.4");
         node.put("ClusterType", "ClusterD");
+        node.put("ClusterId", "abc");
         node.put("LogMessage", "ER");
         node.put("AppendInfo", "seqNo=1,busiCode=TEST001,processName=TestProcess");
 
@@ -109,6 +113,7 @@ class TraceLogParserTest {
         node.put("TraceID", "JOB1234567890");
         node.put("ServerIP", "10.0.0.5");
         node.put("ClusterType", "ClusterE");
+        node.put("ClusterId", "xyz");
         node.put("LogMessage", "ER");
         node.put("jobDefinedId", "TEST_JOB_001");
         node.put("AppendInfo", "seqNo=1,jobDefinedId=TEST_JOB_001");

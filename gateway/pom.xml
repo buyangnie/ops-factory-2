@@ -5,9 +5,16 @@
     http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>com.huawei.opsfactory</groupId>
+        <artifactId>ops-factory-parent</artifactId>
+        <version>1.5.1.1-SNAPSHOT</version>
+    </parent>
+
+
     <groupId>com.huawei.opsfactory</groupId>
     <artifactId>ops-gateway-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.5.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -49,13 +56,6 @@
                 <artifactId>gateway-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
-            <!-- Override transitive commons-lang3 from swagger-core -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.20.0</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -71,6 +71,18 @@
                         <target>${java.version}</target>
                         <encoding>${project.build.sourceEncoding}</encoding>
                         <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${spotless-maven-plugin.version}</version>
+                    <configuration>
+                        <java>
+                            <googleJavaFormat>
+                                <version>${google-java-format.version}</version>
+                            </googleJavaFormat>
+                        </java>
                     </configuration>
                 </plugin>
 

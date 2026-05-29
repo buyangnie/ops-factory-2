@@ -209,11 +209,34 @@ mkdir -p "${BACKUP_DIR}"
 # 2. 备份文件
 echo "创建备份到: ${BACKUP_DIR}"
 cd "${TARGET_HOME_DIR}"
-tar zcvf "backup_${timestamp}.tar.gz" webapp gateway/gateway/gateway-service.jar gateway/gateway/lib/ gateway/gateway/agents/ gateway/gateway/config.yaml operation-intelligence/ control-center/ knowledge-service/
+# 只备份必要的文件，排除 logs、data 目录和 .bak 文件
+tar zcvf "backup_${timestamp}.tar.gz" \
+    --exclude='*/logs' \
+    --exclude='*/data' \
+    --exclude='*/config.yaml.bak*' \
+    --exclude='*/.bak' \
+    webapp \
+    gateway/gateway/gateway-service.jar \
+    gateway/gateway/lib/ \
+    gateway/gateway/agents/ \
+    gateway/gateway/config.yaml \
+    operation-intelligence/operation-intelligence.jar \
+    operation-intelligence/config.yaml \
+    control-center/config.yaml \
+    control-center/control-center.jar \
+    knowledge-service/config.yaml \
+    knowledge-service/knowledge-service.jar
 mv "backup_${timestamp}.tar.gz" "${BACKUP_DIR}"
 
 echo "保留最近5个备份文件..."
 cd "${BACKUP_DIR}" && ls -t *.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
+
+# 清理旧的 config.yaml.bak 文件（保留最近的5个）
+echo "清理旧的配置备份文件..."
+find "${TARGET_DIR}" -maxdepth 1 -name "config.yaml.bak*" -type f | xargs ls -t 2>/dev/null | tail -n +6 | xargs -r rm -f
+find "${TARGET_OI_DIR}" -maxdepth 1 -name "config.yaml.bak*" -type f 2>/dev/null | xargs ls -t | tail -n +6 | xargs -r rm -f
+find "${TARGET_CC_DIR}" -maxdepth 1 -name "config.yaml.bak*" -type f 2>/dev/null | xargs ls -t | tail -n +6 | xargs -r rm -f
+find "${TARGET_KS_DIR}" -maxdepth 1 -name "config.yaml.bak*" -type f 2>/dev/null | xargs ls -t | tail -n +6 | xargs -r rm -f
 
 # 3. 复制 gateway-service.jar
 echo "正在复制 ${GATEWAY_JAR}..."

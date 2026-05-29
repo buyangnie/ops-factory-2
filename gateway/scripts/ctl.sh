@@ -246,22 +246,126 @@ build_node_mcp() {
     log_info "${label} MCP build complete"
 }
 
+check_python_mcp() {
+    local label="$1"
+    local mcp_dir="$2"
+    local entry="$3"
+    local requirements="${mcp_dir}/requirements.txt"
+    local deps_dir="${mcp_dir}/.python-deps"
+
+    if [ ! -f "${entry}" ]; then
+        log_error "${label} MCP entry not found: ${entry}"
+        return 1
+    fi
+    if [ ! -f "${requirements}" ]; then
+        log_error "${label} MCP requirements not found: ${requirements}"
+        return 1
+    fi
+
+    if ! command -v python3 >/dev/null 2>&1; then
+        log_error "${label} MCP requires python3"
+        return 1
+    fi
+
+    if ! PYTHONPATH="${deps_dir}" python3 -c "import importlib.metadata as md; from mcp.server.fastmcp import FastMCP; raise SystemExit(0 if md.version('mcp') == '1.27.1' else 1)" >/dev/null 2>&1; then
+        log_info "Installing ${label} MCP Python dependencies into ${deps_dir}"
+        python3 -m pip install --disable-pip-version-check --quiet --upgrade --target "${deps_dir}" -r "${requirements}" || {
+            log_error "${label} MCP Python dependency install failed"
+            return 1
+        }
+    fi
+
+    if ! PYTHONPATH="${deps_dir}" python3 -c "import importlib.metadata as md; from mcp.server.fastmcp import FastMCP; raise SystemExit(0 if md.version('mcp') == '1.27.1' else 1)" >/dev/null 2>&1; then
+        log_error "${label} MCP requires Python dependency mcp==1.27.1. Install with: python3 -m pip install --target ${deps_dir} -r ${requirements}"
+        return 1
+    fi
+
+    log_info "${label} MCP Python dependency mcp==1.27.1 is available in ${deps_dir}"
+}
+
 build_knowledge_service_mcp() {
-    build_node_mcp "Knowledge-Service" \
+    check_python_mcp "Knowledge-Service" \
         "${SERVICE_DIR}/agents/qa-agent/config/mcp/knowledge-service" \
-        "${SERVICE_DIR}/agents/qa-agent/config/mcp/knowledge-service/dist/index.js"
+        "${SERVICE_DIR}/agents/qa-agent/config/mcp/knowledge-service/server.py"
 }
 
 build_knowledge_cli_mcp() {
-    build_node_mcp "Knowledge-Cli" \
+    check_python_mcp "Knowledge-Cli" \
         "${SERVICE_DIR}/agents/qa-cli-agent/config/mcp/knowledge-cli" \
-        "${SERVICE_DIR}/agents/qa-cli-agent/config/mcp/knowledge-cli/dist/index.js"
+        "${SERVICE_DIR}/agents/qa-cli-agent/config/mcp/knowledge-cli/server.py"
+}
+
+build_supervisor_control_center_mcp() {
+    check_python_mcp "Supervisor-Control-Center" \
+        "${SERVICE_DIR}/agents/supervisor-agent/config/mcp/control-center" \
+        "${SERVICE_DIR}/agents/supervisor-agent/config/mcp/control-center/server.py"
+}
+
+PYTHON_MIN_MINOR=10
+
+find_python_3_10_plus() {
+    local cand ver major minor
+    for cand in python3.13 python3.12 python3.11 python3.10 python3; do
+        command -v "${cand}" >/dev/null 2>&1 || continue
+        ver="$("${cand}" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "")"
+        major="${ver%%.*}"
+        minor="${ver##*.}"
+        if [ "${major}" = "3" ] && [ -n "${minor}" ] && [ "${minor}" -ge "${PYTHON_MIN_MINOR}" ] 2>/dev/null; then
+            echo "${cand}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+build_python_mcp() {
+    local label="$1"
+    local mcp_dir="$2"
+
+    if [ ! -f "${mcp_dir}/requirements.txt" ]; then
+        return 0
+    fi
+
+    local venv_dir="${mcp_dir}/.venv"
+    local stamp="${venv_dir}/.requirements-stamp"
+    local needs_install="false"
+
+    if [ ! -x "${venv_dir}/bin/python" ]; then
+        needs_install="true"
+    elif [ ! -f "${stamp}" ]; then
+        needs_install="true"
+    elif [ "${mcp_dir}/requirements.txt" -nt "${stamp}" ]; then
+        needs_install="true"
+    fi
+
+    if [ "${needs_install}" != "true" ]; then
+        log_info "${label} MCP venv is up-to-date, skipping build"
+        return 0
+    fi
+
+    local python_bin
+    python_bin="$(find_python_3_10_plus)" || {
+        log_error "${label} MCP requires python3 >= 3.${PYTHON_MIN_MINOR}; none found on PATH"
+        return 1
+    }
+
+    log_info "Building ${label} MCP venv with ${python_bin}..."
+    rm -rf "${venv_dir}"
+    "${python_bin}" -m venv "${venv_dir}" || {
+        log_error "${label} MCP venv create failed"
+        return 1
+    }
+    "${venv_dir}/bin/pip" install --quiet --disable-pip-version-check -r "${mcp_dir}/requirements.txt" || {
+        log_error "${label} MCP pip install failed"
+        return 1
+    }
+    touch "${stamp}"
+    log_info "${label} MCP build complete"
 }
 
 build_local_tiny_tools_mcp() {
-    build_node_mcp "Local-Tiny-Tools" \
-        "${SERVICE_DIR}/agents/local-tiny-agent/config/mcp/local-tiny-tools" \
-        "${SERVICE_DIR}/agents/local-tiny-agent/config/mcp/local-tiny-tools/src/index.js"
+    build_python_mcp "Local-Tiny-Tools" \
+        "${SERVICE_DIR}/agents/local-tiny-agent/config/mcp/local-tiny-tools"
 }
 
 # --- Agents (goosed) helpers ---
@@ -347,6 +451,7 @@ do_startup() {
     build_gateway
     build_knowledge_service_mcp
     build_knowledge_cli_mcp
+    build_supervisor_control_center_mcp
     build_local_tiny_tools_mcp
 
     local jar="${SERVICE_DIR}/gateway-service/target/gateway-service.jar"

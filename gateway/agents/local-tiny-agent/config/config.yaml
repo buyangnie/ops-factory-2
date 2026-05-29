@@ -109,9 +109,9 @@ extensions:
     type: stdio
     name: local-tiny-tools
     description: Local Tiny Agent tools for fetching allowed local URLs and running whitelisted local commands
-    cmd: node
+    cmd: config/mcp/local-tiny-tools/.venv/bin/python
     args:
-    - config/mcp/local-tiny-tools/dist/index.js
+    - config/mcp/local-tiny-tools/server.py
     envs:
       LOCAL_TINY_ALLOWED_HOSTS: localhost,127.0.0.1
       LOCAL_TINY_COMMAND_TIMEOUT_MS: '5000'

@@ -1,5 +1,5 @@
-GOOSE_PROVIDER: custom_qwen3.5-35b-a3b
-GOOSE_MODEL: qwen/qwen3.5-35b-a3b
+GOOSE_PROVIDER: custom_qwen3.5-27b
+GOOSE_MODEL: qwen/qwen3.5-27b
 GOOSE_MODE: auto
 GOOSE_DISABLE_KEYRING: '1'
 GOOSE_TELEMETRY_ENABLED: false
@@ -107,10 +107,11 @@ extensions:
     type: stdio
     name: Knowledge-Cli
     description: File-system QA tools for a configured root directory
-    cmd: node
+    cmd: python3
     args:
-    - config/mcp/knowledge-cli/dist/index.js
-    envs: {}
+    - config/mcp/knowledge-cli/server.py
+    envs:
+      PYTHONPATH: config/mcp/knowledge-cli/.python-deps
     env_keys: []
     timeout: 60
     bundled: null

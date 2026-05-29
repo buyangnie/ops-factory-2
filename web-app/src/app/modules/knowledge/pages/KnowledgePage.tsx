@@ -78,9 +78,11 @@ function getKnowledgeStatusLabel(status: string | undefined, t: (key: string) =>
 }
 
 function CreateKnowledgeModal({
+    existingNames,
     onClose,
     onCreated,
 }: {
+    existingNames: Set<string>
     onClose: () => void
     onCreated: () => Promise<void>
 }) {
@@ -90,6 +92,11 @@ function CreateKnowledgeModal({
     const [description, setDescription] = useState('')
     const [creating, setCreating] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    const isNameTooLong = name.length > 64
+    const hasInvalidChars = !!name && !/^[\p{L}\p{N}_\s-]*$/u.test(name)
+    const isDuplicate = existingNames.has(name.trim())
+    const canSubmit = name.trim() && !isNameTooLong && !hasInvalidChars && !isDuplicate
 
     const handleCreate = useCallback(async () => {
         setError(null)
@@ -148,8 +155,22 @@ function CreateKnowledgeModal({
                             placeholder={t('knowledge.namePlaceholder')}
                             value={name}
                             onChange={e => setName(e.target.value)}
+                            maxLength={64}
                             autoFocus
                         />
+                        <div className={`knowledge-field-hint${isNameTooLong ? ' knowledge-field-hint--error' : ''}`}>
+                            {isNameTooLong ? t('knowledge.nameTooLong') : `${name.length}/64`}
+                        </div>
+                        {hasInvalidChars && !isNameTooLong && (
+                            <div className="knowledge-field-hint knowledge-field-hint--error">
+                                {t('knowledge.nameInvalidChars')}
+                            </div>
+                        )}
+                        {isDuplicate && !isNameTooLong && !hasInvalidChars && (
+                            <div className="knowledge-field-hint knowledge-field-hint--error">
+                                {t('knowledge.nameDuplicate')}
+                            </div>
+                        )}
                     </div>
 
                     <div className="form-group">
@@ -171,7 +192,7 @@ function CreateKnowledgeModal({
                     <button
                         className="btn btn-primary"
                         onClick={handleCreate}
-                        disabled={creating || !name.trim()}
+                        disabled={creating || !canSubmit}
                     >
                         {creating ? t('knowledge.creating') : t('knowledge.createAction')}
                     </button>
@@ -443,6 +464,7 @@ export default function Knowledge() {
 
             {showCreateModal && (
                 <CreateKnowledgeModal
+                    existingNames={new Set(sources.map(s => s.name))}
                     onClose={() => setShowCreateModal(false)}
                     onCreated={loadSources}
                 />

@@ -103,10 +103,28 @@ public class SopController {
             body.put("sop", sop);
             return ResponseEntity.status(HttpStatus.CREATED).body(body);
         } catch (IllegalArgumentException e) {
-            log.warn("Duplicate SOP name: {}", e.getMessage());
+            String message = e.getMessage();
+            String errorType;
+            String errorDetail;
+
+            if (message != null && message.contains("non-whitelisted commands")) {
+                errorType = message;
+                errorDetail = message;
+                log.warn("SOP creation failed - command whitelist violation: {}", message);
+            } else if (message != null && message.startsWith("SOP name already exists")) {
+                errorDetail = message.substring(message.lastIndexOf(": ") + 2);
+                errorType = "SOP name already exists: " + errorDetail;
+                log.warn("SOP creation failed - duplicate name: {}", errorDetail);
+            } else {
+                errorType = message != null ? message : "SOP creation failed";
+                errorDetail = errorType;
+                log.warn("SOP creation failed: {}", message);
+            }
+
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("success", false);
-            body.put("error", "SOP name already exists");
+            body.put("error", errorType);
+            body.put("detail", errorDetail != null ? errorDetail : errorType);
             return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
         }
     }
@@ -136,10 +154,34 @@ public class SopController {
             body.put("sop", sop);
             return ResponseEntity.ok(body);
         } catch (IllegalArgumentException e) {
-            log.warn("SOP update conflict: {}", e.getMessage());
+            String message = e.getMessage();
+            String errorType;
+            String errorDetail;
+
+            if (message != null && message.contains("non-whitelisted commands")) {
+                errorType = message;
+                errorDetail = message;
+                log.warn("SOP update failed - command whitelist violation: {}", message);
+            } else if (message != null && message.startsWith("SOP name already exists")) {
+                errorDetail = message.substring(message.lastIndexOf(": ") + 2);
+                errorType = "SOP name already exists: " + errorDetail;
+                log.warn("SOP update failed - duplicate name: {}", errorDetail);
+            } else if (message != null && message.startsWith("SOP not found")) {
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("success", false);
+                body.put("error", message);
+                body.put("detail", message);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+            } else {
+                errorType = message != null ? message : "SOP update failed";
+                errorDetail = errorType;
+                log.warn("SOP update failed: {}", message);
+            }
+
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("success", false);
-            body.put("error", "SOP update conflict");
+            body.put("error", errorType);
+            body.put("detail", errorDetail != null ? errorDetail : errorType);
             return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
         }
     }

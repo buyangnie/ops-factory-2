@@ -10,6 +10,15 @@ The extension is registered in:
 
 Extension name: `knowledge-service`
 
+Runtime command:
+
+- `python3 config/mcp/knowledge-service/server.py`
+
+Python dependency:
+
+- `mcp==1.27.1` from `requirements.txt`
+- The gateway startup script installs dependencies into `.python-deps`; `config.yaml` exposes that directory through `PYTHONPATH`.
+
 The default knowledge source is configured in:
 
 - `extensions.knowledge-service.x-opsfactory.knowledgeScope.sourceId`

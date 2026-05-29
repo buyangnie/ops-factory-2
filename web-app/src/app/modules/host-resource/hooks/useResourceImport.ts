@@ -1,6 +1,10 @@
 import { useState, useCallback } from 'react'
-import { csvToObjects } from '../../../../utils/csvExport'
+import { useTranslation } from 'react-i18next'
+import { readXlsxFile, parseSheetToObjects } from '../../../../utils/xlsxHelper'
+import { validateSheetStructure } from '../../../../utils/xlsxValidator'
 import { isValidIp } from '../../../../utils/ip-validation'
+import { validateAndSanitize } from '../../../../utils/inputValidation'
+import { IMPORT_METADATA } from '../../../../utils/importExportMetadata'
 import type { HostGroup, Cluster, Host, HostCreateRequest, BusinessService, ClusterType, BusinessType, HostRelation } from '../../../../types/host'
 import type { SopCreateRequest } from '../../../../types/sop'
 import type { WhitelistCommand } from '../../../../types/commandWhitelist'
@@ -35,7 +39,6 @@ export interface ImportResult {
 }
 
 interface ImportDeps {
-    // Lookups
     fetchGroups: () => Promise<void>
     fetchAllClusters: () => Promise<void>
     fetchAllHosts: () => Promise<void>
@@ -52,7 +55,6 @@ interface ImportDeps {
     clusterTypes: ClusterType[]
     businessTypes: BusinessType[]
 
-    // Create functions
     createGroup: (body: Partial<HostGroup>) => Promise<HostGroup>
     updateGroup: (id: string, body: Partial<HostGroup>) => Promise<HostGroup>
     createCluster: (body: Partial<Cluster>) => Promise<Cluster>
@@ -66,103 +68,45 @@ interface ImportDeps {
 }
 
 export function useResourceImport(deps: ImportDeps) {
+    const { t } = useTranslation()
     const [importing, setImporting] = useState(false)
     const [progress, setProgress] = useState<ImportProgress | null>(null)
 
-    const importCsv = useCallback(async (type: ImportType, csvText: string): Promise<ImportResult> => {
-        const rows = csvToObjects(csvText)
-            if (rows.length === 0) {
-                return { success: 0, failed: 0, errors: [{ row: 0, code: 'import.noDataRows' }] }
-            }
+    const importXlsx = useCallback(async (type: ImportType, file: File): Promise<ImportResult> => {
+        try {
+            const workbook = await readXlsxFile(file)
+            const structureValidation = validateSheetStructure(workbook, type)
 
-        // Validate CSV type matches selected import type
-        const firstRowKeys = new Set(Object.keys(rows[0]).map(k => k.toLowerCase()))
-
-        // Required fields for each type
-        const typeRequiredFields: Record<ImportType, string[]> = {
-            ClusterTypes: ['name', 'code'],
-            BusinessTypes: ['name', 'code'],
-            HostGroups: ['name'],
-            Clusters: ['name', 'type'],
-            Hosts: ['name', 'ip', 'username'],
-            BusinessServices: ['name', 'code'],
-            Relations: ['sourcenode', 'destnode'],
-            SOPs: ['name'],
-            Whitelist: ['pattern'],
-        }
-
-        // Unique fields to help distinguish types
-        const typeUniqueFields: Record<ImportType, string[]> = {
-            ClusterTypes: ['commandprefix', 'envvariables'],
-            BusinessTypes: [], // Distinguished from ClusterTypes by NOT having commandprefix/envvariables
-            HostGroups: ['parentgroup'],
-            Clusters: ['type', 'group'],
-            Hosts: ['ip', 'port', 'username', 'authtype', 'credential'],
-            BusinessServices: ['businesstype'],
-            Relations: ['sourcenode', 'destnode'],
-            SOPs: ['version', 'triggercondition', 'enabled', 'mode'],
-            Whitelist: ['pattern'],
-        }
-
-        // Check required fields
-        const required = typeRequiredFields[type]
-        const missingRequired = required.filter(field => !firstRowKeys.has(field.toLowerCase()))
-        if (missingRequired.length > 0) {
-            return {
-                success: 0,
-                failed: rows.length,
-                errors: [{
-                    row: 0,
-                    code: 'import.missingRequiredColumns',
-                    params: { type, columns: missingRequired.join(', ') }
-                }]
-            }
-        }
-
-        // Special handling for ClusterTypes vs BusinessTypes (both have 'name' and 'code')
-        if (type === 'ClusterTypes') {
-            // ClusterTypes should NOT have businesstype
-            if (firstRowKeys.has('businesstype')) {
-                return {
-                    success: 0, failed: rows.length,
-                    errors: [{ row: 0, code: 'import.wrongFileType.suggestBusinessTypes' }]
-                }
-            }
-            // ClusterTypes should have commandprefix (optional) or envvariables (optional)
-            if (!firstRowKeys.has('commandprefix') && !firstRowKeys.has('envvariables')) {
-                return {
-                    success: 0, failed: rows.length,
-                    errors: [{ row: 0, code: 'import.wrongFileType.suggestBusinessTypes' }]
-                }
-            }
-        } else if (type === 'BusinessTypes') {
-            // BusinessTypes should NOT have commandprefix, envvariables, or businesstype
-            if (firstRowKeys.has('commandprefix') || firstRowKeys.has('envvariables')) {
-                return {
-                    success: 0, failed: rows.length,
-                    errors: [{ row: 0, code: 'import.wrongFileType.suggestClusterTypes' }]
-                }
-            }
-        } else {
-            // For other types, check if file has unique fields of other types
-            const unexpectedFields = Object.entries(typeUniqueFields)
-                .filter(([checkType]) => checkType !== type)
-                .filter(([checkType]) => typeUniqueFields[checkType as ImportType].length > 0)
-                .filter(([, fields]) => fields.some(field => firstRowKeys.has(field.toLowerCase())))
-
-            if (unexpectedFields.length > 0) {
-                const suggestions = unexpectedFields.map(([checkType]) => checkType).join(' or ')
+            if (!structureValidation.valid) {
+                const sheetError = structureValidation.sheetErrors[0]
                 return {
                     success: 0,
-                    failed: rows.length,
+                    failed: 0,
                     errors: [{
                         row: 0,
-                        code: 'import.wrongFileType.suggestOther',
-                        params: { types: suggestions }
+                        code: 'import.invalidFile',
+                        params: { message: t('hostResource.importErrorInvalidFile', { message: sheetError.params ? JSON.stringify(sheetError.params) : '' }) }
                     }]
                 }
             }
-        }
+
+            const parseResult = parseSheetToObjects(workbook, IMPORT_METADATA[type].sheetName)
+            if (!parseResult.success) {
+                return {
+                    success: 0,
+                    failed: 0,
+                    errors: [{
+                        row: 0,
+                        code: 'import.parseError',
+                        params: { message: t('hostResource.importErrorParseError', { message: parseResult.error || 'Unknown parse error' }) }
+                    }]
+                }
+            }
+
+            const rows = parseResult.data || []
+            if (rows.length === 0) {
+                return { success: 0, failed: 0, errors: [{ row: 0, code: 'import.noDataRows' }] }
+            }
 
             setImporting(true)
             setProgress({ current: 0, total: rows.length, phase: type })
@@ -171,323 +115,794 @@ export function useResourceImport(deps: ImportDeps) {
                 const errors: ImportError[] = []
                 let success = 0
 
-        // Build lookup maps from current data
-        const groupNameToId = new Map(deps.groups.map(g => [g.name, g.id]))
-        const groupCodeToId = new Map(deps.groups.map(g => [g.code ?? '', g.id]))
-        const clusterGroupedKeyToId = new Map(deps.clusters.map(c => [`${c.groupId ?? ''}:${c.name}`, c.id]))
-        const clusterNameToId = new Map(deps.clusters.map(c => [c.name, c.id]))
-        const clusterTypeNameSet = new Set(deps.clusterTypes.map(ct => ct.name))
-        const clusterTypeCodeToName = new Map(deps.clusterTypes.map(ct => [ct.code, ct.name]))
-        const businessTypeNameToId = new Map(deps.businessTypes.map(bt => [bt.name, bt.id]))
-        const hostNameToId = new Map(deps.allHosts.map(h => [h.name, h.id]))
-        const bsNameToId = new Map(deps.businessServices.map(bs => [bs.name, bs.id]))
-        const existingRelationKeys = new Set(deps.relations.map(r => `${r.sourceHostId}->${r.targetHostId}`))
+                const groupNameToId = new Map(deps.groups.map(g => [g.name, g.id]))
+                const groupCodeToId = new Map(deps.groups.map(g => [g.code ?? '', g.id]))
+                const clusterGroupedKeyToId = new Map(deps.clusters.map(c => [`${c.groupId ?? ''}:${c.name}`, c.id]))
+                const clusterNameToId = new Map(deps.clusters.map(c => [c.name, c.id]))
+                const clusterTypeNameSet = new Set(deps.clusterTypes.map(ct => ct.name))
+                const clusterTypeCodeToName = new Map(deps.clusterTypes.map(ct => [ct.code, ct.name]))
+                const businessTypeNameToId = new Map(deps.businessTypes.map(bt => [bt.name, bt.id]))
+                const hostNameToId = new Map(deps.allHosts.map(h => [h.name, h.id]))
+                const bsNameToId = new Map(deps.businessServices.map(bs => [bs.name, bs.id]))
+                const existingRelationKeys = new Set(deps.relations.map(r => `${r.sourceHostId}->${r.targetHostId}`))
 
-        // Track names created during this import to deduplicate within CSV
-        const createdClusterTypeNames = new Set(deps.clusterTypes.map(ct => ct.name))
-        const createdBusinessTypeNames = new Set(deps.businessTypes.map(bt => bt.name))
-        const createdSopNames = new Set<string>()
-        const createdPatterns = new Set<string>()
-
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i]
-            setProgress({ current: i + 1, total: rows.length, phase: type })
-
-            try {
-                switch (type) {
-                    case 'ClusterTypes': {
-                        if (createdClusterTypeNames.has(row.name)) {
-                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'ClusterType', name: row.name } })
-                            continue
+                // Helper functions to get related group IDs in hierarchy
+                const getDescendantIds = (groupId: string, allGroups: HostGroup[]): Set<string> => {
+                    const ids = new Set<string>()
+                    const queue = [groupId]
+                    while (queue.length > 0) {
+                        const current = queue.shift()!
+                        ids.add(current)
+                        for (const g of allGroups) {
+                            if (g.parentId === current && !ids.has(g.id)) {
+                                queue.push(g.id)
+                            }
                         }
-                        await deps.createClusterType({
-                            name: row.name,
-                            code: row.code,
-                            description: row.description || '',
-                            knowledge: row.knowledge || '',
-                            commandPrefix: row.commandprefix || '',
-                            envVariables: row.envvariables
-                                ? row.envvariables.split(';').filter(Boolean).map(pair => {
-                                    const eq = pair.indexOf('=')
-                                    return { key: eq > 0 ? pair.slice(0, eq) : pair, value: eq > 0 ? pair.slice(eq + 1) : '' }
-                                })
-                                : undefined,
-                        })
-                        createdClusterTypeNames.add(row.name)
-                        success++
-                        break
                     }
-
-                    case 'BusinessTypes': {
-                        if (createdBusinessTypeNames.has(row.name)) {
-                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'BusinessType', name: row.name } })
-                            continue
-                        }
-                        await deps.createBusinessType({
-                            name: row.name,
-                            code: row.code,
-                            description: row.description || '',
-                            knowledge: row.knowledge || '',
-                        })
-                        createdBusinessTypeNames.add(row.name)
-                        success++
-                        break
-                    }
-
-                    case 'HostGroups': {
-                        if (groupNameToId.has(row.name)) {
-                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'HostGroup', name: row.name } })
-                            continue
-                        }
-                        const created = await deps.createGroup({
-                            name: row.name,
-                            code: row.code || undefined,
-                            description: row.description || '',
-                        })
-                        groupNameToId.set(row.name, created.id)
-                        if (row.code) groupCodeToId.set(row.code, created.id)
-                        success++
-                        break
-                    }
-
-                    case 'Clusters': {
-                        const groupId = row.group
-                            ? (groupNameToId.get(row.group) || groupCodeToId.get(row.group))
-                            : undefined
-                        const clusterKey = `${groupId ?? ''}:${row.name}`
-                        if (clusterGroupedKeyToId.has(clusterKey)) {
-                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Cluster', name: row.name } })
-                            continue
-                        }
-                        let typeName = row.type || ''
-                        if (typeName && !clusterTypeNameSet.has(typeName)) {
-                            typeName = clusterTypeCodeToName.get(typeName) || typeName
-                        }
-                        if (!groupId && row.group) {
-                            errors.push({ row: i + 2, code: 'import.groupNotFound', params: { group: row.group } })
-                            continue
-                        }
-                        const created = await deps.createCluster({
-                            name: row.name,
-                            type: typeName,
-                            purpose: row.purpose || '',
-                            groupId,
-                            description: row.description || '',
-                        })
-                        clusterGroupedKeyToId.set(clusterKey, created.id)
-                        clusterNameToId.set(row.name, created.id)
-                        success++
-                        break
-                    }
-
-                    case 'Hosts': {
-                        const hostName = row.name?.trim() || ''
-                        const hostIp = row.ip?.trim() || ''
-                        const hostUsername = row.username?.trim() || ''
-                        if (!hostName) {
-                            errors.push({ row: i + 2, code: 'import.hostNameRequired' })
-                            continue
-                        }
-                        if (hostName.length > 100) {
-                            errors.push({ row: i + 2, code: 'import.hostNameTooLong', params: { length: String(hostName.length) } })
-                            continue
-                        }
-                        if (!hostIp) {
-                            errors.push({ row: i + 2, code: 'import.hostIpRequired' })
-                            continue
-                        }
-                        if (!isValidIp(hostIp)) {
-                            errors.push({ row: i + 2, code: 'import.hostIpInvalid', params: { ip: hostIp } })
-                            continue
-                        }
-                        if (!hostUsername) {
-                            errors.push({ row: i + 2, code: 'import.hostUsernameRequired' })
-                            continue
-                        }
-                        if (hostNameToId.has(hostName)) {
-                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Host', name: hostName } })
-                            continue
-                        }
-                        const clusterId = row.cluster
-                            ? clusterNameToId.get(row.cluster)
-                            : undefined
-                        if (!clusterId && row.cluster) {
-                            errors.push({ row: i + 2, code: 'import.clusterNotFound', params: { cluster: row.cluster } })
-                            continue
-                        }
-                        const roleValue = row.role as string | undefined
-                        const created = await deps.createHost({
-                            name: hostName,
-                            ip: hostIp,
-                            port: row.port ? parseInt(row.port, 10) : 22,
-                            username: hostUsername,
-                            authType: (row.authtype === 'key' ? 'key' : 'password') as 'password' | 'key',
-                            credential: row.credential || '',
-                            hostname: row.hostname || undefined,
-                            businessIp: row.businessip || undefined,
-                            os: row.os || undefined,
-                            location: row.location || undefined,
-                            business: row.business || undefined,
-                            clusterId,
-                            purpose: row.purpose || undefined,
-                            role: (roleValue === 'primary' || roleValue === 'backup') ? roleValue : undefined,
-                            tags: row.tags ? row.tags.split(';').map(t => t.trim()).filter(Boolean) : [],
-                            description: row.description || undefined,
-                        })
-                        hostNameToId.set(row.name, created.id)
-                        success++
-                        break
-                    }
-
-                    case 'BusinessServices': {
-                        if (bsNameToId.has(row.name)) {
-                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'BusinessService', name: row.name } })
-                            continue
-                        }
-                        const groupId = row.group
-                            ? (groupNameToId.get(row.group) || groupCodeToId.get(row.group))
-                            : undefined
-                        const businessTypeId = row.businesstype
-                            ? businessTypeNameToId.get(row.businesstype)
-                            : undefined
-                        if (!groupId && row.group) {
-                            errors.push({ row: i + 2, code: 'import.groupNotFound', params: { group: row.group } })
-                            continue
-                        }
-                        const created = await deps.createBusinessService({
-                            name: row.name,
-                            code: row.code,
-                            groupId,
-                            businessTypeId,
-                            description: row.description || '',
-                            tags: row.tags ? row.tags.split(';').map(t => t.trim()).filter(Boolean) : [],
-                            priority: row.priority || '',
-                            contactInfo: row.contactinfo || '',
-                        })
-                        bsNameToId.set(row.name, created.id)
-                        success++
-                        break
-                    }
-
-                    case 'Relations': {
-                        const sourceBsId = bsNameToId.get(row.sourcenode)
-                        const sourceHostId = hostNameToId.get(row.sourcenode)
-                        const destHostId = hostNameToId.get(row.destnode)
-                        if (!destHostId) {
-                            errors.push({ row: i + 2, code: 'import.targetHostNotFound', params: { host: row.destnode } })
-                            continue
-                        }
-                        if (!sourceBsId && !sourceHostId) {
-                            errors.push({ row: i + 2, code: 'import.sourceNodeNotFound', params: { node: row.sourcenode } })
-                            continue
-                        }
-                        const relationKey = `${sourceBsId || sourceHostId}->${destHostId}`
-                        if (existingRelationKeys.has(relationKey)) {
-                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Relation', name: `${row.sourcenode} -> ${row.destnode}` } })
-                            continue
-                        }
-                        existingRelationKeys.add(relationKey)
-                        await deps.createRelation({
-                            sourceHostId: sourceBsId || sourceHostId!,
-                            targetHostId: destHostId,
-                            description: row.description || '',
-                            sourceType: sourceBsId ? 'business-service' : 'host',
-                        })
-                        success++
-                        break
-                    }
-
-                    case 'SOPs': {
-                        if (createdSopNames.has(row.name)) {
-                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'SOP', name: row.name } })
-                            continue
-                        }
-                        const tags = row.tags
-                            ? row.tags.split(';').map(t => t.trim()).filter(Boolean)
-                            : []
-                        await deps.createSop({
-                            name: row.name,
-                            description: row.description || '',
-                            version: row.version || '',
-                            triggerCondition: row.triggercondition || '',
-                            enabled: row.enabled !== 'false',
-                            mode: (row.mode === 'natural_language' ? 'natural_language' : 'structured') as 'structured' | 'natural_language',
-                            stepsDescription: row.stepsdescription || '',
-                            tags,
-                        })
-                        createdSopNames.add(row.name)
-                        success++
-                        break
-                    }
-
-                    case 'Whitelist': {
-                        if (createdPatterns.has(row.pattern)) {
-                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Whitelist', name: row.pattern } })
-                            continue
-                        }
-                        await deps.addWhitelistCommand({
-                            pattern: row.pattern,
-                            description: row.description || '',
-                            enabled: row.enabled !== 'false',
-                        })
-                        createdPatterns.add(row.pattern)
-                        success++
-                        break
-                    }
-                    default:
-                        break
+                    return ids
                 }
-            } catch (err) {
-                const msg = err instanceof Error ? err.message : String(err)
-                errors.push({ row: i + 2, code: 'import.rowError', params: { message: msg } })
-            }
-        }
 
-        // Post-import: update parent groups for HostGroups type
-        if (type === 'HostGroups') {
-            const parentRows = rows.filter(r => r.parentgroup)
-            for (let i = 0; i < parentRows.length; i++) {
-                const row = parentRows[i]
-                const groupId = groupNameToId.get(row.name)
-                const parentId = groupNameToId.get(row.parentgroup) || groupCodeToId.get(row.parentgroup)
-                if (groupId && parentId) {
+                const getAncestorIds = (groupId: string, allGroups: HostGroup[]): Set<string> => {
+                    const ids = new Set<string>()
+                    let currentGroupId: string | null = groupId
+                    while (currentGroupId) {
+                        ids.add(currentGroupId)
+                        const group = allGroups.find(g => g.id === currentGroupId)
+                        if (!group || !group.parentId) break
+                        currentGroupId = group.parentId
+                    }
+                    return ids
+                }
+
+                const getRelatedGroupIds = (groupId: string, allGroups: HostGroup[]): Set<string> => {
+                    const ancestorIds = getAncestorIds(groupId, allGroups)
+                    const descendantIds = new Set<string>()
+                    for (const id of ancestorIds) {
+                        const descendants = getDescendantIds(id, allGroups)
+                        for (const d of descendants) {
+                            descendantIds.add(d)
+                        }
+                    }
+                    return new Set([...ancestorIds, ...descendantIds])
+                }
+
+                const createdClusterTypeNames = new Set(deps.clusterTypes.map(ct => ct.name))
+                const createdClusterTypeCodes = new Set(deps.clusterTypes.map(ct => ct.code || ''))
+                const createdBusinessTypeNames = new Set(deps.businessTypes.map(bt => bt.name))
+                const createdBusinessTypeCodes = new Set(deps.businessTypes.map(bt => bt.code || ''))
+                const createdSopNames = new Set<string>()
+                const createdPatterns = new Set<string>()
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i]
+                    setProgress({ current: i + 1, total: rows.length, phase: type })
+
                     try {
-                        await deps.updateGroup(groupId, { parentId })
+                        switch (type) {
+                            case 'ClusterTypes': {
+                                const typeName = row.name?.trim() || ''
+                                if (!typeName) {
+                                    errors.push({ row: i + 2, code: 'import.clusterTypeNameRequired' })
+                                    continue
+                                }
+                                const nameResult = validateAndSanitize(typeName, 'Name')
+                                if (!nameResult.valid) {
+                                    errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Name' } })
+                                    continue
+                                }
+                                if (nameResult.sanitized.length > 100) {
+                                    errors.push({ row: i + 2, code: 'import.clusterTypeNameTooLong', params: { length: String(nameResult.sanitized.length) } })
+                                    continue
+                                }
+                                const typeCode = row.code?.trim() || ''
+                                if (!typeCode) {
+                                    errors.push({ row: i + 2, code: 'import.clusterTypeCodeRequired' })
+                                    continue
+                                }
+                                const codeResult = validateAndSanitize(typeCode, 'Code')
+                                if (!codeResult.valid) {
+                                    errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Code' } })
+                                    continue
+                                }
+                                if (codeResult.sanitized.length > 50) {
+                                    errors.push({ row: i + 2, code: 'import.clusterTypeCodeTooLong', params: { length: String(codeResult.sanitized.length) } })
+                                    continue
+                                }
+                                if (row.description) {
+                                    const description = row.description?.trim() || ''
+                                    if (description.length > 500) {
+                                        errors.push({ row: i + 2, code: 'import.descriptionTooLong', params: { length: String(description.length) } })
+                                        continue
+                                    }
+                                }
+                                if (row.clusterMode && row.clusterMode !== 'Peer' && row.clusterMode !== 'Primary-Backup') {
+                                    errors.push({ row: i + 2, code: 'import.clusterTypeInvalidMode', params: { mode: row.clusterMode } })
+                                    continue
+                                }
+                                if (createdClusterTypeNames.has(nameResult.sanitized) || createdClusterTypeCodes.has(codeResult.sanitized)) {
+                                    // Determine if it's a name or code duplicate
+                                    if (createdClusterTypeCodes.has(codeResult.sanitized) && !createdClusterTypeNames.has(nameResult.sanitized)) {
+                                        errors.push({ row: i + 2, code: 'import.duplicateCode', params: { type: 'ClusterType', code: codeResult.sanitized } })
+                                    } else {
+                                        errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'ClusterType', name: nameResult.sanitized } })
+                                    }
+                                    continue
+                                }
+                                await deps.createClusterType({
+                                    name: nameResult.sanitized,
+                                    code: codeResult.sanitized,
+                                    description: row.description ? row.description.trim() : '',
+                                    knowledge: row.knowledge || '',
+                                    color: row.typeColor || '',
+                                    mode: row.clusterMode === 'Peer' ? 'peer' : (row.clusterMode === 'Primary-Backup' ? 'primary-backup' : undefined),
+                                    commandPrefix: row.commandPrefix || '',
+                                    envVariables: row.envVariables
+                                        ? row.envVariables.split(';').filter(Boolean).map(pair => {
+                                            const eq = pair.indexOf('=')
+                                            return { key: eq > 0 ? pair.slice(0, eq) : pair, value: eq > 0 ? pair.slice(eq + 1) : '' }
+                                        })
+                                        : undefined,
+                                })
+                                createdClusterTypeNames.add(nameResult.sanitized)
+                                createdClusterTypeCodes.add(codeResult.sanitized)
+                                success++
+                                break
+                            }
+
+                            case 'BusinessTypes': {
+                                const typeName = row.name?.trim() || ''
+                                if (!typeName) {
+                                    errors.push({ row: i + 2, code: 'import.businessTypeNameRequired' })
+                                    continue
+                                }
+                                const nameResult = validateAndSanitize(typeName, 'Name')
+                                if (!nameResult.valid) {
+                                    errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Name' } })
+                                    continue
+                                }
+                                if (nameResult.sanitized.length > 100) {
+                                    errors.push({ row: i + 2, code: 'import.businessTypeNameTooLong', params: { length: String(nameResult.sanitized.length) } })
+                                    continue
+                                }
+                                const typeCode = row.code?.trim() || ''
+                                if (!typeCode) {
+                                    errors.push({ row: i + 2, code: 'import.businessTypeCodeRequired' })
+                                    continue
+                                }
+                                const codeResult = validateAndSanitize(typeCode, 'Code')
+                                if (!codeResult.valid) {
+                                    errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Code' } })
+                                    continue
+                                }
+                                if (codeResult.sanitized.length > 50) {
+                                    errors.push({ row: i + 2, code: 'import.businessTypeCodeTooLong', params: { length: String(codeResult.sanitized.length) } })
+                                    continue
+                                }
+                                if (row.description) {
+                                    const description = row.description?.trim() || ''
+                                    if (description.length > 500) {
+                                        errors.push({ row: i + 2, code: 'import.descriptionTooLong', params: { length: String(description.length) } })
+                                        continue
+                                    }
+                                }
+                                if (createdBusinessTypeNames.has(nameResult.sanitized) || createdBusinessTypeCodes.has(codeResult.sanitized)) {
+                                    // Determine if it's a name or code duplicate
+                                    if (createdBusinessTypeCodes.has(codeResult.sanitized) && !createdBusinessTypeNames.has(nameResult.sanitized)) {
+                                        errors.push({ row: i + 2, code: 'import.duplicateCode', params: { type: 'BusinessType', code: codeResult.sanitized } })
+                                    } else {
+                                        errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'BusinessType', name: nameResult.sanitized } })
+                                    }
+                                    continue
+                                }
+                                await deps.createBusinessType({
+                                    name: nameResult.sanitized,
+                                    code: codeResult.sanitized,
+                                    description: row.description ? row.description.trim() : '',
+                                    color: row.typeColor || '',
+                                    knowledge: row.knowledge || '',
+                                })
+                                createdBusinessTypeNames.add(nameResult.sanitized)
+                                createdBusinessTypeCodes.add(codeResult.sanitized)
+                                success++
+                                break
+                            }
+
+                            case 'HostGroups': {
+                                const groupName = row.name?.trim() || ''
+                                if (!groupName) {
+                                    errors.push({ row: i + 2, code: 'import.hostGroupNameRequired' })
+                                    continue
+                                }
+                                const nameResult = validateAndSanitize(groupName, 'Name')
+                                if (!nameResult.valid) {
+                                    errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Name' } })
+                                    continue
+                                }
+                                if (nameResult.sanitized.length > 100) {
+                                    errors.push({ row: i + 2, code: 'import.hostGroupNameTooLong', params: { length: String(nameResult.sanitized.length) } })
+                                    continue
+                                }
+                                if (row.code) {
+                                    const codeResult = validateAndSanitize(row.code, 'Code')
+                                    if (!codeResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Code' } })
+                                        continue
+                                    }
+                                    if (codeResult.sanitized.length > 50) {
+                                        errors.push({ row: i + 2, code: 'import.hostGroupCodeTooLong', params: { length: String(codeResult.sanitized.length) } })
+                                        continue
+                                    }
+                                    const trimmedCode = codeResult.sanitized.trim()
+                                    if (groupCodeToId.has(trimmedCode)) {
+                                        errors.push({ row: i + 2, code: 'import.duplicateCode', params: { type: 'HostGroup', code: trimmedCode } })
+                                        continue
+                                    }
+                                }
+                                if (row.description) {
+                                    const descResult = validateAndSanitize(row.description, 'Description')
+                                    if (!descResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Description' } })
+                                        continue
+                                    }
+                                    if (descResult.sanitized.length > 500) {
+                                        errors.push({ row: i + 2, code: 'import.descriptionTooLong', params: { length: String(descResult.sanitized.length) } })
+                                        continue
+                                    }
+                                }
+                                if (groupNameToId.has(nameResult.sanitized)) {
+                                    errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'HostGroup', name: nameResult.sanitized } })
+                                    continue
+                                }
+                                const created = await deps.createGroup({
+                                    name: nameResult.sanitized,
+                                    code: row.code ? validateAndSanitize(row.code, 'Code').sanitized : undefined,
+                                    description: row.description ? validateAndSanitize(row.description, 'Description').sanitized : '',
+                                    enabled: row.enabled === 'true',
+                                })
+                                groupNameToId.set(nameResult.sanitized, created.id)
+                                if (row.code) groupCodeToId.set(validateAndSanitize(row.code, 'Code').sanitized, created.id)
+                                success++
+                                break
+                            }
+
+                            case 'Clusters': {
+                                const clusterName = row.name?.trim() || ''
+                                if (!clusterName) {
+                                    errors.push({ row: i + 2, code: 'import.clusterNameRequired' })
+                                    continue
+                                }
+                                const nameResult = validateAndSanitize(clusterName, 'Name')
+                                if (!nameResult.valid) {
+                                    errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Name' } })
+                                    continue
+                                }
+                                if (nameResult.sanitized.length > 100) {
+                                    errors.push({ row: i + 2, code: 'import.clusterNameTooLong', params: { length: String(nameResult.sanitized.length) } })
+                                    continue
+                                }
+                                if (row.type) {
+                                    const typeResult = validateAndSanitize(row.type, 'Type')
+                                    if (!typeResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Type' } })
+                                        continue
+                                    }
+                                }
+                                if (row.purpose) {
+                                    const purposeResult = validateAndSanitize(row.purpose, 'Purpose')
+                                    if (!purposeResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Purpose' } })
+                                        continue
+                                    }
+                                    if (purposeResult.sanitized.length > 200) {
+                                        errors.push({ row: i + 2, code: 'import.purposeTooLong', params: { length: String(purposeResult.sanitized.length) } })
+                                        continue
+                                    }
+                                }
+                                if (row.description) {
+                                    const descResult = validateAndSanitize(row.description, 'Description')
+                                    if (!descResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Description' } })
+                                        continue
+                                    }
+                                    if (descResult.sanitized.length > 500) {
+                                        errors.push({ row: i + 2, code: 'import.descriptionTooLong', params: { length: String(descResult.sanitized.length) } })
+                                        continue
+                                    }
+                                }
+                                const groupId = row.group
+                                    ? (groupNameToId.get(row.group) || groupCodeToId.get(row.group))
+                                    : undefined
+
+                                // Check duplicate cluster name in related group hierarchy
+                                const trimmedClusterName = nameResult.sanitized
+                                if (groupId) {
+                                    const relatedGroupIds = getRelatedGroupIds(groupId, deps.groups)
+                                    // Check against existing clusters
+                                    const duplicateExisting = deps.clusters.find(c => {
+                                        if (!c.groupId || c.name?.toLowerCase() !== trimmedClusterName.toLowerCase()) return false
+                                        const cRelatedIds = getRelatedGroupIds(c.groupId, deps.groups)
+                                        return [...cRelatedIds].some(id => relatedGroupIds.has(id))
+                                    })
+                                    if (duplicateExisting) {
+                                        errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Cluster', name: trimmedClusterName } })
+                                        continue
+                                    }
+                                    // Check against already created clusters in this import
+                                    for (const [key, _id] of clusterGroupedKeyToId) {
+                                        const [cGroupId, cName] = key.split(':')
+                                        if (cName.toLowerCase() === trimmedClusterName.toLowerCase() && cGroupId) {
+                                            const cRelatedIds = getRelatedGroupIds(cGroupId, deps.groups)
+                                            if ([...cRelatedIds].some(id => relatedGroupIds.has(id))) {
+                                                errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Cluster', name: trimmedClusterName } })
+                                                continue
+                                            }
+                                        }
+                                    }
+                                }
+                                const clusterKey = `${groupId ?? ''}:${trimmedClusterName}`
+                                let typeName = row.type?.trim() || ''
+                                if (typeName) {
+                                    if (!clusterTypeNameSet.has(typeName)) {
+                                        const mappedName = clusterTypeCodeToName.get(typeName)
+                                        if (mappedName) {
+                                            typeName = mappedName
+                                        } else {
+                                            errors.push({ row: i + 2, code: 'import.clusterTypeNotFound', params: { type: typeName } })
+                                            continue
+                                        }
+                                    }
+                                }
+                                if (!groupId && row.group) {
+                                    errors.push({ row: i + 2, code: 'import.groupNotFound', params: { group: row.group } })
+                                    continue
+                                }
+                                const created = await deps.createCluster({
+                                    name: nameResult.sanitized,
+                                    type: typeName,
+                                    purpose: row.purpose ? validateAndSanitize(row.purpose, 'Purpose').sanitized : '',
+                                    groupId,
+                                    description: row.description ? validateAndSanitize(row.description, 'Description').sanitized : '',
+                                })
+                                clusterGroupedKeyToId.set(clusterKey, created.id)
+                                clusterNameToId.set(nameResult.sanitized, created.id)
+                                success++
+                                break
+                            }
+
+                            case 'Hosts': {
+                                const hostName = row.name?.trim() || ''
+                                const hostIp = row.ip?.trim() || ''
+                                const hostUsername = row.username?.trim() || ''
+                                if (!hostName) {
+                                    errors.push({ row: i + 2, code: 'import.hostNameRequired' })
+                                    continue
+                                }
+                                const nameResult = validateAndSanitize(hostName, 'Name')
+                                if (!nameResult.valid) {
+                                    errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Name' } })
+                                    continue
+                                }
+                                if (hostName.length > 100) {
+                                    errors.push({ row: i + 2, code: 'import.hostNameTooLong', params: { length: String(hostName.length) } })
+                                    continue
+                                }
+                                if (!hostIp) {
+                                    errors.push({ row: i + 2, code: 'import.hostIpRequired' })
+                                    continue
+                                }
+                                if (!isValidIp(hostIp)) {
+                                    errors.push({ row: i + 2, code: 'import.hostIpInvalid', params: { ip: hostIp } })
+                                    continue
+                                }
+                                if (row.businessIp && !isValidIp(row.businessIp)) {
+                                    errors.push({ row: i + 2, code: 'import.businessIpInvalid', params: { ip: row.businessIp } })
+                                    continue
+                                }
+                                if (!hostUsername) {
+                                    errors.push({ row: i + 2, code: 'import.hostUsernameRequired' })
+                                    continue
+                                }
+                                if (hostUsername && !/^[\x00-\x7F]*$/.test(hostUsername)) {
+                                    errors.push({ row: i + 2, code: 'import.usernameInvalidChars' })
+                                    continue
+                                }
+                                if (row.credential && row.credential !== '***' && !/^[\x00-\x7F]*$/.test(row.credential)) {
+                                    errors.push({ row: i + 2, code: 'import.credentialInvalidChars' })
+                                    continue
+                                }
+                                if (row.hostname) {
+                                    const hostnameResult = validateAndSanitize(row.hostname, 'Hostname')
+                                    if (!hostnameResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Hostname' } })
+                                        continue
+                                    }
+                                }
+                                if (row.os) {
+                                    const osResult = validateAndSanitize(row.os, 'OS')
+                                    if (!osResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'OS' } })
+                                        continue
+                                    }
+                                }
+                                if (row.location) {
+                                    const locationResult = validateAndSanitize(row.location, 'Location')
+                                    if (!locationResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Location' } })
+                                        continue
+                                    }
+                                }
+                                if (row.purpose) {
+                                    const purposeResult = validateAndSanitize(row.purpose, 'Purpose')
+                                    if (!purposeResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Purpose' } })
+                                        continue
+                                    }
+                                }
+                                if (row.business) {
+                                    const businessResult = validateAndSanitize(row.business, 'Business')
+                                    if (!businessResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Business' } })
+                                        continue
+                                    }
+                                }
+                                if (row.description) {
+                                    const descResult = validateAndSanitize(row.description, 'Description')
+                                    if (!descResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Description' } })
+                                        continue
+                                    }
+                                }
+                                if (hostNameToId.has(hostName)) {
+                                    errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Host', name: hostName } })
+                                    continue
+                                }
+                                const clusterId = row.cluster
+                                    ? clusterNameToId.get(row.cluster)
+                                    : undefined
+                                if (!clusterId && row.cluster) {
+                                    errors.push({ row: i + 2, code: 'import.clusterNotFound', params: { cluster: row.cluster } })
+                                    continue
+                                }
+                                const roleValue = row.role as string | undefined
+                                const created = await deps.createHost({
+                                    name: nameResult.sanitized,
+                                    ip: hostIp,
+                                    port: row.port ? parseInt(row.port, 10) : 22,
+                                    username: hostUsername,
+                                    authType: (row.authType === 'key' ? 'key' : 'password') as 'password' | 'key',
+                                    credential: row.credential || '',
+                                    hostname: row.hostname ? validateAndSanitize(row.hostname, 'Hostname').sanitized : undefined,
+                                    businessIp: row.businessIp || undefined,
+                                    os: row.os ? validateAndSanitize(row.os, 'OS').sanitized : undefined,
+                                    location: row.location ? validateAndSanitize(row.location, 'Location').sanitized : undefined,
+                                    business: row.business ? validateAndSanitize(row.business, 'Business').sanitized : undefined,
+                                    clusterId,
+                                    purpose: row.purpose ? validateAndSanitize(row.purpose, 'Purpose').sanitized : undefined,
+                                    role: (roleValue === 'primary' || roleValue === 'backup') ? roleValue : undefined,
+                                    tags: row.tags ? row.tags.split(';').map(t => t.trim()).filter(Boolean) : [],
+                                    description: row.description ? validateAndSanitize(row.description, 'Description').sanitized : undefined,
+                                })
+                                hostNameToId.set(row.name, created.id)
+                                success++
+                                break
+                            }
+
+                            case 'BusinessServices': {
+                                const serviceName = row.name?.trim() || ''
+                                if (!serviceName) {
+                                    errors.push({ row: i + 2, code: 'import.businessServiceNameRequired' })
+                                    continue
+                                }
+                                const nameResult = validateAndSanitize(serviceName, 'Name')
+                                if (!nameResult.valid) {
+                                    errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Name' } })
+                                    continue
+                                }
+                                if (nameResult.sanitized.length > 100) {
+                                    errors.push({ row: i + 2, code: 'import.businessServiceNameTooLong', params: { length: String(nameResult.sanitized.length) } })
+                                    continue
+                                }
+                                if (row.code) {
+                                    const codeResult = validateAndSanitize(row.code, 'Code')
+                                    if (!codeResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Code' } })
+                                        continue
+                                    }
+                                    if (codeResult.sanitized.length > 50) {
+                                        errors.push({ row: i + 2, code: 'import.businessServiceCodeTooLong', params: { length: String(codeResult.sanitized.length) } })
+                                        continue
+                                    }
+                                }
+                                if (row.description) {
+                                    const descResult = validateAndSanitize(row.description, 'Description')
+                                    if (!descResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Description' } })
+                                        continue
+                                    }
+                                    if (descResult.sanitized.length > 500) {
+                                        errors.push({ row: i + 2, code: 'import.descriptionTooLong', params: { length: String(descResult.sanitized.length) } })
+                                        continue
+                                    }
+                                }
+                                if (bsNameToId.has(nameResult.sanitized)) {
+                                    errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'BusinessService', name: nameResult.sanitized } })
+                                    continue
+                                }
+                                const groupId = row.group
+                                    ? (groupNameToId.get(row.group) || groupCodeToId.get(row.group))
+                                    : undefined
+                                const businessType = row.businessType?.trim() || ''
+                                if (!businessType) {
+                                    errors.push({ row: i + 2, code: 'import.businessTypeRequired' })
+                                    continue
+                                }
+                                const businessTypeId = businessTypeNameToId.get(businessType)
+                                if (!businessTypeId) {
+                                    errors.push({ row: i + 2, code: 'import.businessTypeNotFound', params: { type: businessType } })
+                                    continue
+                                }
+                                if (!groupId && row.group) {
+                                    errors.push({ row: i + 2, code: 'import.groupNotFound', params: { group: row.group } })
+                                    continue
+                                }
+
+                                // Check duplicate business service name in related group hierarchy
+                                const trimmedBsName = nameResult.sanitized
+                                if (groupId) {
+                                    const relatedGroupIds = getRelatedGroupIds(groupId, deps.groups)
+                                    // Check against existing business services
+                                    const duplicateExisting = deps.businessServices.find(bs => {
+                                        if (!bs.groupId || bs.name?.toLowerCase() !== trimmedBsName.toLowerCase()) return false
+                                        const bsRelatedIds = getRelatedGroupIds(bs.groupId, deps.groups)
+                                        return [...bsRelatedIds].some(id => relatedGroupIds.has(id))
+                                    })
+                                    if (duplicateExisting) {
+                                        errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'BusinessService', name: trimmedBsName } })
+                                        continue
+                                    }
+                                    // Check against already created business services in this import
+                                    for (const [bsName, _bsId] of bsNameToId) {
+                                        if (bsName.toLowerCase() === trimmedBsName.toLowerCase()) {
+                                            const bs = deps.businessServices.find(b => b.name === bsName)
+                                            if (bs && bs.groupId) {
+                                                const bsRelatedIds = getRelatedGroupIds(bs.groupId, deps.groups)
+                                                if ([...bsRelatedIds].some(id => relatedGroupIds.has(id))) {
+                                                    errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'BusinessService', name: trimmedBsName } })
+                                                    continue
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                const created = await deps.createBusinessService({
+                                    name: nameResult.sanitized,
+                                    code: row.code ? validateAndSanitize(row.code, 'Code').sanitized : '',
+                                    groupId,
+                                    businessTypeId,
+                                    description: row.description ? validateAndSanitize(row.description, 'Description').sanitized : '',
+                                    tags: row.tags ? row.tags.split(';').map(t => t.trim()).filter(Boolean) : [],
+                                    priority: row.priority || '',
+                                })
+                                bsNameToId.set(nameResult.sanitized, created.id)
+                                success++
+                                break
+                            }
+
+                            case 'Relations': {
+                                const sourceBsId = bsNameToId.get(row.sourceNode)
+                                const sourceHostId = hostNameToId.get(row.sourceNode)
+                                const destHostId = hostNameToId.get(row.destNode)
+                                if (!destHostId) {
+                                    errors.push({ row: i + 2, code: 'import.targetHostNotFound', params: { host: row.destNode } })
+                                    continue
+                                }
+                                if (!sourceBsId && !sourceHostId) {
+                                    errors.push({ row: i + 2, code: 'import.sourceNodeNotFound', params: { node: row.sourceNode } })
+                                    continue
+                                }
+                                const relationKey = `${sourceBsId || sourceHostId}->${destHostId}`
+                                if (existingRelationKeys.has(relationKey)) {
+                                    errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Relation', name: `${row.sourceNode} -> ${row.destNode}` } })
+                                    continue
+                                }
+                                existingRelationKeys.add(relationKey)
+                                await deps.createRelation({
+                                    sourceHostId: sourceBsId || sourceHostId!,
+                                    targetHostId: destHostId,
+                                    description: row.description || '',
+                                    sourceType: sourceBsId ? 'business-service' : 'host',
+                                })
+                                success++
+                                break
+                            }
+
+                            case 'SOPs': {
+                                console.log('[Import SOPs] Row data:', JSON.stringify(row, null, 2))
+                                const sopName = row.name?.trim() || ''
+                                if (!sopName) {
+                                    errors.push({ row: i + 2, code: 'import.sopNameRequired' })
+                                    continue
+                                }
+                                const nameResult = validateAndSanitize(sopName, 'Name')
+                                if (!nameResult.valid) {
+                                    errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Name' } })
+                                    continue
+                                }
+                                if (nameResult.sanitized.length > 100) {
+                                    errors.push({ row: i + 2, code: 'import.sopNameTooLong', params: { length: String(nameResult.sanitized.length) } })
+                                    continue
+                                }
+                                if (row.version) {
+                                    const versionResult = validateAndSanitize(row.version, 'Version')
+                                    if (!versionResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Version' } })
+                                        continue
+                                    }
+                                    if (versionResult.sanitized.length > 50) {
+                                        errors.push({ row: i + 2, code: 'import.sopVersionTooLong', params: { length: String(versionResult.sanitized.length) } })
+                                        continue
+                                    }
+                                }
+                                if (row.mode && row.mode !== 'structured' && row.mode !== 'natural_language') {
+                                    errors.push({ row: i + 2, code: 'import.sopInvalidMode', params: { mode: row.mode } })
+                                    continue
+                                }
+                                if (row.description) {
+                                    const description = row.description?.trim() || ''
+                                    if (description.length > 500) {
+                                        errors.push({ row: i + 2, code: 'import.descriptionTooLong', params: { length: String(description.length) } })
+                                        continue
+                                    }
+                                }
+                                if (row.triggerCondition) {
+                                    const triggerCondition = row.triggerCondition?.trim() || ''
+                                    if (triggerCondition.length > 500) {
+                                        errors.push({ row: i + 2, code: 'import.sopTriggerConditionTooLong', params: { length: String(triggerCondition.length) } })
+                                        continue
+                                    }
+                                }
+                                if (row.stepsDescription) {
+                                    const stepsDescription = row.stepsDescription?.trim() || ''
+                                    if (stepsDescription.length > 1000) {
+                                        errors.push({ row: i + 2, code: 'import.sopStepsDescriptionTooLong', params: { length: String(stepsDescription.length) } })
+                                        continue
+                                    }
+                                }
+                                if (createdSopNames.has(nameResult.sanitized)) {
+                                    errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'SOP', name: nameResult.sanitized } })
+                                    continue
+                                }
+                                const tags = (row.targetTags || row.sopTags || row.tags)
+                                    ? (row.targetTags || row.sopTags || row.tags).split(';').map(t => t.trim()).filter(Boolean)
+                                    : []
+                                let nodes = []
+                                if (row.nodes && typeof row.nodes === 'string' && row.nodes.trim()) {
+                                    try {
+                                        nodes = JSON.parse(row.nodes)
+                                        if (!Array.isArray(nodes)) {
+                                            nodes = []
+                                        }
+                                    } catch {
+                                        errors.push({ row: i + 2, code: 'import.invalidNodes', params: { name: nameResult.sanitized } })
+                                        continue
+                                    }
+                                }
+                                const sopData = {
+                                    name: nameResult.sanitized,
+                                    description: row.description ? validateAndSanitize(row.description, 'Description').sanitized : '',
+                                    version: row.version || '',
+                                    triggerCondition: row.triggerCondition ? validateAndSanitize(row.triggerCondition, 'TriggerCondition').sanitized : '',
+                                    enabled: row.enabled !== 'false',
+                                    mode: (row.mode === 'natural_language' ? 'natural_language' : 'structured') as 'structured' | 'natural_language',
+                                    stepsDescription: row.stepsDescription ? validateAndSanitize(row.stepsDescription, 'StepsDescription').sanitized : '',
+                                    tags,
+                                    nodes,
+                                }
+                                console.log('[Import SOPs] Creating SOP:', JSON.stringify(sopData, null, 2))
+                                await deps.createSop(sopData)
+                                createdSopNames.add(nameResult.sanitized)
+                                success++
+                                break
+                            }
+
+                            case 'Whitelist': {
+                                const pattern = row.pattern?.trim() || ''
+                                if (!pattern) {
+                                    errors.push({ row: i + 2, code: 'import.whitelistPatternRequired' })
+                                    continue
+                                }
+                                if (createdPatterns.has(pattern)) {
+                                    errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Whitelist', name: pattern } })
+                                    continue
+                                }
+                                if (!/^[a-zA-Z0-9_\-./\s]+$/.test(pattern)) {
+                                    errors.push({ row: i + 2, code: 'import.whitelistInvalidPattern', params: { pattern: pattern } })
+                                    continue
+                                }
+                                if (row.description) {
+                                    const descResult = validateAndSanitize(row.description, 'Description')
+                                    if (!descResult.valid) {
+                                        errors.push({ row: i + 2, code: 'import.invalidChars', params: { field: 'Description' } })
+                                        continue
+                                    }
+                                    if (descResult.sanitized.length > 500) {
+                                        errors.push({ row: i + 2, code: 'import.descriptionTooLong', params: { length: String(descResult.sanitized.length) } })
+                                        continue
+                                    }
+                                }
+                                await deps.addWhitelistCommand({
+                                    pattern: pattern,
+                                    description: row.description ? validateAndSanitize(row.description, 'Description').sanitized : '',
+                                    enabled: row.enabled !== 'false',
+                                })
+                                createdPatterns.add(pattern)
+                                success++
+                                break
+                            }
+                            default:
+                                break
+                        }
                     } catch (err) {
                         const msg = err instanceof Error ? err.message : String(err)
-                        errors.push({ row: i + 2, code: 'import.setParentFailed', params: { message: msg } })
+                        if (msg === 'Command whitelist entry conflict') {
+                            errors.push({ row: i + 2, code: 'import.duplicate', params: { type: 'Whitelist', name: row.pattern } })
+                        } else {
+                            errors.push({ row: i + 2, code: 'import.rowError', params: { message: msg } })
+                        }
                     }
                 }
+
+                if (type === 'HostGroups') {
+                    const parentRows = rows.filter(r => r.parentGroup)
+                    for (let i = 0; i < parentRows.length; i++) {
+                        const row = parentRows[i]
+                        const groupId = groupNameToId.get(row.name)
+                        const parentId = groupNameToId.get(row.parentGroup) || groupCodeToId.get(row.parentGroup)
+                        if (groupId && parentId) {
+                            try {
+                                await deps.updateGroup(groupId, { parentId })
+                            } catch (err) {
+                                const msg = err instanceof Error ? err.message : String(err)
+                                errors.push({ row: i + 2, code: 'import.setParentFailed', params: { message: msg } })
+                            }
+                        }
+                    }
+                }
+
+                try {
+                    await Promise.all([
+                        deps.fetchGroups(),
+                        deps.fetchAllClusters(),
+                        deps.fetchAllHosts(),
+                        deps.fetchHostRelations(),
+                        deps.fetchBusinessServices(),
+                        deps.fetchGraph(),
+                        deps.fetchWhitelist(),
+                    ])
+                } catch {}
+
+                setImporting(false)
+                setProgress(null)
+                return { success, failed: errors.length, errors }
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err)
+                setImporting(false)
+                setProgress(null)
+                return {
+                    success: 0,
+                    failed: rows.length,
+                    errors: [{ row: 0, code: 'import.importFailed', params: { message: t('hostResource.importErrorImportFailed', { message: msg }) } }]
+                }
             }
-        }
-
-        // Refresh data
-        try {
-            await Promise.all([
-                deps.fetchGroups(),
-                deps.fetchAllClusters(),
-                deps.fetchAllHosts(),
-                deps.fetchHostRelations(),
-                deps.fetchBusinessServices(),
-                deps.fetchGraph(),
-                deps.fetchWhitelist(),
-            ])
-        } catch { /* non-critical refresh failure */ }
-
-            setImporting(false)
-            setProgress(null)
-            return { success, failed: errors.length, errors }
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err)
-            setImporting(false)
-            setProgress(null)
             return {
                 success: 0,
-                failed: rows.length,
-                errors: [{ row: 0, code: 'import.importFailed', params: { message: msg } }]
+                failed: 0,
+                errors: [{ row: 0, code: 'import.fileReadError', params: { message: t('hostResource.importErrorFileReadError', { message: msg }) } }]
+            }
         }
-    }
     }, [deps])
 
-    return { importing, progress, importCsv }
+    return { importing, progress, importXlsx }
 }

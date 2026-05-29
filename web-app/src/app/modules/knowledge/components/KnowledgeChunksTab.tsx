@@ -820,10 +820,10 @@ export default function KnowledgeChunksTab({
                                             >
                                                 <div className="knowledge-chunk-card-head">
                                                     <div className="knowledge-chunk-card-head-copy">
-                                                        <div className="knowledge-chunk-card-title">
+                                                        <div className="knowledge-chunk-card-title" title={chunk.title?.trim() || undefined}>
                                                             {chunk.title?.trim() || t('knowledge.chunkUntitled')}
                                                         </div>
-                                                        <div className="knowledge-chunk-card-subtitle">
+                                                        <div className="knowledge-chunk-card-subtitle" title={document ? getDocumentDisplayTitle(document) : chunk.documentId}>
                                                             {document ? getDocumentDisplayTitle(document) : chunk.documentId}
                                                         </div>
                                                     </div>

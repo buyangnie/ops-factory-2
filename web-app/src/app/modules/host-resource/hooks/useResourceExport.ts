@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { createZip } from '../../../../utils/zipHelper'
-import { objectsToCsv } from '../../../../utils/csvExport'
+import { generateExportXlsx } from '../../../../utils/xlsxHelper'
+import * as XLSX from 'xlsx'
 import type { HostGroup, Cluster, Host, BusinessService, HostRelation, ClusterType, BusinessType } from '../../../../types/host'
 import type { Sop } from '../../../../types/sop'
 import type { WhitelistCommand } from '../../../../types/commandWhitelist'
@@ -20,7 +21,7 @@ export function useResourceExport() {
         businessTypes: BusinessType[]
         whitelistCommands: WhitelistCommand[]
         sops: Sop[]
-    }) => {
+    }, t: (key: string) => string) => {
         setExporting(true)
         try {
             const {
@@ -29,99 +30,90 @@ export function useResourceExport() {
                 whitelistCommands, sops,
             } = params
 
-            // Build lookup maps for ID → name resolution
             const groupMap = new Map(groups.map(g => [g.id, g]))
             const clusterMap = new Map(clusters.map(c => [c.id, c]))
+            const businessTypeMap = new Map(businessTypes.map(bt => [bt.id, bt]))
 
-            // 1. Cluster types CSV
-            const ctHeaders = [
-                { key: 'name' }, { key: 'code' }, { key: 'description' },
-                { key: 'knowledge' }, { key: 'commandPrefix' },
-                { key: 'envVariables' },
-            ]
-            const ctRows = clusterTypes.map(ct => ({
+            const files = []
+
+            // 1. Cluster Types XLSX
+            const ctData = clusterTypes.map(ct => ({
                 name: ct.name,
                 code: ct.code,
                 description: ct.description || '',
+                typeColor: ct.color || '',
                 knowledge: ct.knowledge || '',
+                clusterMode: ct.mode === 'peer' ? 'Peer' : (ct.mode === 'primary-backup' ? 'Primary-Backup' : ''),
                 commandPrefix: ct.commandPrefix || '',
                 envVariables: ct.envVariables
                     ? (ct.envVariables as EnvVariable[]).map((v: EnvVariable) => `${v.key}=${v.value}`).join(';')
                     : '',
             }))
+            const ctWorkbook = generateExportXlsx('ClusterTypes', ctData, t)
+            const ctBlob = workbookToBlob(ctWorkbook)
+            files.push({ name: 'cluster_types.xlsx', data: ctBlob })
 
-            // 2. Business types CSV
-            const btHeaders = [
-                { key: 'name' }, { key: 'code' }, { key: 'description' },
-                { key: 'knowledge' },
-            ]
-            const btRows = businessTypes.map(bt => ({
+            // 2. Business Types XLSX
+            const btData = businessTypes.map(bt => ({
                 name: bt.name,
                 code: bt.code,
                 description: bt.description || '',
+                typeColor: bt.color || '',
                 knowledge: bt.knowledge || '',
             }))
+            const btWorkbook = generateExportXlsx('BusinessTypes', btData, t)
+            const btBlob = workbookToBlob(btWorkbook)
+            files.push({ name: 'business_types.xlsx', data: btBlob })
 
-            // 3. Groups CSV
-            const groupHeaders = [
-                { key: 'name' }, { key: 'code' }, { key: 'parentGroup' },
-                { key: 'description' },
-            ]
-            const groupRows = groups.map(g => ({
+            // 3. Host Groups XLSX
+            const groupData = groups.map(g => ({
                 name: g.name,
                 code: g.code || '',
                 parentGroup: g.parentId ? (groupMap.get(g.parentId)?.name ?? '') : '',
                 description: g.description || '',
+                enabled: g.enabled ? 'true' : 'false',
             }))
+            const groupWorkbook = generateExportXlsx('HostGroups', groupData, t)
+            const groupBlob = workbookToBlob(groupWorkbook)
+            files.push({ name: 'groups.xlsx', data: groupBlob })
 
-            // 4. Clusters CSV
-            const clusterHeaders = [
-                { key: 'name' }, { key: 'type' }, { key: 'purpose' },
-                { key: 'group' }, { key: 'description' },
-            ]
-            const clusterRows = clusters.map(c => ({
+            // 4. Clusters XLSX
+            const clusterData = clusters.map(c => ({
                 name: c.name,
                 type: c.type || '',
                 purpose: c.purpose || '',
                 group: c.groupId ? (groupMap.get(c.groupId)?.name ?? '') : '',
                 description: c.description || '',
             }))
+            const clusterWorkbook = generateExportXlsx('Clusters', clusterData, t)
+            const clusterBlob = workbookToBlob(clusterWorkbook)
+            files.push({ name: 'clusters.xlsx', data: clusterBlob })
 
-            // 5. Hosts CSV
-            const hostHeaders = [
-                { key: 'name' }, { key: 'hostname' }, { key: 'ip' },
-                { key: 'businessIp' }, { key: 'port' }, { key: 'os' },
-                { key: 'location' }, { key: 'username' }, { key: 'authType' },
-                { key: 'credential' }, { key: 'business' }, { key: 'cluster' },
-                { key: 'purpose' }, { key: 'role' }, { key: 'tags' }, { key: 'description' },
-            ]
-            const hostRows = allHosts.map(h => ({
+            // 5. Hosts XLSX
+            const hostData = allHosts.map(h => ({
                 name: h.name,
                 hostname: h.hostname || '',
                 ip: h.ip,
-                businessIp: h.businessIp || '',
                 port: String(h.port),
+                businessIp: h.businessIp || '',
                 os: h.os || '',
                 location: h.location || '',
                 username: h.username,
-                authType: h.authType,
-                credential: '',  // Always empty on export
+                authType: h.authType || '',
+                credential: '',
                 business: h.business || '',
                 cluster: h.clusterId ? (clusterMap.get(h.clusterId)?.name ?? '') : '',
                 purpose: h.purpose || '',
-                role: h.role || '',
+                role: h.role === 'primary' ? 'primary' : (h.role === 'backup' ? 'backup' : ''),
                 tags: Array.isArray(h.tags) ? h.tags.join(';') : '',
                 description: h.description || '',
             }))
+            const hostWorkbook = generateExportXlsx('Hosts', hostData, t)
+            const hostBlob = workbookToBlob(hostWorkbook)
+            files.push({ name: 'hosts.xlsx', data: hostBlob })
 
-            // 6. Business services CSV
-            const bsHeaders = [
-                { key: 'name' }, { key: 'code' }, { key: 'group' },
-                { key: 'businessType' }, { key: 'description' },
-                { key: 'tags' }, { key: 'priority' }, { key: 'contactInfo' },
-            ]
-            const businessTypeMap = new Map(businessTypes.map(bt => [bt.id, bt]))
-            const bsRows = businessServices.map(bs => ({
+            // 6. Business Services XLSX
+            const bsData = businessServices.map(bs => ({
                 name: bs.name,
                 code: bs.code,
                 group: bs.groupId ? (groupMap.get(bs.groupId)?.name ?? '') : '',
@@ -129,26 +121,23 @@ export function useResourceExport() {
                 description: bs.description || '',
                 tags: Array.isArray(bs.tags) ? bs.tags.join(';') : '',
                 priority: bs.priority || '',
-                contactInfo: bs.contactInfo || '',
             }))
+            const bsWorkbook = generateExportXlsx('BusinessServices', bsData, t)
+            const bsBlob = workbookToBlob(bsWorkbook)
+            files.push({ name: 'business_services.xlsx', data: bsBlob })
 
-            // 7. Relations CSV — includes both host-host and business-host relations
-            const relHeaders = [
-                { key: 'sourceNode' }, { key: 'destNode' }, { key: 'description' },
-            ]
+            // 7. Relations XLSX
             const allHostMap = new Map(allHosts.map(h => [h.id, h]))
             const bsMap = new Map(businessServices.map(bs => [bs.id, bs]))
+            const relData: { sourceNode: string; destNode: string; description: string }[] = []
 
-            const relRows: { sourceNode: string; destNode: string; description: string }[] = []
-
-            // Host-host relations
             for (const r of hostRelations) {
                 const sourceName = r.sourceType === 'business-service'
                     ? (bsMap.get(r.sourceHostId)?.name ?? '')
                     : (allHostMap.get(r.sourceHostId)?.name ?? '')
                 const destName = allHostMap.get(r.targetHostId)?.name ?? ''
                 if (sourceName && destName) {
-                    relRows.push({
+                    relData.push({
                         sourceNode: sourceName,
                         destNode: destName,
                         description: r.description || '',
@@ -156,17 +145,15 @@ export function useResourceExport() {
                 }
             }
 
-            // Business-service → host relations (via hostIds)
             for (const bs of businessServices) {
                 for (const hostId of bs.hostIds) {
                     const hostName = allHostMap.get(hostId)?.name
                     if (hostName) {
-                        // Only add if not already covered by hostRelations
-                        const exists = relRows.some(r =>
+                        const exists = relData.some(r =>
                             r.sourceNode === bs.name && r.destNode === hostName
                         )
                         if (!exists) {
-                            relRows.push({
+                            relData.push({
                                 sourceNode: bs.name,
                                 destNode: hostName,
                                 description: '',
@@ -176,13 +163,12 @@ export function useResourceExport() {
                 }
             }
 
-            // 8. SOPs CSV
-            const sopHeaders = [
-                { key: 'name' }, { key: 'description' }, { key: 'version' },
-                { key: 'triggerCondition' }, { key: 'enabled' }, { key: 'mode' },
-                { key: 'stepsDescription' }, { key: 'tags' },
-            ]
-            const sopRows = sops.map(s => ({
+            const relWorkbook = generateExportXlsx('Relations', relData, t)
+            const relBlob = workbookToBlob(relWorkbook)
+            files.push({ name: 'relations.xlsx', data: relBlob })
+
+            // 8. SOPs XLSX
+            const sopData = sops.map(s => ({
                 name: s.name,
                 description: s.description || '',
                 version: s.version || '',
@@ -190,35 +176,25 @@ export function useResourceExport() {
                 enabled: String(s.enabled ?? true),
                 mode: s.mode || 'structured',
                 stepsDescription: s.stepsDescription || '',
-                tags: Array.isArray(s.tags) ? s.tags.join(';') : '',
+                targetTags: Array.isArray(s.tags) ? s.tags.join(';') : '',
+                nodes: Array.isArray(s.nodes) && s.nodes.length > 0 ? JSON.stringify(s.nodes) : '',
             }))
+            const sopWorkbook = generateExportXlsx('SOPs', sopData, t)
+            const sopBlob = workbookToBlob(sopWorkbook)
+            files.push({ name: 'sops.xlsx', data: sopBlob })
 
-            // 9. Whitelist CSV
-            const wlHeaders = [
-                { key: 'pattern' }, { key: 'description' }, { key: 'enabled' },
-            ]
-            const wlRows = whitelistCommands.map(cmd => ({
+            // 9. Whitelist XLSX
+            const wlData = whitelistCommands.map(cmd => ({
                 pattern: cmd.pattern,
                 description: cmd.description || '',
                 enabled: String(cmd.enabled),
             }))
-
-            // Build CSV files
-            const encoder = new TextEncoder()
-            const csvFiles = [
-                { name: 'cluster_types.csv', data: encoder.encode(objectsToCsv(ctHeaders, ctRows)) },
-                { name: 'business_types.csv', data: encoder.encode(objectsToCsv(btHeaders, btRows)) },
-                { name: 'groups.csv', data: encoder.encode(objectsToCsv(groupHeaders, groupRows)) },
-                { name: 'clusters.csv', data: encoder.encode(objectsToCsv(clusterHeaders, clusterRows)) },
-                { name: 'hosts.csv', data: encoder.encode(objectsToCsv(hostHeaders, hostRows)) },
-                { name: 'business_services.csv', data: encoder.encode(objectsToCsv(bsHeaders, bsRows)) },
-                { name: 'relations.csv', data: encoder.encode(objectsToCsv(relHeaders, relRows)) },
-                { name: 'sops.csv', data: encoder.encode(objectsToCsv(sopHeaders, sopRows)) },
-                { name: 'whitelist.csv', data: encoder.encode(objectsToCsv(wlHeaders, wlRows)) },
-            ]
+            const wlWorkbook = generateExportXlsx('Whitelist', wlData, t)
+            const wlBlob = workbookToBlob(wlWorkbook)
+            files.push({ name: 'trustlist.xlsx', data: wlBlob })
 
             // Create ZIP and download
-            const zipBlob = createZip(csvFiles)
+            const zipBlob = createZip(files)
             const url = URL.createObjectURL(zipBlob)
             const a = document.createElement('a')
             a.href = url
@@ -231,4 +207,10 @@ export function useResourceExport() {
     }, [])
 
     return { exporting, exportAllAsZip }
+}
+
+// Helper function to convert workbook to blob
+function workbookToBlob(workbook: XLSX.WorkBook): Uint8Array {
+    const buffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' })
+    return new Uint8Array(buffer)
 }

@@ -468,10 +468,11 @@ cd /opt/ops-factory/test
 npm install
 ```
 
-Gateway 启动脚本会自动构建 Java 包，也会为以下 MCP 子项目执行 `npm install` 和 `npm run build`：
+Gateway 启动脚本会自动构建 Java 包，也会为以下 Python MCP 子项目检查并安装 `mcp==1.27.1` 到各自的 `.python-deps` 目录：
 
 - `gateway/agents/qa-agent/config/mcp/knowledge-service`
 - `gateway/agents/qa-cli-agent/config/mcp/knowledge-cli`
+- `gateway/agents/supervisor-agent/config/mcp/control-center`
 
 如果内网环境 Maven 下载慢或失败，配置 Maven mirror。示例 `~/.m2/settings.xml`：
 
@@ -751,20 +752,22 @@ tail -n 200 gateway/logs/gateway-stdout-stderr.log
 - 内网环境配置 Maven mirror。
 - 单独进入失败服务目录执行 `mvn package -DskipTests`，查看完整错误。
 
-### 4. Node.js 或 npm 问题
+### 4. Node.js、npm 或 Python MCP 依赖问题
 
 现象：
 
 - `node: command not found`
 - `npm install` 失败
 - Web App 无法启动
-- Gateway 启动时 MCP build 失败
+- Gateway 启动时 MCP 依赖检查失败
 
 排查：
 
 ```bash
 node -v
 npm -v
+PYTHONPATH=gateway/agents/qa-agent/config/mcp/knowledge-service/.python-deps python3 -c "import importlib.metadata as md; from mcp.server.fastmcp import FastMCP; raise SystemExit(0 if md.version('mcp') == '1.27.1' else 1)"
+PYTHONPATH=gateway/agents/supervisor-agent/config/mcp/control-center/.python-deps python3 -c "import importlib.metadata as md; from mcp.server.fastmcp import FastMCP; raise SystemExit(0 if md.version('mcp') == '1.27.1' else 1)"
 tail -n 200 web-app/logs/webapp.log
 ```
 
@@ -772,11 +775,12 @@ tail -n 200 web-app/logs/webapp.log
 
 ```bash
 cd web-app && npm install
-cd ../gateway/agents/qa-agent/config/mcp/knowledge-service && npm install && npm run build
-cd ../../../../qa-cli-agent/config/mcp/knowledge-cli && npm install && npm run build
+cd ../gateway/agents/qa-agent/config/mcp/knowledge-service && python3 -m pip install --target .python-deps -r requirements.txt
+cd ../../../../qa-cli-agent/config/mcp/knowledge-cli && python3 -m pip install --target .python-deps -r requirements.txt
+cd ../../../../supervisor-agent/config/mcp/control-center && python3 -m pip install --target .python-deps -r requirements.txt
 ```
 
-内网环境配置 npm registry 后重试。
+内网环境配置 npm registry 和 Python package mirror 后重试。
 
 ### 5. `goosed` 找不到或版本不对
 

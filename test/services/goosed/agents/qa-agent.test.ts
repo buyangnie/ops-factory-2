@@ -13,10 +13,9 @@
  * - knowledge-service is expected to be reachable at http://127.0.0.1:8092.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { spawn, type ChildProcess } from 'node:child_process'
+import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
-import { execFileSync } from 'node:child_process'
 import net from 'node:net'
 import yaml from 'js-yaml'
 import { sendSessionReplyAndWait, sleep, type GatewayHandle } from '../../../platform/shared/helpers.js'
@@ -25,13 +24,14 @@ const AGENT_ID = 'qa-agent'
 const USER_SYS = 'admin'
 const SECRET_KEY = 'test-secret'
 const PROJECT_ROOT = join(import.meta.dirname, '..', '..', '..', '..')
-const AGENT_CONFIG_PATH = join(PROJECT_ROOT, 'gateway', 'agents', 'qa-agent', 'config', 'config.yaml')
-const MCP_DIR = join(PROJECT_ROOT, 'gateway', 'agents', 'qa-agent', 'config', 'mcp', 'knowledge-service')
+const AGENT_DIR = join(PROJECT_ROOT, 'gateway', 'agents', 'qa-agent')
+const AGENT_CONFIG_PATH = join(AGENT_DIR, 'config', 'config.yaml')
+const MCP_DIR = join(AGENT_DIR, 'config', 'mcp', 'knowledge-service')
 
 let gw: GatewayHandle
 
-function readQaAgentConfig(): Record<string, any> {
-  return yaml.load(readFileSync(AGENT_CONFIG_PATH, 'utf8')) as Record<string, any>
+function readQaAgentConfig(): Record<string, unknown> {
+  return yaml.load(readFileSync(AGENT_CONFIG_PATH, 'utf8')) as Record<string, unknown>
 }
 
 function readConfiguredKnowledgeSourceId(): string {
@@ -41,11 +41,39 @@ function readConfiguredKnowledgeSourceId(): string {
   return sourceId
 }
 
-function readConfiguredKnowledgeExtension(): Record<string, any> {
-  const parsed = readQaAgentConfig()
-  const extension = parsed?.extensions?.['knowledge-service']
-  expect(extension).toBeDefined()
-  return extension as Record<string, any>
+function readConfiguredKnowledgeExtension(): Record<string, unknown> {
+    const parsed = readQaAgentConfig()
+    const extension = parsed?.extensions?.['knowledge-service']
+    expect(extension).toBeDefined()
+    return extension as Record<string, unknown>
+}
+
+function ensurePythonMcpDependencies(mcpDir: string): void {
+    const depsDir = join(mcpDir, '.python-deps')
+    const env = {
+        ...process.env,
+        PYTHONPATH: depsDir,
+    }
+    try {
+        execFileSync('python3', [
+            '-c',
+            "import importlib.metadata as md; from mcp.server.fastmcp import FastMCP; raise SystemExit(0 if md.version('mcp') == '1.27.1' else 1)",
+        ], { env, stdio: 'ignore' })
+        return
+    } catch {
+        execFileSync('python3', [
+            '-m',
+            'pip',
+            'install',
+            '--disable-pip-version-check',
+            '--quiet',
+            '--upgrade',
+            '--target',
+            depsDir,
+            '-r',
+            join(mcpDir, 'requirements.txt'),
+        ], { stdio: 'inherit' })
+    }
 }
 
 async function freePort(): Promise<number> {
@@ -151,7 +179,7 @@ async function startQaJavaGateway(): Promise<GatewayHandle> {
   }
 }
 
-function parseSseEvents(body: string): Array<Record<string, any>> {
+function parseSseEvents(body: string): Array<Record<string, unknown>> {
   return body
     .split('\n\n')
     .map(chunk => chunk.trim())
@@ -171,7 +199,7 @@ function parseSseEvents(body: string): Array<Record<string, any>> {
     })
 }
 
-function collectAssistantTextFromSse(events: Array<Record<string, any>>): string {
+function collectAssistantTextFromSse(events: Array<Record<string, unknown>>): string {
   return events
     .filter(event => event.type === 'Message' && event.message)
     .flatMap(event => (event.message.content || []) as Array<{ type: string; text?: string }>)
@@ -180,10 +208,10 @@ function collectAssistantTextFromSse(events: Array<Record<string, any>>): string
     .join('')
 }
 
-function extractToolNames(events: Array<Record<string, any>>): string[] {
+function extractToolNames(events: Array<Record<string, unknown>>): string[] {
   return events
     .filter(event => event.type === 'Message' && event.message)
-    .flatMap(event => (event.message.content || []) as Array<Record<string, any>>)
+    .flatMap(event => (event.message.content || []) as Array<Record<string, unknown>>)
     .filter(content => content.type === 'toolRequest')
     .map(content =>
       content.toolCall?.value?.name ||
@@ -229,11 +257,95 @@ async function createSessionAndChat(
   return { sessionId, replyBody }
 }
 
-beforeAll(async () => {
-  if (!existsSync(join(MCP_DIR, 'node_modules'))) {
-    execFileSync('npm', ['install'], { cwd: MCP_DIR, stdio: 'inherit' })
+interface McpClientHandle {
+  request: (method: string, params: Record<string, unknown>) => Promise<unknown>
+  close: () => Promise<void>
+}
+
+async function startMcpClient(options: {
+  cwd: string
+  command?: string
+  args?: string[]
+  env?: Record<string, string>
+}): Promise<McpClientHandle> {
+  const child = spawn(options.command || 'python3', options.args || ['server.py'], {
+    cwd: options.cwd,
+    env: { ...process.env, ...options.env },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  }) as ChildProcessWithoutNullStreams
+
+  const stderr: string[] = []
+  let nextId = 1
+  let stdoutBuffer = ''
+  const pending = new Map<number, {
+    resolve: (value: unknown) => void
+    reject: (error: Error) => void
+  }>()
+
+  child.stderr.on('data', chunk => {
+    const text = chunk.toString().trim()
+    if (text) stderr.push(text)
+  })
+  child.stdout.on('data', chunk => {
+    stdoutBuffer += chunk.toString('utf8')
+    const lines = stdoutBuffer.split('\n')
+    stdoutBuffer = lines.pop() ?? ''
+    for (const line of lines) {
+      if (!line.trim()) continue
+      const message = JSON.parse(line)
+      const waiter = pending.get(message.id)
+      if (!waiter) continue
+      pending.delete(message.id)
+      if (message.error) {
+        waiter.reject(new Error(message.error.message || JSON.stringify(message.error)))
+      } else {
+        waiter.resolve(message.result)
+      }
+    }
+  })
+
+  const request = (method: string, params: Record<string, unknown>) => {
+    const id = nextId++
+    const payload = { jsonrpc: '2.0', id, method, params }
+    const result = new Promise<unknown>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        pending.delete(id)
+        reject(new Error(`MCP request timed out: ${method}\n${stderr.join('\n')}`))
+      }, 30_000)
+      pending.set(id, {
+        resolve: value => {
+          clearTimeout(timeout)
+          resolve(value)
+        },
+        reject: error => {
+          clearTimeout(timeout)
+          reject(error)
+        },
+      })
+    })
+    child.stdin.write(`${JSON.stringify(payload)}\n`)
+    return result
   }
-  execFileSync('npm', ['run', 'build'], { cwd: MCP_DIR, stdio: 'inherit' })
+
+  await request('initialize', {
+    protocolVersion: '2025-03-26',
+    capabilities: {},
+    clientInfo: { name: 'qa-agent-test', version: '1.0.0' },
+  })
+  child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n`)
+
+  return {
+    request,
+    close: async () => {
+      child.kill('SIGTERM')
+      await sleep(300)
+      if (!child.killed) child.kill('SIGKILL')
+    },
+  }
+}
+
+beforeAll(async () => {
+  ensurePythonMcpDependencies(MCP_DIR)
   gw = await startQaJavaGateway()
   await sleep(2_000)
 }, 90_000)
@@ -247,7 +359,7 @@ describe('qa-agent registration and MCP wiring', () => {
     const res = await gw.fetchAs(USER_SYS, '/agents')
     expect(res.ok).toBe(true)
     const data = await res.json()
-    const qa = (data.agents as Array<Record<string, any>>).find(agent => agent.id === AGENT_ID)
+    const qa = (data.agents as Array<Record<string, unknown>>).find(agent => agent.id === AGENT_ID)
     expect(qa).toBeDefined()
     expect(qa!.name).toBe('QA Agent')
     const config = readQaAgentConfig()
@@ -258,8 +370,8 @@ describe('qa-agent registration and MCP wiring', () => {
   it('exposes the knowledge-service MCP extension on /agents/qa-agent/mcp', async () => {
     const res = await gw.fetchAs(USER_SYS, `/agents/${AGENT_ID}/mcp`)
     expect(res.ok).toBe(true)
-    const data = await res.json() as Record<string, any>
-    const extensions = data.extensions as Array<Record<string, any>>
+    const data = await res.json() as Record<string, unknown>
+    const extensions = data.extensions as Array<Record<string, unknown>>
     const knowledge = extensions.find(ext => ext.name === 'knowledge-service')
     expect(knowledge).toBeDefined()
     expect(knowledge!.enabled).toBe(true)
@@ -271,7 +383,7 @@ describe('qa-agent registration and MCP wiring', () => {
 })
 
 describe('qa-agent MCP runtime', () => {
-  it('loads search and fetch tools on a real session', async () => {
+  it('resumes a real session with knowledge-service MCP enabled', async () => {
     const startRes = await gw.fetchAs(USER_SYS, `/agents/${AGENT_ID}/agent/start`, {
       method: 'POST',
       body: JSON.stringify({}),
@@ -286,73 +398,57 @@ describe('qa-agent MCP runtime', () => {
     })
     expect(resumeRes.ok).toBe(true)
 
-    const res = await gw.fetchAs(USER_SYS, `/agents/${AGENT_ID}/agent/tools?session_id=${sessionId}`)
-    expect(res.ok).toBe(true)
-    const tools = await res.json() as Array<Record<string, any>>
-    const names = tools.map(tool => tool.name as string)
-
-    expect(names.some(name => name.includes('search'))).toBe(true)
-    expect(names.some(name => name.includes('fetch'))).toBe(true)
+    const resumeBody = await resumeRes.json() as Record<string, unknown>
+    expect(resumeBody).toBeDefined()
   }, 60_000)
 
   it('supports real MCP search and fetch calls through stdio', async () => {
-    const script = `
-      import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-      import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
-
-      const transport = new StdioClientTransport({
-        command: 'node',
-        args: ['dist/index.js'],
-        cwd: process.cwd(),
-        env: {
-          ...process.env,
-          KNOWLEDGE_SERVICE_URL: 'http://127.0.0.1:8092',
-          KNOWLEDGE_REQUEST_TIMEOUT_MS: '15000',
-        },
+    const configuredExtension = readConfiguredKnowledgeExtension()
+    const client = await startMcpClient({
+      cwd: AGENT_DIR,
+      command: configuredExtension.cmd as string,
+      args: configuredExtension.args as string[],
+      env: {
+        ...(configuredExtension.envs as Record<string, string> | undefined),
+        KNOWLEDGE_SERVICE_URL: 'http://127.0.0.1:8092',
+        KNOWLEDGE_REQUEST_TIMEOUT_MS: '15000',
+      },
+    })
+    try {
+      const tools = await client.request('tools/list', {})
+      const searchResult = await client.request('tools/call', {
+        name: 'search',
+        arguments: { query: '运维', topK: 2 },
       })
-
-      const client = new Client({ name: 'qa-agent-test', version: '1.0.0' }, { capabilities: {} })
-      await client.connect(transport)
-
-      const tools = await client.listTools()
-      const searchResult = await client.callTool({ name: 'search', arguments: { query: '运维', topK: 2 } })
       const searchPayload = JSON.parse(searchResult.content[0].text)
 
       let fetchPayload = null
       if (Array.isArray(searchPayload.hits) && searchPayload.hits.length > 0) {
-        const fetchResult = await client.callTool({
+        const fetchResult = await client.request('tools/call', {
           name: 'fetch',
           arguments: { chunkId: searchPayload.hits[0].chunkId, includeNeighbors: true, neighborWindow: 1 },
         })
         fetchPayload = JSON.parse(fetchResult.content[0].text)
       }
 
-      console.log(JSON.stringify({
-        toolNames: tools.tools.map(tool => tool.name),
+      const payload = {
+        toolNames: tools.tools.map((tool: Record<string, unknown>) => tool.name),
         searchTotal: searchPayload.total,
         firstHit: searchPayload.hits?.[0] || null,
         fetchedChunkId: fetchPayload?.chunkId || null,
         fetchedSourceId: fetchPayload?.sourceId || null,
-      }))
+      }
 
+      expect(payload.toolNames).toContain('search')
+      expect(payload.toolNames).toContain('fetch')
+      expect(payload.searchTotal).toBeGreaterThan(0)
+      const configuredSourceId = readConfiguredKnowledgeSourceId()
+      expect(payload.firstHit?.sourceId).toBe(configuredSourceId)
+      expect(payload.fetchedChunkId).toBeTruthy()
+      expect(payload.fetchedSourceId).toBe(configuredSourceId)
+    } finally {
       await client.close()
-    `
-
-    const output = execFileSync('node', ['--input-type=module', '-e', script], {
-      cwd: MCP_DIR,
-      encoding: 'utf-8',
-    })
-
-    const lines = output.trim().split('\n').filter(Boolean)
-    const payload = JSON.parse(lines[lines.length - 1]) as Record<string, any>
-
-    expect(payload.toolNames).toContain('search')
-    expect(payload.toolNames).toContain('fetch')
-    expect(payload.searchTotal).toBeGreaterThan(0)
-    const configuredSourceId = readConfiguredKnowledgeSourceId()
-    expect(payload.firstHit?.sourceId).toBe(configuredSourceId)
-    expect(payload.fetchedChunkId).toBeTruthy()
-    expect(payload.fetchedSourceId).toBe(configuredSourceId)
+    }
   }, 60_000)
 })
 

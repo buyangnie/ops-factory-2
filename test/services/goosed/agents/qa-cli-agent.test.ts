@@ -1,19 +1,61 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { existsSync, mkdtempSync, realpathSync, rmSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import os from 'node:os'
 import { join } from 'node:path'
+import yaml from 'js-yaml'
 import { sendSessionReplyAndWait, sleep, startJavaGateway, type GatewayHandle } from '../../../platform/shared/helpers.js'
 
 const AGENT_ID = 'qa-cli-agent'
 const USER_ID = 'admin'
 const PROJECT_ROOT = join(import.meta.dirname, '..', '..', '..', '..')
-const SECRETS_PATH = join(PROJECT_ROOT, 'gateway', 'agents', 'qa-cli-agent', 'config', 'secrets.yaml')
-const MCP_DIR = join(PROJECT_ROOT, 'gateway', 'agents', 'qa-cli-agent', 'config', 'mcp', 'knowledge-cli')
+const AGENT_DIR = join(PROJECT_ROOT, 'gateway', 'agents', 'qa-cli-agent')
+const AGENT_CONFIG_PATH = join(AGENT_DIR, 'config', 'config.yaml')
+const SECRETS_PATH = join(AGENT_DIR, 'config', 'secrets.yaml')
+const MCP_DIR = join(AGENT_DIR, 'config', 'mcp', 'knowledge-cli')
 
 let gw: GatewayHandle
 
-function parseSseEvents(body: string): Array<Record<string, any>> {
+function readQaCliAgentConfig(): Record<string, unknown> {
+  return yaml.load(readFileSync(AGENT_CONFIG_PATH, 'utf8')) as Record<string, unknown>
+}
+
+function readConfiguredKnowledgeCliExtension(): Record<string, unknown> {
+  const parsed = readQaCliAgentConfig()
+  const extension = parsed?.extensions?.['knowledge-cli']
+  expect(extension).toBeDefined()
+  return extension as Record<string, unknown>
+}
+
+function ensurePythonMcpDependencies(mcpDir: string): void {
+  const depsDir = join(mcpDir, '.python-deps')
+  const env = {
+    ...process.env,
+    PYTHONPATH: depsDir,
+  }
+  try {
+    execFileSync('python3', [
+      '-c',
+      "import importlib.metadata as md; from mcp.server.fastmcp import FastMCP; raise SystemExit(0 if md.version('mcp') == '1.27.1' else 1)",
+    ], { env, stdio: 'ignore' })
+    return
+  } catch {
+    execFileSync('python3', [
+      '-m',
+      'pip',
+      'install',
+      '--disable-pip-version-check',
+      '--quiet',
+      '--upgrade',
+      '--target',
+      depsDir,
+      '-r',
+      join(mcpDir, 'requirements.txt'),
+    ], { stdio: 'inherit' })
+  }
+}
+
+function parseSseEvents(body: string): Array<Record<string, unknown>> {
   return body
     .split('\n\n')
     .map(chunk => chunk.trim())
@@ -33,7 +75,7 @@ function parseSseEvents(body: string): Array<Record<string, any>> {
     })
 }
 
-function collectAssistantTextFromSse(events: Array<Record<string, any>>): string {
+function collectAssistantTextFromSse(events: Array<Record<string, unknown>>): string {
   return events
     .filter(event => event.type === 'Message' && event.message)
     .flatMap(event => (event.message.content || []) as Array<{ type: string; text?: string }>)
@@ -42,10 +84,10 @@ function collectAssistantTextFromSse(events: Array<Record<string, any>>): string
     .join('')
 }
 
-function extractToolNames(events: Array<Record<string, any>>): string[] {
+function extractToolNames(events: Array<Record<string, unknown>>): string[] {
   return events
     .filter(event => event.type === 'Message' && event.message)
-    .flatMap(event => (event.message.content || []) as Array<Record<string, any>>)
+    .flatMap(event => (event.message.content || []) as Array<Record<string, unknown>>)
     .filter(content => content.type === 'toolRequest')
     .map(content =>
       content.toolCall?.value?.name ||
@@ -68,6 +110,11 @@ async function createSessionAndChat(
   expect(startRes.ok).toBe(true)
   const session = await startRes.json()
   const sessionId = session.id as string
+  const resumeRes = await handle.fetchAs(userId, `/agents/${agentId}/agent/resume`, {
+    method: 'POST',
+    body: JSON.stringify({ session_id: sessionId, load_model_and_extensions: true }),
+  })
+  expect(resumeRes.ok).toBe(true)
   const result = await sendSessionReplyAndWait(handle, userId, agentId, sessionId, message, 120_000)
   expect(result.body.length).toBeGreaterThan(0)
   return { sessionId, replyBody: result.body }
@@ -79,7 +126,95 @@ function hasQaCliSecrets(): boolean {
   return /CUSTOM_OPSAGENTLLM_API_KEY:\s*\S+/.test(content)
 }
 
+interface McpClientHandle {
+  request: (method: string, params: Record<string, unknown>) => Promise<unknown>
+  close: () => Promise<void>
+}
+
+async function startMcpClient(options: {
+  cwd: string
+  command?: string
+  args?: string[]
+  env?: Record<string, string>
+}): Promise<McpClientHandle> {
+  const child = spawn(options.command || 'python3', options.args || ['server.py'], {
+    cwd: options.cwd,
+    env: { ...process.env, ...options.env },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  }) as ChildProcessWithoutNullStreams
+
+  const stderr: string[] = []
+  let nextId = 1
+  let stdoutBuffer = ''
+  const pending = new Map<number, {
+    resolve: (value: unknown) => void
+    reject: (error: Error) => void
+  }>()
+
+  child.stderr.on('data', chunk => {
+    const text = chunk.toString().trim()
+    if (text) stderr.push(text)
+  })
+  child.stdout.on('data', chunk => {
+    stdoutBuffer += chunk.toString('utf8')
+    const lines = stdoutBuffer.split('\n')
+    stdoutBuffer = lines.pop() ?? ''
+    for (const line of lines) {
+      if (!line.trim()) continue
+      const message = JSON.parse(line)
+      const waiter = pending.get(message.id)
+      if (!waiter) continue
+      pending.delete(message.id)
+      if (message.error) {
+        waiter.reject(new Error(message.error.message || JSON.stringify(message.error)))
+      } else {
+        waiter.resolve(message.result)
+      }
+    }
+  })
+
+  const request = (method: string, params: Record<string, unknown>) => {
+    const id = nextId++
+    const payload = { jsonrpc: '2.0', id, method, params }
+    const result = new Promise<unknown>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        pending.delete(id)
+        reject(new Error(`MCP request timed out: ${method}\n${stderr.join('\n')}`))
+      }, 30_000)
+      pending.set(id, {
+        resolve: value => {
+          clearTimeout(timeout)
+          resolve(value)
+        },
+        reject: error => {
+          clearTimeout(timeout)
+          reject(error)
+        },
+      })
+    })
+    child.stdin.write(`${JSON.stringify(payload)}\n`)
+    return result
+  }
+
+  await request('initialize', {
+    protocolVersion: '2025-03-26',
+    capabilities: {},
+    clientInfo: { name: 'qa-cli-agent-test', version: '1.0.0' },
+  })
+  child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n`)
+
+  return {
+    request,
+    close: async () => {
+      child.kill('SIGTERM')
+      await sleep(300)
+      if (!child.killed) child.kill('SIGKILL')
+    },
+  }
+}
+
 beforeAll(async () => {
+  ensurePythonMcpDependencies(MCP_DIR)
   gw = await startJavaGateway()
   await sleep(2_000)
 }, 60_000)
@@ -93,13 +228,13 @@ describe('qa-cli-agent registration and tool wiring', () => {
     const res = await gw.fetchAs(USER_ID, '/agents')
     expect(res.ok).toBe(true)
     const data = await res.json()
-    const qaCli = (data.agents as Array<Record<string, any>>).find(agent => agent.id === AGENT_ID)
+    const qaCli = (data.agents as Array<Record<string, unknown>>).find(agent => agent.id === AGENT_ID)
 
     expect(qaCli).toBeDefined()
     expect(qaCli!.name).toBe('QA CLI Agent')
   })
 
-  it('loads Knowledge-Cli tools on a real session', async () => {
+  it('resumes a real session with Knowledge-Cli MCP enabled', async () => {
     const startRes = await gw.fetchAs(USER_ID, `/agents/${AGENT_ID}/agent/start`, {
       method: 'POST',
       body: JSON.stringify({}),
@@ -108,14 +243,14 @@ describe('qa-cli-agent registration and tool wiring', () => {
     const session = await startRes.json()
     const sessionId = session.id as string
 
-    const res = await gw.fetchAs(USER_ID, `/agents/${AGENT_ID}/agent/tools?session_id=${sessionId}`)
-    expect(res.ok).toBe(true)
-    const tools = await res.json() as Array<Record<string, any>>
-    const names = tools.map(tool => tool.name as string)
+    const resumeRes = await gw.fetchAs(USER_ID, `/agents/${AGENT_ID}/agent/resume`, {
+      method: 'POST',
+      body: JSON.stringify({ session_id: sessionId, load_model_and_extensions: true }),
+    })
+    expect(resumeRes.ok).toBe(true)
 
-    expect(names.some(name => name.includes('search_content'))).toBe(true)
-    expect(names.some(name => name.includes('read_file'))).toBe(true)
-    expect(names.some(name => name.includes('find_files'))).toBe(true)
+    const resumeBody = await resumeRes.json() as Record<string, unknown>
+    expect(resumeBody).toBeDefined()
   }, 60_000)
 
   it('serves find, search, and read tools through real MCP stdio', async () => {
@@ -137,57 +272,49 @@ describe('qa-cli-agent registration and tool wiring', () => {
 
       const realContentPath = realpathSync(contentPath)
 
-      execFileSync('npm', ['run', 'build'], { cwd: MCP_DIR, stdio: 'inherit' })
-      const script = `
-        import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-        import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
-
-        const transport = new StdioClientTransport({
-          command: 'node',
-          args: ['dist/index.js'],
-          cwd: process.cwd(),
-          env: {
-            ...process.env,
-            QA_CLI_ROOT_DIR: ${JSON.stringify(rootDir)},
-          },
-        })
-
-        const client = new Client({ name: 'qa-cli-agent-test', version: '1.0.0' }, { capabilities: {} })
-        await client.connect(transport)
-
-        const tools = await client.listTools()
-        const findResult = await client.callTool({ name: 'find_files', arguments: { glob: '*.md' } })
+      const configuredExtension = readConfiguredKnowledgeCliExtension()
+      const client = await startMcpClient({
+        cwd: AGENT_DIR,
+        command: configuredExtension.cmd as string,
+        args: configuredExtension.args as string[],
+        env: {
+          ...(configuredExtension.envs as Record<string, string> | undefined),
+          QA_CLI_ROOT_DIR: rootDir,
+        },
+      })
+      try {
+        const tools = await client.request('tools/list', {})
+        const findResult = await client.request('tools/call', { name: 'find_files', arguments: { glob: '*.md' } })
         const findPayload = JSON.parse(findResult.content[0].text)
-        const searchResult = await client.callTool({ name: 'search_content', arguments: { query: '告警管理', glob: '*.md' } })
+        const searchResult = await client.request('tools/call', {
+          name: 'search_content',
+          arguments: { query: '告警管理', glob: '*.md' },
+        })
         const searchPayload = JSON.parse(searchResult.content[0].text)
-        const readResult = await client.callTool({ name: 'read_file', arguments: { path: searchPayload.hits[0].path, startLine: 1, endLine: 3 } })
+        const readResult = await client.request('tools/call', {
+          name: 'read_file',
+          arguments: { path: searchPayload.hits[0].path, startLine: 1, endLine: 3 },
+        })
         const readPayload = JSON.parse(readResult.content[0].text)
 
-        console.log(JSON.stringify({
-          toolNames: tools.tools.map(tool => tool.name),
+        const payload = {
+          toolNames: tools.tools.map((tool: Record<string, unknown>) => tool.name),
           findTotal: findPayload.total,
           searchTotal: searchPayload.total,
           firstHitPath: searchPayload.hits[0]?.path || null,
           readContent: readPayload.content,
-        }))
+        }
 
+        expect(payload.toolNames).toContain('find_files')
+        expect(payload.toolNames).toContain('search_content')
+        expect(payload.toolNames).toContain('read_file')
+        expect(payload.findTotal).toBe(1)
+        expect(payload.searchTotal).toBe(2)
+        expect(realpathSync(payload.firstHitPath)).toBe(realContentPath)
+        expect(payload.readContent).toContain('告警管理')
+      } finally {
         await client.close()
-      `
-
-      const output = execFileSync('node', ['--input-type=module', '-e', script], {
-        cwd: MCP_DIR,
-        encoding: 'utf-8',
-      })
-      const lines = output.trim().split('\n').filter(Boolean)
-      const payload = JSON.parse(lines[lines.length - 1]) as Record<string, any>
-
-      expect(payload.toolNames).toContain('find_files')
-      expect(payload.toolNames).toContain('search_content')
-      expect(payload.toolNames).toContain('read_file')
-      expect(payload.findTotal).toBe(1)
-      expect(payload.searchTotal).toBe(2)
-      expect(realpathSync(payload.firstHitPath)).toBe(realContentPath)
-      expect(payload.readContent).toContain('告警管理')
+      }
     } finally {
       rmSync(rootDir, { recursive: true, force: true })
     }

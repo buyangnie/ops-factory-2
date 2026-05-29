@@ -5,9 +5,15 @@
     http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.huawei.opsfactory</groupId>
+    <parent>
+        <groupId>com.huawei.msz</groupId>
+        <artifactId>ms-om-parent</artifactId>
+        <version>1.5.1.1-SNAPSHOT</version>
+    </parent>
+
+    <groupId>com.huawei.msz</groupId>
     <artifactId>finops</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.5.1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -15,7 +21,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-boot.version>3.3.12</spring-boot.version>
+        <spring-boot.version>3.5.14</spring-boot.version>
     </properties>
 
     <dependencyManagement>

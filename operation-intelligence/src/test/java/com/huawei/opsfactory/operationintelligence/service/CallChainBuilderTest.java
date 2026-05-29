@@ -77,7 +77,7 @@ class CallChainBuilderTest {
         logs.add(log3);
 
         // Build call chain - use 1 for total count (only 1 traceId)
-        CallChainTree tree = builder.build("BES", "menuId", "604015020", logs, 1);
+        CallChainTree tree = builder.build("BES", "menuId", "604015020", logs, 1L, "method");
 
         assertNotNull(tree);
         assertEquals("BES", tree.getChainType());
@@ -89,7 +89,7 @@ class CallChainBuilderTest {
     void testBuildWithEmptyLogs() {
         List<TraceLogRecord> logs = new ArrayList<>();
 
-        CallChainTree tree = builder.build("BES", "menuId", "test", logs, 0);
+        CallChainTree tree = builder.build("BES", "menuId", "test", logs, 0L, "method");
 
         assertNotNull(tree);
         assertTrue(tree.getFlows().isEmpty());

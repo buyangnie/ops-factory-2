@@ -18,6 +18,8 @@ export interface PreviewFile {
     displayPath?: string
     agentId?: string
     downloadUrl?: string
+    /** Preferred filename for download. Currently used by knowledge-document previews; other preview paths fall back to `name`. */
+    downloadFilename?: string
     previewKind: PreviewKind
     content?: string
     tableData?: string[][]
@@ -40,6 +42,8 @@ interface DirectPreviewRequest {
     type: string
     content?: string
     downloadUrl?: string
+    /** Preferred filename for download. Currently used by knowledge-document previews; other preview paths fall back to `name`. */
+    downloadFilename?: string
     previewKind?: PreviewKind
 }
 
@@ -123,6 +127,7 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
                     type: normalizedType,
                     content: file.content,
                     downloadUrl: file.downloadUrl,
+                    downloadFilename: file.downloadFilename,
                     previewKind,
                 })
                 return

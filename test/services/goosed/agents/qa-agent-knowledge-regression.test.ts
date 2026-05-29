@@ -9,10 +9,9 @@
  * - the agent does not time out while following the knowledge-service flow
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
-import { execFileSync } from 'node:child_process'
 import net from 'node:net'
 
 import { sendSessionReplyAndWait, type GatewayHandle, sleep } from '../../../platform/shared/helpers.js'
@@ -31,6 +30,34 @@ const ROUND_LIMIT = Math.min(REQUESTED_ROUND_LIMIT, qaKnowledgeRegressionCases.l
 
 let gw: GatewayHandle
 
+function ensurePythonMcpDependencies(mcpDir: string): void {
+  const depsDir = join(mcpDir, '.python-deps')
+  const env = {
+    ...process.env,
+    PYTHONPATH: depsDir,
+  }
+  try {
+    execFileSync('python3', [
+      '-c',
+      "import importlib.metadata as md; from mcp.server.fastmcp import FastMCP; raise SystemExit(0 if md.version('mcp') == '1.27.1' else 1)",
+    ], { env, stdio: 'ignore' })
+    return
+  } catch {
+    execFileSync('python3', [
+      '-m',
+      'pip',
+      'install',
+      '--disable-pip-version-check',
+      '--quiet',
+      '--upgrade',
+      '--target',
+      depsDir,
+      '-r',
+      join(mcpDir, 'requirements.txt'),
+    ], { stdio: 'inherit' })
+  }
+}
+
 interface ToolRequestRecord {
   id: string
   name: string
@@ -41,7 +68,7 @@ interface ToolResponseRecord {
   id: string
   name: string
   status: string
-  data: Record<string, any> | null
+  data: Record<string, unknown> | null
 }
 
 interface RoundReport {
@@ -166,7 +193,7 @@ async function startQaJavaGateway(): Promise<GatewayHandle> {
   }
 }
 
-function parseSseEvents(body: string): Array<Record<string, any>> {
+function parseSseEvents(body: string): Array<Record<string, unknown>> {
   return body
     .split('\n\n')
     .map(chunk => chunk.trim())
@@ -186,7 +213,7 @@ function parseSseEvents(body: string): Array<Record<string, any>> {
     })
 }
 
-function unwrapToolResult(value: unknown): Record<string, any> | null {
+function unwrapToolResult(value: unknown): Record<string, unknown> | null {
   if (!value) return null
   if (typeof value === 'string') {
     try {
@@ -210,10 +237,10 @@ function unwrapToolResult(value: unknown): Record<string, any> | null {
     }
   }
 
-  return obj as Record<string, any>
+  return obj as Record<string, unknown>
 }
 
-function collectAssistantText(events: Array<Record<string, any>>): string {
+function collectAssistantText(events: Array<Record<string, unknown>>): string {
   return events
     .filter(event => event.type === 'Message' && event.message)
     .flatMap(event => (event.message.content || []) as Array<{ type: string; text?: string }>)
@@ -222,13 +249,13 @@ function collectAssistantText(events: Array<Record<string, any>>): string {
     .join('')
 }
 
-function extractToolRecords(events: Array<Record<string, any>>) {
+function extractToolRecords(events: Array<Record<string, unknown>>) {
   const requests = new Map<string, ToolRequestRecord>()
   const responses: ToolResponseRecord[] = []
 
   for (const event of events) {
     if (event.type !== 'Message' || !event.message?.content) continue
-    for (const content of event.message.content as Array<Record<string, any>>) {
+    for (const content of event.message.content as Array<Record<string, unknown>>) {
       if (content.type === 'toolRequest' && content.id) {
         const name = content.toolCall?.value?.name || content.toolCall?.name || ''
         requests.set(content.id, {
@@ -383,10 +410,7 @@ async function sendReplyAndWait(
 }
 
 beforeAll(async () => {
-  if (!existsSync(join(MCP_DIR, 'node_modules'))) {
-    execFileSync('npm', ['install'], { cwd: MCP_DIR, stdio: 'inherit' })
-  }
-  execFileSync('npm', ['run', 'build'], { cwd: MCP_DIR, stdio: 'inherit' })
+  ensurePythonMcpDependencies(MCP_DIR)
   gw = await startQaJavaGateway()
   await sleep(2_000)
 }, 90_000)
@@ -463,7 +487,7 @@ describe('qa-agent knowledge regression', () => {
         const firstSearchHits = Array.isArray(successfulSearch[0]?.data?.hits) ? successfulSearch[0]!.data!.hits : []
         const topHits = firstSearchHits
           .slice(0, 3)
-          .map((hit: Record<string, any>) =>
+          .map((hit: Record<string, unknown>) =>
             [
               hit.title,
               hit.documentName,

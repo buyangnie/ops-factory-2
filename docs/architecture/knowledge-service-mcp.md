@@ -42,12 +42,13 @@
 
 实现位于：
 
-- `gateway/agents/qa-agent/config/mcp/knowledge-service/src/index.ts`
-- `gateway/agents/qa-agent/config/mcp/knowledge-service/src/handlers.ts`
+- `gateway/agents/qa-agent/config/mcp/knowledge-service/server.py`
+- `gateway/agents/qa-agent/config/mcp/knowledge-service/core.py`
 
-构建产物入口位于：
+Python 依赖声明位于：
 
-- `gateway/agents/qa-agent/config/mcp/knowledge-service/dist/index.js`
+- `gateway/agents/qa-agent/config/mcp/knowledge-service/requirements.txt`
+- 启动脚本会安装到 `gateway/agents/qa-agent/config/mcp/knowledge-service/.python-deps`
 
 注册配置位于：
 
@@ -64,8 +65,8 @@
 在 `qa-agent` 配置中，`knowledge-service` 以 stdio 扩展形式注册：
 
 - `type: stdio`
-- `cmd: node`
-- 入口：`config/mcp/knowledge-service/dist/index.js`
+- `cmd: python3`
+- 入口：`config/mcp/knowledge-service/server.py`
 
 这意味着：
 
@@ -90,7 +91,7 @@ qa-agent process
     |
     +-- start stdio extension: knowledge-service
             |
-            +-- node dist/index.js
+            +-- python3 server.py
                     |
                     +-- register tools: search, fetch
 ```
@@ -99,12 +100,11 @@ qa-agent process
 
 ### 5.1 必需配置
 
-MCP 依赖以下环境变量：
+MCP 可使用以下环境变量：
 
 - `KNOWLEDGE_SERVICE_URL`
-- `KNOWLEDGE_DEFAULT_SOURCE_ID`
 
-这些值通常由 `gateway/agents/qa-agent/config/secrets.yaml` 注入。
+`KNOWLEDGE_SERVICE_URL` 通常由 `gateway/agents/qa-agent/config/secrets.yaml` 注入。默认知识库范围来自 `config.yaml` 的 `extensions.knowledge-service.x-opsfactory.knowledgeScope.sourceId`。
 
 ### 5.2 可选配置
 
@@ -112,10 +112,9 @@ MCP 依赖以下环境变量：
 
 ### 5.3 代码级默认值
 
-`handlers.ts` 中定义了以下默认值：
+`core.py` 中定义了以下默认值：
 
 - `KNOWLEDGE_SERVICE_URL = http://127.0.0.1:8092`
-- `KNOWLEDGE_DEFAULT_SOURCE_ID = src_ac8da09a7cfd`
 - `KNOWLEDGE_REQUEST_TIMEOUT_MS = 15000`
 - `KNOWLEDGE_FETCH_MAX_NEIGHBOR_WINDOW = 2`
 
@@ -194,8 +193,8 @@ MCP `search` 会映射到：
 `sourceIds` 的处理逻辑是：
 
 1. 如果调用者传了非空 `sourceIds`，使用调用者提供的值
-2. 如果未传或为空，回退为 `KNOWLEDGE_DEFAULT_SOURCE_ID`
-3. 如果默认 source 也为空，则传空数组给后端
+2. 如果未传或为空，回退为 `config.yaml` 中的 `extensions.knowledge-service.x-opsfactory.knowledgeScope.sourceId`
+3. 如果配置 source 也为空，则返回空检索结果，不向后端发起无范围搜索
 
 这条路径非常关键，因为 QA Agent 的默认问答通常依赖单一知识库。
 

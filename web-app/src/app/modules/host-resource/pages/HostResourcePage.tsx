@@ -95,7 +95,7 @@ export default function HostResourcePage() {
 
     // Export / Import hooks
     const { exporting, exportAllAsZip } = useResourceExport()
-    const { importing: csvImporting, progress: importProgress, importCsv } = useResourceImport({
+    const { importing, progress, importXlsx } = useResourceImport({
         fetchGroups, fetchAllClusters, fetchAllHosts, fetchHostRelations, fetchBusinessServices, fetchGraph, fetchWhitelist: fetchWhitelistCommands,
         groups, clusters, allHosts, businessServices, relations: hostRelations,
         clusterTypes: clusterTypesHook.clusterTypes,
@@ -604,8 +604,8 @@ export default function HostResourcePage() {
             businessTypes: businessTypesHook.businessTypes,
             whitelistCommands,
             sops: sopsHook.sops,
-        })
-    }, [exportAllAsZip, groups, clusters, allHosts, hostRelations, businessServices, clusterTypesHook.clusterTypes, businessTypesHook.businessTypes, whitelistCommands, sopsHook.sops])
+        }, t)
+    }, [exportAllAsZip, groups, clusters, allHosts, hostRelations, businessServices, clusterTypesHook.clusterTypes, businessTypesHook.businessTypes, whitelistCommands, sopsHook.sops, t])
 
     const openCreateModal = useCallback(() => {
         setEditingItem(null)
@@ -677,7 +677,7 @@ export default function HostResourcePage() {
                         <button className="btn btn-secondary btn-sm" onClick={handleExport} disabled={exporting}>
                             {exporting ? t('hostResource.exporting') : t('hostResource.export')}
                         </button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setShowImportDialog(true)} disabled={csvImporting}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowImportDialog(true)} disabled={importing}>
                             {t('hostResource.import')}
                         </button>
                     </div>
@@ -971,9 +971,9 @@ export default function HostResourcePage() {
             <ImportDialog
                 open={showImportDialog}
                 onClose={() => setShowImportDialog(false)}
-                importing={csvImporting}
-                progress={importProgress}
-                onImport={importCsv}
+                importing={importing}
+                progress={progress}
+                onImport={importXlsx}
             />
         </div>
     )

@@ -439,12 +439,28 @@
     font-weight: 700;
     color: var(--color-text-primary);
     line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .knowledge-chunk-card-subtitle {
     margin-top: 4px;
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.knowledge-field-hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+.knowledge-field-hint--error {
+    color: var(--color-error, #ef4444);
 }
 
 .knowledge-chunk-card-snippet {

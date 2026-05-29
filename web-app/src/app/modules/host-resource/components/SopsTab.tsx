@@ -536,6 +536,7 @@ function SopFormModal({
                         type="text"
                         value={triggerCondition}
                         onChange={e => setTriggerCondition(e.target.value)}
+                        maxLength={500}
                     />
                 </div>
             </section>
@@ -575,6 +576,7 @@ function SopFormModal({
                             placeholder={t('remoteDiagnosis.sops.stepsDescriptionPlaceholder')}
                             value={stepsDescription}
                             onChange={e => setStepsDescription(e.target.value)}
+                            maxLength={1000}
                         />
                     </div>
                 </section>

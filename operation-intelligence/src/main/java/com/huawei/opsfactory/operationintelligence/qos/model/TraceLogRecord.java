@@ -55,6 +55,8 @@ public class TraceLogRecord {
 
     private String moi;
 
+    private String clusterId;
+
     /**
      * Gets the trace id.
      *
@@ -413,5 +415,23 @@ public class TraceLogRecord {
      */
     public void setMoi(String moi) {
         this.moi = moi;
+    }
+
+    /**
+     * Gets the cluster id.
+     *
+     * @return the cluster id
+     */
+    public String getClusterId() {
+        return clusterId;
+    }
+
+    /**
+     * Sets the cluster id.
+     *
+     * @param clusterId the cluster id
+     */
+    public void setClusterId(String clusterId) {
+        this.clusterId = clusterId;
     }
 }
