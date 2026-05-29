@@ -59,7 +59,8 @@
     "validationArray": "用分隔符分隔多个值",
     "validationMaxLength": "最大{{max}}字符",
     "validationMinLength": "最小{{min}}字符",
-    "validationCustom": "自定义验证"
+    "validationCustom": "自定义验证",
+    "validationXssProtected": "字符串（禁止XSS字符：< > \" ' & ` /），最大{{max}}字符"
   },
   "sidebar": {
     "home": "首页",

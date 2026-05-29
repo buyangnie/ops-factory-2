@@ -59,7 +59,8 @@
     "validationArray": "Separator for multiple values",
     "validationMaxLength": "Max {{max}} chars",
     "validationMinLength": "Min {{min}} chars",
-    "validationCustom": "Custom validation"
+    "validationCustom": "Custom validation",
+    "validationXssProtected": "String (no XSS chars: < > \" ' & ` /), max {{max}} chars"
   },
   "sidebar": {
     "home": "Home",
