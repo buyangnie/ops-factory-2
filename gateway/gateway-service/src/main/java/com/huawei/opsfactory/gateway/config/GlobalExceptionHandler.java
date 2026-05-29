@@ -4,10 +4,17 @@
 
 package com.huawei.opsfactory.gateway.config;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.huawei.opsfactory.gateway.controller.SessionErrorResponseException;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -16,6 +23,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -28,6 +36,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final GatewayProperties properties;
 
@@ -66,9 +75,18 @@ public class GlobalExceptionHandler {
      * @param ex session error response exception
      * @return response entity with the structured error body
      */
-    @ExceptionHandler(SessionErrorResponseException.class)
     public ResponseEntity<Map<String, Object>> handleSessionErrorResponse(SessionErrorResponseException ex) {
+        return handleSessionErrorResponse(ex, null, null);
+    }
+
+    @ExceptionHandler(SessionErrorResponseException.class)
+    public ResponseEntity<Map<String, Object>> handleSessionErrorResponse(SessionErrorResponseException ex,
+        HttpServletRequest request, HttpServletResponse response) {
         log.warn("Session error: status={} code={}", ex.getStatusCode(), ex.getErrorBody().get("code"));
+        if (isSseRequest(request)) {
+            writeSseErrorResponse(response, HttpStatus.valueOf(ex.getStatusCode().value()), ex.getErrorBody());
+            return null;
+        }
         return ResponseEntity.status(ex.getStatusCode()).body(ex.getErrorBody());
     }
 
@@ -78,12 +96,24 @@ public class GlobalExceptionHandler {
      * @param ex ex
      * @return the handles response status exceptions and returns a normalized error body
      */
-    @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException ex) {
+        return handleResponseStatus(ex, null, null);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException ex,
+        HttpServletRequest request, HttpServletResponse response) {
         log.warn("Request rejected with status={} reason={}", ex.getStatusCode(), ex.getReason());
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("success", false);
         body.put("error", ex.getReason() != null ? ex.getReason() : ex.getMessage());
+        if (isSseRequest(request)) {
+            body.put("type", "Error");
+            body.put("layer", "gateway");
+            body.put("severity", "error");
+            writeSseErrorResponse(response, HttpStatus.valueOf(ex.getStatusCode().value()), body);
+            return null;
+        }
         return ResponseEntity.status(ex.getStatusCode()).body(body);
     }
 
@@ -124,5 +154,37 @@ public class GlobalExceptionHandler {
             return "";
         }
         return value.length() > maxLength ? value.substring(0, maxLength) + "..." : value;
+    }
+
+    private boolean isSseRequest(HttpServletRequest request) {
+        if (request == null) {
+            return false;
+        }
+        String accept = request.getHeader(HttpHeaders.ACCEPT);
+        return accept != null && accept.contains(MediaType.TEXT_EVENT_STREAM_VALUE);
+    }
+
+    private void writeSseErrorResponse(HttpServletResponse response, HttpStatus status, Map<String, Object> body) {
+        if (response == null) {
+            return;
+        }
+        response.setStatus(status.value());
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        try {
+            response.getWriter().write("event: error\ndata: " + toJson(body) + "\n\n");
+            response.getWriter().flush();
+        } catch (IOException ex) {
+            log.warn("Failed to write SSE error response: {}", ex.getMessage());
+        }
+    }
+
+    private String toJson(Map<String, Object> body) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(body);
+        } catch (JsonProcessingException ex) {
+            log.warn("Failed to serialize SSE error body: {}", ex.getMessage());
+            return "{\"type\":\"Error\",\"layer\":\"gateway\",\"severity\":\"error\",\"error\":\"Internal server error\"}";
+        }
     }
 }

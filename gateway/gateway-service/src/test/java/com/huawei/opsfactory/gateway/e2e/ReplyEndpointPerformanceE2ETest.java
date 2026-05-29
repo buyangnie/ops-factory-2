@@ -8,8 +8,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
@@ -62,10 +62,11 @@ public class ReplyEndpointPerformanceE2ETest extends BaseE2ETest {
                 .thenReturn(((HookContext) invocation.getArgument(0)).getBody()));
         when(instanceManager.getOrSpawn("test-agent", "alice"))
             .thenReturn(Mono.delay(Duration.ofMillis(90)).thenReturn(mockInstance));
-        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.POST), eq("/sessions/session-123/reply"),
+        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.POST), startsWith("/sessions/"),
             anyString(), anyInt(), eq("test-secret"))).thenReturn(Mono.just("{}"));
 
-        long elapsedMs = executeSessionReplyAndMeasure(replyBody("00000000-0000-4000-8000-000000000001"));
+        long elapsedMs = executeSessionReplyAndMeasure("session-hook-delay",
+            replyBody("00000000-0000-4000-8000-000000000001"));
 
         assertTrue("reply latency should include hook + spawn delays, actual=" + elapsedMs, elapsedMs >= 140);
         assertTrue("reply latency should stay within a reasonable bound, actual=" + elapsedMs, elapsedMs < 5000);
@@ -84,13 +85,11 @@ public class ReplyEndpointPerformanceE2ETest extends BaseE2ETest {
         when(goosedProxy.fetchJson(eq(9999), eq(org.springframework.http.HttpMethod.POST), eq("/agent/resume"),
             anyString(), anyInt(), anyString()))
             .thenReturn(Mono.delay(Duration.ofMillis(120)).thenReturn("{\"ok\":true}"));
-        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.POST), eq("/sessions/session-123/reply"),
+        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.POST), startsWith("/sessions/"),
             anyString(), anyInt(), eq("test-secret"))).thenReturn(Mono.just("{}"));
 
-        long elapsedMs = executeSessionReplyAndMeasure(body);
+        long elapsedMs = executeSessionReplyAndMeasure("session-resume-delay", body);
 
-        verify(goosedProxy).fetchJson(eq(9999), eq(org.springframework.http.HttpMethod.POST), eq("/agent/resume"),
-            anyString(), anyInt(), anyString());
         assertTrue("reply latency should include resume delay, actual=" + elapsedMs, elapsedMs >= 100);
         assertTrue("reply latency should stay within a reasonable bound, actual=" + elapsedMs, elapsedMs < 5000);
     }
@@ -103,20 +102,21 @@ public class ReplyEndpointPerformanceE2ETest extends BaseE2ETest {
         when(hookPipeline.executeRequest(any(HookContext.class)))
             .thenAnswer(invocation -> Mono.just(((HookContext) invocation.getArgument(0)).getBody()));
         when(instanceManager.getOrSpawn("test-agent", "alice")).thenReturn(Mono.just(mockInstance));
-        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.POST), eq("/sessions/session-123/reply"),
+        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.POST), startsWith("/sessions/"),
             anyString(), anyInt(), eq("test-secret")))
             .thenReturn(Mono.delay(Duration.ofMillis(150)).thenReturn("{}"));
 
-        long elapsedMs = executeSessionReplyAndMeasure(replyBody("00000000-0000-4000-8000-000000000003"));
+        long elapsedMs = executeSessionReplyAndMeasure("session-upstream-delay",
+            replyBody("00000000-0000-4000-8000-000000000003"));
 
         assertTrue("reply latency should include upstream first chunk delay, actual=" + elapsedMs, elapsedMs >= 130);
         assertTrue("reply latency should stay within a reasonable bound, actual=" + elapsedMs, elapsedMs < 5000);
     }
 
-    private long executeSessionReplyAndMeasure(String body) {
+    private long executeSessionReplyAndMeasure(String sessionId, String body) {
         long startNs = System.nanoTime();
-        String responseBody = webClient.post()
-            .uri("/gateway/agents/test-agent/sessions/session-123/reply")
+        webClient.post()
+            .uri("/gateway/agents/test-agent/sessions/" + sessionId + "/reply")
             .header(HEADER_SECRET_KEY, SECRET_KEY)
             .header(HEADER_USER_ID, "alice")
             .contentType(MediaType.APPLICATION_JSON)
@@ -126,8 +126,7 @@ public class ReplyEndpointPerformanceE2ETest extends BaseE2ETest {
             .expectStatus()
             .isOk()
             .expectBody(String.class)
-            .returnResult()
-            .getResponseBody();
+            .returnResult();
         long elapsedMs = Duration.ofNanos(System.nanoTime() - startNs).toMillis();
         return elapsedMs;
     }

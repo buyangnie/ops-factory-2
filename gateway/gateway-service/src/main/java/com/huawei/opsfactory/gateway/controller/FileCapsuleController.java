@@ -72,7 +72,7 @@ public class FileCapsuleController {
      * Saves the messageId-to-files mapping reported by the frontend for a session.
      *
      * @param agentId agent instance identifier
-     * @param body request body containing sessionId, messageId, and files list
+     * @param body request body containing sessionId, messageId, optional requestId, and files list
      * @param exchange current HTTP exchange carrying user context
      * @return Mono emitting a map with "status" key
      */
@@ -84,6 +84,7 @@ public class FileCapsuleController {
 
         String sessionId = (String) body.get("sessionId");
         String messageId = (String) body.get("messageId");
+        String requestId = (String) body.get("requestId");
         Object rawFiles = body.get("files");
 
         if (sessionId == null || messageId == null || !(rawFiles instanceof List<?> fileList)) {
@@ -97,7 +98,7 @@ public class FileCapsuleController {
             return entry;
         }).toList();
 
-        fileService.persistOutputFiles(workingDir, sessionId, messageId, files);
+        fileService.persistOutputFiles(workingDir, sessionId, messageId, requestId, files);
         return Map.of("status", "ok");
     }
 }

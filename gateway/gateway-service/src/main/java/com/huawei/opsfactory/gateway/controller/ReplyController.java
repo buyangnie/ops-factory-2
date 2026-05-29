@@ -40,6 +40,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.util.UriUtils;
 
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -51,6 +54,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -107,7 +112,7 @@ public class ReplyController {
 
     private final FileService fileService;
 
-    private final ConcurrentHashMap<String, String> inFlightResumes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CompletableFuture<String>> inFlightResumes = new ConcurrentHashMap<>();
 
     private final ConcurrentHashMap<String, List<Map<String, Object>>> fileSnapshots = new ConcurrentHashMap<>();
 
@@ -216,7 +221,9 @@ public class ReplyController {
             sessionId, instance.getPort(), path);
 
         return goosedProxy.proxySessionEventsToEmitter(instance.getPort(), path, instance.getSecretKey(), lastEventId,
-            agentId, userId, sessionId);
+            agentId, userId, sessionId,
+            eventJson -> Mono.fromCallable(() -> outputFilesBeforeTerminalEvent(agentId, userId, sessionId, eventJson))
+                .subscribeOn(Schedulers.boundedElastic()));
     }
 
     /**
@@ -568,8 +575,13 @@ public class ReplyController {
      * keeps "continue chatting" aligned with the explicit history/resume entrypoint.
      */
     private void ensureSessionResumed(ManagedInstance instance, String sessionId) {
-        if (sessionId == null) {
+        if (sessionId == null || sessionId.isBlank()) {
             log.debug("[REPLY] session id missing, skipping pre-reply resume");
+            return;
+        }
+        if (instance.isSessionResumed(sessionId)) {
+            log.debug("[REPLY] session {} already resumed on instance {}:{}, skipping pre-reply resume", sessionId,
+                instance.getAgentId(), instance.getUserId());
             return;
         }
         String resumeBody = "{\"session_id\":\"" + sessionId + "\",\"load_model_and_extensions\":true}";
@@ -589,24 +601,49 @@ public class ReplyController {
         }
 
         String dedupeKey = instance.getKey() + ":" + sessionId;
-        String result = inFlightResumes.get(dedupeKey);
-        if (result != null) {
+        CompletableFuture<String> existing = inFlightResumes.get(dedupeKey);
+        if (existing != null) {
             log.debug("{} joining in-flight resume key={}", logPrefix, dedupeKey);
-            return result;
+            return waitForResume(existing);
+        }
+
+        CompletableFuture<String> created = new CompletableFuture<>();
+        existing = inFlightResumes.putIfAbsent(dedupeKey, created);
+        if (existing != null) {
+            log.debug("{} joining in-flight resume key={}", logPrefix, dedupeKey);
+            return waitForResume(existing);
         }
 
         long resumeStart = System.currentTimeMillis();
         log.info("{} session {} not yet resumed on instance {}:{} (port={}), calling /agent/resume", logPrefix,
             sessionId, instance.getAgentId(), instance.getUserId(), instance.getPort());
-        String json = goosedProxy
-            .fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", body, 120, instance.getSecretKey())
-            .block();
-        long resumeMs = System.currentTimeMillis() - resumeStart;
-        instance.markSessionResumed(sessionId);
-        log.info("{} session {} resumed in {}ms on instance {}:{}", logPrefix, sessionId, resumeMs,
-            instance.getAgentId(), instance.getUserId());
-        inFlightResumes.put(dedupeKey, json);
-        return json;
+        try {
+            String json = goosedProxy
+                .fetchJson(instance.getPort(), HttpMethod.POST, "/agent/resume", body, 120, instance.getSecretKey())
+                .block();
+            long resumeMs = System.currentTimeMillis() - resumeStart;
+            instance.markSessionResumed(sessionId);
+            log.info("{} session {} resumed in {}ms on instance {}:{}", logPrefix, sessionId, resumeMs,
+                instance.getAgentId(), instance.getUserId());
+            created.complete(json);
+            return json;
+        } catch (RuntimeException e) {
+            created.completeExceptionally(e);
+            throw e;
+        } finally {
+            inFlightResumes.remove(dedupeKey, created);
+        }
+    }
+
+    private String waitForResume(CompletableFuture<String> inFlightResume) {
+        try {
+            return inFlightResume.join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new IllegalStateException("Resume request failed", e.getCause());
+        }
     }
 
     /**

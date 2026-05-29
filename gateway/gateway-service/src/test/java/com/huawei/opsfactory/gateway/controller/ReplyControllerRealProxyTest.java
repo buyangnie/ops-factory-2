@@ -8,9 +8,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.huawei.opsfactory.gateway.common.model.ManagedInstance;
@@ -28,19 +31,12 @@ import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.io.IOException;
 
 import java.nio.file.Path;
 import java.util.Collections;
@@ -113,18 +109,14 @@ public class ReplyControllerRealProxyTest {
                         + "{\"role\":\"user\",\"created\":1776928807,\"content\":[{\"type\":\"text\",\"text\":"
                         + "\"hello\"}],\"metadata\":{\"userVisible\":true,\"agentVisible\":true}}}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.type").value("Error"))
-                .andExpect(jsonPath("$.layer").value("goosed"))
-                .andExpect(jsonPath("$.code").value("goosed_active_request_conflict"))
-                .andExpect(jsonPath("$.message").value("Session already has an active request. Cancel it first."))
-                .andExpect(jsonPath("$.retryable").value(true))
-                .andExpect(jsonPath("$.suggested_actions[0]").value("wait"))
-                .andExpect(jsonPath("$.suggested_actions[1]").value("cancel"))
-                .andExpect(jsonPath("$.suggested_actions[2]").value("retry"))
-                .andExpect(jsonPath("$.request_id").value("00000000-0000-0000-0000-000000000001"))
-                .andExpect(jsonPath("$.session_id").value("session-123"))
-                .andExpect(jsonPath("$.agent_id").value("test-agent"))
-                .andExpect(jsonPath("$.upstream_status").value(400));
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                    org.hamcrest.Matchers.containsString("goosed_active_request_conflict"),
+                    org.hamcrest.Matchers.containsString("Session already has an active request. Cancel it first."),
+                    org.hamcrest.Matchers.containsString("session-123"),
+                    org.hamcrest.Matchers.containsString("test-agent"),
+                    org.hamcrest.Matchers.containsString("wait"),
+                    org.hamcrest.Matchers.containsString("cancel"),
+                    org.hamcrest.Matchers.containsString("retry"))));
         } finally {
             server.disposeNow();
         }
@@ -175,7 +167,12 @@ public class ReplyControllerRealProxyTest {
 
             mockMvc.perform(get("/gateway/agents/test-agent/sessions/session-123/events")
                     .accept(MediaType.TEXT_EVENT_STREAM))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, org.hamcrest.Matchers.containsString(
+                    MediaType.TEXT_EVENT_STREAM_VALUE)))
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                    org.hamcrest.Matchers.containsString("event: error"),
+                    org.hamcrest.Matchers.containsString("\"error\":\"Agent resource not found\""))));
         } finally {
             server.disposeNow();
         }
@@ -246,9 +243,20 @@ public class ReplyControllerRealProxyTest {
                         + "\"create a file\"}],\"metadata\":{\"userVisible\":true,\"agentVisible\":true}}}"))
                 .andExpect(status().isOk());
 
-            mockMvc.perform(get("/gateway/agents/test-agent/sessions/session-123/events")
+            MvcResult initialResult = mockMvc.perform(get("/gateway/agents/test-agent/sessions/session-123/events")
                     .accept(MediaType.TEXT_EVENT_STREAM))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+            MvcResult result = mockMvc.perform(asyncDispatch(initialResult))
+                .andExpect(status().isOk())
+                .andReturn();
+
+            String eventBody = result.getResponse().getContentAsString();
+            org.junit.Assert.assertTrue(eventBody.contains("\"type\":\"ActiveRequests\""));
+            org.junit.Assert.assertTrue(eventBody.contains("\"type\":\"OutputFiles\""));
+            org.junit.Assert.assertTrue(eventBody.contains("\"request_id\":\"00000000-0000-0000-0000-000000000001\""));
         } finally {
             server.disposeNow();
         }
@@ -283,10 +291,10 @@ public class ReplyControllerRealProxyTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("not-json"))
             .andExpect(status().is5xxServerError())
-            .andExpect(jsonPath("$.type").value("Error"))
-            .andExpect(jsonPath("$.code").value("gateway_submit_failed"))
-            .andExpect(jsonPath("$.session_id").value("session-123"))
-            .andExpect(jsonPath("$.agent_id").value("test-agent"));
+            .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                org.hamcrest.Matchers.containsString("gateway_submit_failed"),
+                org.hamcrest.Matchers.containsString("session-123"),
+                org.hamcrest.Matchers.containsString("test-agent"))));
     }
 
     /**

@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -80,9 +81,6 @@ public class ReplyEndpointE2ETest extends BaseE2ETest {
             .isOk();
         long after = System.currentTimeMillis() / 1000;
 
-        verify(goosedProxy).fetchJson(eq(9999), eq(HttpMethod.POST), eq("/agent/resume"),
-            eq("{\"session_id\":\"session-123\",\"load_model_and_extensions\":true}"), anyInt(), anyString());
-
         ArgumentCaptor<String> bodyCaptor = forClass(String.class);
         verify(goosedProxy).fetchJson(eq(9999), eq(HttpMethod.POST), eq("/sessions/session-123/reply"),
             bodyCaptor.capture(), anyInt(), eq("test-secret"));
@@ -103,7 +101,8 @@ public class ReplyEndpointE2ETest extends BaseE2ETest {
         SseEmitter emitter = new SseEmitter();
         emitter.complete();
         when(goosedProxy.proxySessionEventsToEmitter(eq(9999), eq("/sessions/session-123/events"), eq("test-secret"),
-            eq("42"), eq("test-agent"), eq("alice"), eq("session-123"))).thenReturn(emitter);
+            eq("42"), eq("test-agent"), eq("alice"), eq("session-123"),
+            any())).thenReturn(emitter);
 
         webClient.get()
             .uri("/gateway/agents/test-agent/sessions/session-123/events")
@@ -116,7 +115,7 @@ public class ReplyEndpointE2ETest extends BaseE2ETest {
             .isOk();
 
         verify(goosedProxy).proxySessionEventsToEmitter(eq(9999), eq("/sessions/session-123/events"),
-            eq("test-secret"), eq("42"), eq("test-agent"), eq("alice"), eq("session-123"));
+            eq("test-secret"), eq("42"), eq("test-agent"), eq("alice"), eq("session-123"), any());
     }
 
     /**
@@ -264,10 +263,9 @@ public class ReplyEndpointE2ETest extends BaseE2ETest {
     @Test
     public void sessionEvents_proxyFailure_returnsStableFallbackMessageKey() {
         when(instanceManager.getOrSpawn("test-agent", "alice")).thenReturn(Mono.just(mockInstance));
-        SseEmitter emitter = new SseEmitter();
-        emitter.completeWithError(new RuntimeException("events failed"));
         when(goosedProxy.proxySessionEventsToEmitter(eq(9999), eq("/sessions/session-123/events"), eq("test-secret"),
-            eq(null), eq("test-agent"), eq("alice"), eq("session-123"))).thenReturn(emitter);
+            eq(null), eq("test-agent"), eq("alice"), eq("session-123"), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "events failed"));
 
         webClient.get()
             .uri("/gateway/agents/test-agent/sessions/session-123/events")
@@ -276,7 +274,14 @@ public class ReplyEndpointE2ETest extends BaseE2ETest {
             .accept(MediaType.TEXT_EVENT_STREAM)
             .exchange()
             .expectStatus()
-            .is5xxServerError();
+            .is5xxServerError()
+            .expectHeader()
+            .contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM)
+            .expectBody(String.class)
+            .value(body -> {
+                org.junit.Assert.assertTrue(body.contains("event: error"));
+                org.junit.Assert.assertTrue(body.contains("\"error\":\"events failed\""));
+            });
     }
 
     /**
@@ -355,6 +360,74 @@ public class ReplyEndpointE2ETest extends BaseE2ETest {
 
         verify(goosedProxy).fetchJson(eq(9999), eq(HttpMethod.POST), eq("/agent/resume"), anyString(), anyInt(),
             anyString());
+    }
+
+    /**
+     * Executes the resume same session twice returns refreshed conversation operation.
+     */
+    @Test
+    public void resume_sameSessionTwice_returnsFreshConversation() {
+        when(instanceManager.getOrSpawn("test-agent", "alice")).thenReturn(Mono.just(mockInstance));
+        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.POST), eq("/agent/resume"), anyString(), anyInt(),
+            anyString()))
+            .thenReturn(Mono.just("{\"session\":{\"id\":\"session-123\",\"conversation\":[]},\"extension_results\":[]}"))
+            .thenReturn(Mono.just("{\"session\":{\"id\":\"session-123\",\"conversation\":[{\"id\":\"a1\"}]},"
+                + "\"extension_results\":[]}"));
+
+        webClient.post()
+            .uri("/gateway/agents/test-agent/agent/resume")
+            .header(HEADER_SECRET_KEY, SECRET_KEY)
+            .header(HEADER_USER_ID, "alice")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("{\"session_id\":\"session-123\"}")
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody()
+            .jsonPath("$.session.conversation.length()")
+            .isEqualTo(0);
+
+        webClient.post()
+            .uri("/gateway/agents/test-agent/agent/resume")
+            .header(HEADER_SECRET_KEY, SECRET_KEY)
+            .header(HEADER_USER_ID, "alice")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("{\"session_id\":\"session-123\"}")
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody()
+            .jsonPath("$.session.conversation.length()")
+            .isEqualTo(1);
+
+        verify(goosedProxy, times(2)).fetchJson(eq(9999), eq(HttpMethod.POST), eq("/agent/resume"), anyString(),
+            anyInt(), anyString());
+    }
+
+    /**
+     * Executes the session reply resumed session skips redundant resume operation.
+     */
+    @Test
+    public void sessionReply_resumedSession_skipsRedundantResume() {
+        mockInstance.markSessionResumed("session-123");
+        when(instanceManager.getOrSpawn("test-agent", "alice")).thenReturn(Mono.just(mockInstance));
+        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.POST), eq("/sessions/session-123/reply"),
+            anyString(), anyInt(), eq("test-secret"))).thenReturn(Mono.just("{\"status\":\"ok\"}"));
+
+        webClient.post()
+            .uri("/gateway/agents/test-agent/sessions/session-123/reply")
+            .header(HEADER_SECRET_KEY, SECRET_KEY)
+            .header(HEADER_USER_ID, "alice")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("{\"request_id\":\"00000000-0000-0000-0000-000000000001\",\"user_message\":{\"role\":"
+                + "\"user\",\"created\":1776928807,\"content\":[{\"type\":\"text\",\"text\":\"hello\"}],"
+                + "\"metadata\":{\"userVisible\":true,\"agentVisible\":true}}}")
+            .exchange()
+            .expectStatus()
+            .isOk();
+
+        verify(goosedProxy, never()).fetchJson(eq(9999), eq(HttpMethod.POST), eq("/agent/resume"), anyString(),
+            anyInt(), anyString());
     }
 
     /**

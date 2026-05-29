@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -279,6 +280,12 @@ public class GoosedProxy {
 
     private Flux<DataBuffer> transformSessionEventStream(Flux<DataBuffer> upstream, DataBufferFactory bufferFactory,
         Function<String, Mono<String>> beforeTerminalEventFactory) {
+        return transformSessionEventFrames(upstream, beforeTerminalEventFactory)
+            .map(frame -> bufferFactory.wrap(frame.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private Flux<String> transformSessionEventFrames(Flux<DataBuffer> upstream,
+        Function<String, Mono<String>> beforeTerminalEventFactory) {
         StringBuilder buffer = new StringBuilder();
 
         return Flux.concat(upstream.concatMap(dataBuffer -> {
@@ -309,32 +316,51 @@ public class GoosedProxy {
             }
 
             return Flux.fromIterable(frames)
-                .concatMap(frame -> emitTransformedFrame(frame, bufferFactory, beforeTerminalEventFactory));
+                .concatMap(frame -> emitTransformedFrameText(frame, beforeTerminalEventFactory));
         }), Mono.defer(() -> {
             if (buffer.isEmpty()) {
                 return Mono.empty();
             }
             String remaining = buffer.toString();
             buffer.setLength(0);
-            return Mono.just(bufferFactory.wrap(remaining.getBytes(StandardCharsets.UTF_8)));
+            return Mono.just(remaining);
         }));
     }
 
-    private Flux<DataBuffer> emitTransformedFrame(String frame, DataBufferFactory bufferFactory,
-        Function<String, Mono<String>> beforeTerminalEventFactory) {
+    private Flux<String> emitTransformedFrameText(String frame, Function<String, Mono<String>> beforeTerminalEventFactory) {
         String data = extractSseData(frame);
         Mono<String> injected = data == null || data.isBlank() ? Mono.empty() : beforeTerminalEventFactory.apply(data);
 
-        Mono<DataBuffer> originalFrame =
-            Mono.just(bufferFactory.wrap((frame + "\n\n").getBytes(StandardCharsets.UTF_8)));
-        Mono<DataBuffer> extraFrame = injected.timeout(EVENT_AUGMENT_TIMEOUT).onErrorResume(err -> {
+        Mono<String> originalFrame = Mono.just(frame + "\n\n");
+        Mono<String> extraFrame = injected.timeout(EVENT_AUGMENT_TIMEOUT).onErrorResume(err -> {
             log.warn("[SESSION-EVENTS] skipped supplemental event after original frame: {}", err.getMessage());
             return Mono.empty();
         })
             .filter(extraPayload -> extraPayload != null && !extraPayload.isBlank())
-            .map(extraPayload -> bufferFactory.wrap(extraPayload.getBytes(StandardCharsets.UTF_8)));
+            .map(this::ensureSseFrameDelimiter);
 
         return Flux.concat(originalFrame, extraFrame);
+    }
+
+    /**
+     * Backward-compatible frame transformer retained for reflective tests.
+     *
+     * @param frame raw SSE frame without trailing blank line
+     * @param bufferFactory target buffer factory
+     * @param beforeTerminalEventFactory function that augments terminal events before forwarding
+     * @return transformed frame stream as data buffers
+     */
+    private Flux<DataBuffer> emitTransformedFrame(String frame, DataBufferFactory bufferFactory,
+        Function<String, Mono<String>> beforeTerminalEventFactory) {
+        return emitTransformedFrameText(frame, beforeTerminalEventFactory)
+            .map(text -> bufferFactory.wrap(text.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private String ensureSseFrameDelimiter(String frame) {
+        if (frame.endsWith("\r\n\r\n") || frame.endsWith("\n\n")) {
+            return frame;
+        }
+        return frame + "\n\n";
     }
 
     private String extractSseData(String frame) {
@@ -471,7 +497,25 @@ public class GoosedProxy {
      */
     public SseEmitter proxySessionEventsToEmitter(int port, String path, String secretKey, String lastEventId,
         String agentId, String userId, String sessionId) {
-        SseEmitter emitter = new SseEmitter(30 * 60 * 1000L); // 30 minutes timeout
+        return proxySessionEventsToEmitter(port, path, secretKey, lastEventId, agentId, userId, sessionId,
+            data -> Mono.empty());
+    }
+
+    /**
+     * Proxy goosed session events to Servlet SSE emitter with supplemental event injection.
+     *
+     * @param port port number of the target goosed instance
+     * @param path target SSE endpoint path
+     * @param secretKey secret key for authenticating with the goosed instance
+     * @param lastEventId Last-Event-ID header value for resuming the stream
+     * @param agentId agent instance identifier
+     * @param userId user identifier
+     * @param sessionId session identifier
+     * @param beforeTerminalEventFactory function that augments terminal events before forwarding
+     * @return SseEmitter for streaming events
+     */
+    public SseEmitter proxySessionEventsToEmitter(int port, String path, String secretKey, String lastEventId,
+        String agentId, String userId, String sessionId, Function<String, Mono<String>> beforeTerminalEventFactory) {
         String target = goosedBaseUrl(port) + path;
         log.info("[GOOSED-PROXY] sse-connect port={} path={} agentId={} userId={} sessionId={} lastEventId={}", port,
             path, agentId, userId, sessionId, lastEventId);
@@ -484,8 +528,28 @@ public class GoosedProxy {
             spec = spec.header("Last-Event-ID", lastEventId);
         }
 
-        spec.retrieve()
-            .bodyToFlux(String.class)
+        org.springframework.web.reactive.function.client.ClientResponse upstream =
+            spec.exchange().block(Duration.ofSeconds(10));
+        if (upstream == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Agent event stream unavailable");
+        }
+        if (upstream.statusCode().isError()) {
+            log.warn("[GOOSED-PROXY] sse-upstream-error port={} path={} status={} agentId={} sessionId={}", port,
+                path, upstream.rawStatusCode(), agentId, sessionId);
+            String errorBody = upstream.bodyToMono(String.class).defaultIfEmpty("").block(Duration.ofSeconds(5));
+            throw toUpstreamResponseException(upstream.rawStatusCode(), upstream.headers().asHttpHeaders(), errorBody);
+        }
+
+        SseEmitter emitter = createSseEmitter();
+        log.info("[GOOSED-PROXY] sse-connected port={} path={} status={} agentId={} sessionId={}", port, path,
+            upstream.statusCode(), agentId, sessionId);
+
+        transformSessionEventFrames(
+            upstream.bodyToFlux(DataBuffer.class)
+                .onErrorResume(err -> Flux.just(DefaultDataBufferFactory.sharedInstance
+                    .wrap(gatewayEventStreamError(err, agentId, userId, sessionId)
+                        .getBytes(StandardCharsets.UTF_8)))),
+            beforeTerminalEventFactory)
             .doOnSubscribe(s -> log.info("[GOOSED-PROXY] sse-subscribed agentId={} sessionId={}", agentId, sessionId))
             .doOnComplete(() -> {
                 log.info("[GOOSED-PROXY] sse-complete agentId={} sessionId={}", agentId, sessionId);
@@ -496,9 +560,9 @@ public class GoosedProxy {
                     err.getMessage());
                 emitter.completeWithError(err);
             })
-            .subscribe(event -> {
+            .subscribe(frame -> {
                 try {
-                    emitter.send(SseEmitter.event().data(event));
+                    sendSseFrame(emitter, frame);
                 } catch (IOException e) {
                     log.warn("[GOOSED-PROXY] sse-send-error agentId={} sessionId={}", agentId, sessionId);
                     emitter.completeWithError(e);
@@ -506,6 +570,75 @@ public class GoosedProxy {
             }, emitter::completeWithError, emitter::complete);
 
         return emitter;
+    }
+
+    private SseEmitter createSseEmitter() {
+        return new SseEmitter(30 * 60 * 1000L) {
+            @Override
+            protected void extendResponse(org.springframework.http.server.ServerHttpResponse outputMessage) {
+                super.extendResponse(outputMessage);
+                outputMessage.getHeaders().set(HttpHeaders.CACHE_CONTROL, "no-cache");
+                outputMessage.getHeaders().set("X-Accel-Buffering", "no");
+            }
+        };
+    }
+
+    private void sendSseFrame(SseEmitter emitter, String frame) throws IOException {
+        String normalizedFrame = frame
+            .replaceAll("(\\r?\\n){2}$", "")
+            .replace("\r\n", "\n");
+        if (normalizedFrame.isBlank()) {
+            return;
+        }
+
+        SseEmitter.SseEventBuilder builder = SseEmitter.event();
+        boolean hasFields = false;
+        for (String line : normalizedFrame.split("\n")) {
+            if (line.isEmpty()) {
+                continue;
+            }
+            if (line.startsWith(":")) {
+                builder.comment(line.substring(1).trim());
+                hasFields = true;
+                continue;
+            }
+
+            int separatorIndex = line.indexOf(':');
+            String field = separatorIndex >= 0 ? line.substring(0, separatorIndex) : line;
+            String value = separatorIndex >= 0 ? line.substring(separatorIndex + 1) : "";
+            if (value.startsWith(" ")) {
+                value = value.substring(1);
+            }
+
+            switch (field) {
+                case "data":
+                    builder.data(value);
+                    hasFields = true;
+                    break;
+                case "event":
+                    builder.name(value);
+                    hasFields = true;
+                    break;
+                case "id":
+                    builder.id(value);
+                    hasFields = true;
+                    break;
+                case "retry":
+                    try {
+                        builder.reconnectTime(Long.parseLong(value));
+                        hasFields = true;
+                    } catch (NumberFormatException ignored) {
+                        // Ignore invalid retry hints from upstream frames.
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (hasFields) {
+            emitter.send(builder);
+        }
     }
 
     private boolean isProxyError(Throwable e) {
