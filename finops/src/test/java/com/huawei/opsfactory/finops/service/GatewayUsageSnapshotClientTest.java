@@ -145,7 +145,7 @@ class GatewayUsageSnapshotClientTest {
 
     private void startServer(ExchangeHandler handler) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/gateway/usage/session-snapshot", exchange -> {
+        server.createContext("/api/gateway/usage/session-snapshot", exchange -> {
             if (!"GET".equals(exchange.getRequestMethod())) {
                 send(exchange, 405, "{}");
                 return;

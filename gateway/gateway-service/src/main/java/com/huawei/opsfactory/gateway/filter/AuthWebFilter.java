@@ -34,7 +34,7 @@ import java.security.NoSuchAlgorithmException;
 public class AuthWebFilter implements jakarta.servlet.Filter {
     private static final Logger log = LoggerFactory.getLogger(AuthWebFilter.class);
 
-    private static final String CHANNEL_WEBHOOK_PREFIX = "/gateway/channels/webhooks/";
+    private static final String CHANNEL_WEBHOOK_PREFIX = "/api/gateway/channels/webhooks/";
 
     private final GatewayProperties properties;
 

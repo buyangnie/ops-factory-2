@@ -24,7 +24,7 @@ public class GatewayUsageSnapshotClient {
 
     private static final String SECRET_HEADER = "x-secret-key";
     private static final String USER_HEADER = "x-user-id";
-    private static final String SNAPSHOT_PATH = "/gateway/usage/session-snapshot";
+    private static final String SNAPSHOT_PATH = "/api/gateway/usage/session-snapshot";
 
     private final FinOpsProperties properties;
     private final ObjectMapper objectMapper;

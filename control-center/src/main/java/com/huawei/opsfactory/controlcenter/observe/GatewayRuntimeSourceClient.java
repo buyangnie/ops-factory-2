@@ -33,19 +33,19 @@ public class GatewayRuntimeSourceClient {
     }
 
     public Map<String, Object> getSystem() {
-        return getMap("/gateway/runtime-source/system");
+        return getMap("/api/gateway/runtime-source/system");
     }
 
     public Map<String, Object> getInstances() {
-        return getMap("/gateway/runtime-source/instances");
+        return getMap("/api/gateway/runtime-source/instances");
     }
 
     public Map<String, Object> getAgents() {
-        return getMap("/gateway/agents");
+        return getMap("/api/gateway/agents");
     }
 
     public Map<String, Object> getMetrics() {
-        return getMap("/gateway/runtime-source/metrics");
+        return getMap("/api/gateway/runtime-source/metrics");
     }
 
     private Map<String, Object> getMap(String path) {

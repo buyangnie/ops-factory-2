@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 @ConditionalOnBean(OperationIntelligenceProxyService.class)
 @Order(10)
 public class OperationIntelligenceProxyFilter implements jakarta.servlet.Filter {
-    private static final String PREFIX = "/gateway/operation-intelligence/";
+    private static final String PREFIX = "/api/gateway/operation-intelligence/";
 
     private final OperationIntelligenceProxyService proxyService;
 

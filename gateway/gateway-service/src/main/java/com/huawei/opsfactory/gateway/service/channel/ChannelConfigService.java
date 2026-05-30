@@ -833,7 +833,7 @@ public class ChannelConfigService {
     }
 
     private String webhookPath(ChannelInstance channel) {
-        return "/gateway/channels/webhooks/" + normalizeType(channel.type()) + "/" + channel.id();
+        return "/api/gateway/channels/webhooks/" + normalizeType(channel.type()) + "/" + channel.id();
     }
 
     private boolean usesWebhook(String type) {
