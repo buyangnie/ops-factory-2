@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import QRCode from "qrcode";
+import { toDataUrl } from "../qr-sdk/index.mjs";
 import {
   DisconnectReason,
   fetchLatestBaileysVersion,
@@ -182,7 +182,7 @@ async function runLogin(args) {
     activeSock.ev.on("connection.update", async (update) => {
       if (update.qr) {
         await appendLog(debugLogFile, "connection.update.qr", { hasQr: true });
-        const qrCodeDataUrl = await QRCode.toDataURL(update.qr);
+        const qrCodeDataUrl = await toDataUrl(update.qr);
         await updateState(stateFile, {
           status: "pending",
           message: "Scan the QR code in WhatsApp -> Linked Devices.",

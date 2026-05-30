@@ -5,8 +5,8 @@ import {
     Eye,
     Presentation,
     Trash2,
-    type LucideIcon,
-} from 'lucide-react'
+    type AppIcon,
+} from '../../../platform/ui/icons/AppIcons'
 import { useTranslation } from 'react-i18next'
 import { useGoosed } from '../../../platform/providers/GoosedContext'
 import { usePreview } from '../../../platform/providers/PreviewContext'
@@ -90,7 +90,7 @@ type FileIconProps = SVGProps<SVGSVGElement> & {
     strokeWidth?: number
 }
 
-type FileIconComponent = ((props: FileIconProps) => ReactNode) | LucideIcon
+type FileIconComponent = ((props: FileIconProps) => ReactNode) | AppIcon
 
 function FileIconFrame({ children, strokeWidth = 1.85, ...props }: FileIconProps & { children: ReactNode }) {
     return (

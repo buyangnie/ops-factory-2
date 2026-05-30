@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Archive, MessageSquare } from 'lucide-react'
+import { Archive, MessageSquare } from '../../../platform/ui/icons/AppIcons'
 import { buildChatSessionState } from '../../../platform/chat/chatRouteState'
 import { useInbox } from '../../../platform/providers/InboxContext'
 import { useGoosed } from '../../../platform/providers/GoosedContext'

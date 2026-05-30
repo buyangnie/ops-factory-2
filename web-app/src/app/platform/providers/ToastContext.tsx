@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { AlertCircle, CheckCircle2, Info, TriangleAlert, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Info, TriangleAlert, X } from '../ui/icons/AppIcons'
 import { useTranslation } from 'react-i18next'
 import { getUrlParam } from '../../../utils/urlParams'
 import './Toast.css'

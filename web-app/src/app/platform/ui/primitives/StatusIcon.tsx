@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Info, Minus, TriangleAlert } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Info, Minus, TriangleAlert } from '../icons/AppIcons'
 import './StatusIcon.css'
 
 export type StatusTone = 'success' | 'warning' | 'danger' | 'neutral' | 'info'

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Download, Search, X } from 'lucide-react'
+import { Check, Download, Search, X } from '../../../../platform/ui/icons/AppIcons'
 import { useTranslation } from 'react-i18next'
 import type { SkillEntry } from '../../../../../types/skill'
 import type { SkillMarketEntry } from '../../../../../types/skillMarket'

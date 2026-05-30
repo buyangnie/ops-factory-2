@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw } from '../../../platform/ui/icons/AppIcons'
 import { useTranslation } from 'react-i18next'
 import { runtime } from '../../../../config/runtime'
 import { useToast } from '../../../platform/providers/ToastContext'

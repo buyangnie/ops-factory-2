@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Radar } from 'lucide-react'
+import { Radar } from '../../../platform/ui/icons/AppIcons'
 import type { Host, Cluster } from '../../../../types/host'
 import {
     ResourceCardAction,

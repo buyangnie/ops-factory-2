@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X, AlertTriangle } from 'lucide-react'
+import { X, AlertTriangle } from '../../../platform/ui/icons/AppIcons'
 import {
     fetchFinOpsAgentSessions,
     fetchFinOpsUserSessions,

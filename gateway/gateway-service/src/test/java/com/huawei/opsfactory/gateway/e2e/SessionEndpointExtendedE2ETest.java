@@ -18,8 +18,10 @@ import reactor.core.publisher.Mono;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import java.nio.file.Path;
 
@@ -246,6 +248,34 @@ public class SessionEndpointExtendedE2ETest extends BaseE2ETest {
 
         verify(goosedProxy).fetchJson(eq(9999), eq(HttpMethod.PUT), eq("/sessions/session-123/name"),
             anyString(), anyInt(), anyString());
+    }
+
+    /**
+     * Executes the export session authenticated returns upstream headers and body operation.
+     */
+    @Test
+    public void exportSession_authenticated_returnsUpstreamResponse() {
+        when(instanceManager.getOrSpawn("test-agent", "alice")).thenReturn(Mono.just(runningInstance));
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"session-abc.txt\"");
+        when(goosedProxy.fetchTextResponse(eq(9999), eq(HttpMethod.GET), eq("/sessions/session-abc/export"), eq(null),
+            anyInt(), anyString())).thenReturn(Mono.just(ResponseEntity.ok().headers(headers).body("exported body")));
+
+        webClient.get()
+            .uri("/gateway/agents/test-agent/sessions/session-abc/export")
+            .header(HEADER_SECRET_KEY, SECRET_KEY)
+            .header(HEADER_USER_ID, "alice")
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectHeader()
+            .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"session-abc.txt\"")
+            .expectBody(String.class)
+            .isEqualTo("exported body");
+
+        verify(goosedProxy).fetchTextResponse(eq(9999), eq(HttpMethod.GET), eq("/sessions/session-abc/export"),
+            eq(null), anyInt(), anyString());
     }
 
     /**

@@ -40,9 +40,10 @@ operation-intelligence:
         crt-content: ""                       # Base64 encoded certificate
         crt-file-name: "client.jks"
         strict-ssl: false                     # reject insecure SSL fallback (default: true)
-  
+
   call-chain:
     enabled: true
+    query-mode: "service"
     query-size: 100
     query-limit: 10000
     request-timeout-ms: 60000
@@ -50,9 +51,11 @@ operation-intelligence:
     rotation-interval-ms: 3600000         # 1 hour (data file rotation)
     normalize-data-retention-days: 90     # data retention days
     min-call-ratio: 3.0                   # minimum call ratio threshold for filtering low frequency flows
+    mock-query-enabled: false
+    mock-query-file: ""
     time-split:
       initial-minutes: 15
-      degrade-minutes: [10, 5]
+      degrade-minutes: [ 10, 5 ]
 
   logging:
     access-log-enabled: true

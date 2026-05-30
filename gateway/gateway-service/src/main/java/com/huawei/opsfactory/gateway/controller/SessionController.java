@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,8 +39,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -361,6 +364,24 @@ public class SessionController {
             }
             throw e;
         }
+    }
+
+    /**
+     * Exports a session from goosed while preserving upstream content type and headers.
+     *
+     * @param agentId agent identifier from the URL path
+     * @param sessionId session identifier from the URL path
+     * @param request current server request carrying user context attributes
+     * @return proxied export response
+     */
+    @GetMapping(value = "/agents/{agentId}/sessions/{sessionId}/export")
+    public ResponseEntity<String> exportSession(@PathVariable("agentId") String agentId,
+        @PathVariable("sessionId") String sessionId, HttpServletRequest request) {
+        String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
+        ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
+        String path = "/sessions/" + UriUtils.encodePathSegment(sessionId, StandardCharsets.UTF_8) + "/export";
+        return goosedProxy.fetchTextResponse(instance.getPort(), HttpMethod.GET, path, null, 30,
+            instance.getSecretKey()).block();
     }
 
     /**

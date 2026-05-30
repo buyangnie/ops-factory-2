@@ -1,5 +1,5 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, HTMLAttributes, ReactElement, ReactNode } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import type { AppIcon } from '../icons/AppIcons'
 
 export type ItemActionTone = 'default' | 'primary' | 'success' | 'warning' | 'danger'
 
@@ -8,7 +8,7 @@ interface ItemActionGroupProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 interface ItemActionBaseProps {
-    icon: LucideIcon
+    icon: AppIcon
     label: string
     tone?: ItemActionTone
     iconClassName?: string

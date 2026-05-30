@@ -6,13 +6,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.huawei.opsfactory</groupId>
-        <artifactId>ops-factory-parent</artifactId>
+        <groupId>com.huawei.msz</groupId>
+        <artifactId>ms-om-parent</artifactId>
         <version>1.5.1.1-SNAPSHOT</version>
     </parent>
 
 
-    <groupId>com.huawei.opsfactory</groupId>
+    <groupId>com.huawei.msz</groupId>
     <artifactId>ops-gateway-parent</artifactId>
     <version>1.5.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -52,7 +52,7 @@
 
             <!-- Internal modules -->
             <dependency>
-                <groupId>com.huawei.opsfactory</groupId>
+                <groupId>com.huawei.msz</groupId>
                 <artifactId>gateway-common</artifactId>
                 <version>${project.version}</version>
             </dependency>

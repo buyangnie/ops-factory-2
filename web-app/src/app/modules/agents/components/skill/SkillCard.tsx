@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Trash2 } from 'lucide-react'
+import { Trash2 } from '../../../../platform/ui/icons/AppIcons'
 import type { SkillEntry } from '../../../../../types/skill'
 import Button from '../../../../platform/ui/primitives/Button'
 import ResourceCard from '../../../../platform/ui/primitives/ResourceCard'

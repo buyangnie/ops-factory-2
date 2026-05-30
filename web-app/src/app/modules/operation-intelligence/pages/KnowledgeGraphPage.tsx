@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import { FileDown, Network, Radar, RefreshCw, Save, Search, Trash2, Upload } from 'lucide-react'
+import { FileDown, Network, Radar, RefreshCw, Save, Search, Trash2, Upload } from '../../../platform/ui/icons/AppIcons'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../../platform/ui/primitives/PageHeader'
 import SectionCard from '../../../platform/ui/primitives/SectionCard'
@@ -3169,19 +3169,15 @@ function GraphCanvas({
     )
     const zoomedWidth = Math.ceil(width * zoom)
     const zoomedHeight = Math.ceil(height * zoom)
+    const selectedNodePopoverPosition = selectedNode
+        ? {
+            left: Math.round(selectedNode.x * zoom),
+            top: Math.round((selectedNode.y + (selectedNode.height ?? GRAPH_NODE_HEIGHT) + 12) * zoom),
+        }
+        : null
 
     const updateZoom = (nextZoom: number) => {
         setZoom(Math.min(MAX_GRAPH_ZOOM, Math.max(MIN_GRAPH_ZOOM, Number(nextZoom.toFixed(2)))))
-    }
-
-    const resetGraphView = () => {
-        setZoom(DEFAULT_GRAPH_ZOOM)
-        setSelectedEdgeId(null)
-        onSelectNode(null)
-        setNodePositions(nodes.reduce<Record<string, GraphNodePosition>>((positions, node) => {
-            positions[node.id] = { x: node.x, y: node.y }
-            return positions
-        }, {}))
     }
 
     const clearGraphSelection = () => {
@@ -3269,14 +3265,6 @@ function GraphCanvas({
                         </button>
                         <span>{Math.round(zoom * 100)}%</span>
                     </div>
-                    <button
-                        type="button"
-                        className="kg-graph-reset"
-                        onClick={resetGraphView}
-                    >
-                        {t('operationIntelligence.knowledgeGraph.resetGraph')}
-                    </button>
-                    <em>{nodes.length}</em>
                 </div>
             </div>
             <div className="kg-graph-scroll">
@@ -3402,27 +3390,24 @@ function GraphCanvas({
                             ) : null}
                         </button>
                     ))}
-                    {showNodeProperties && selectedNode ? (
+                    </div>
+                    {showNodeProperties && selectedNode && selectedNodePopoverPosition ? (
                         <div
                             className="kg-node-popover"
                             onClick={event => event.stopPropagation()}
-                            style={{
-                                left: selectedNode.x,
-                                top: selectedNode.y + (selectedNode.height ?? GRAPH_NODE_HEIGHT) + 12,
-                        }}
-                    >
-                        <strong>{nodeTitle}</strong>
-                        <div className="kg-property-list">
-                            {selectedNodeProperties.map(([key, value]) => (
-                                <div key={key} className="kg-property-row">
-                                    <span>{formatPropertyName(key)}</span>
-                                    <em>{formatPropertyValue(value)}</em>
-                                </div>
-                            ))}
+                            style={selectedNodePopoverPosition}
+                        >
+                            <strong>{nodeTitle}</strong>
+                            <div className="kg-property-list">
+                                {selectedNodeProperties.map(([key, value]) => (
+                                    <div key={key} className="kg-property-row">
+                                        <span>{formatPropertyName(key)}</span>
+                                        <em>{formatPropertyValue(value)}</em>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
                     ) : null}
-                    </div>
                 </div>
             </div>
         </div>

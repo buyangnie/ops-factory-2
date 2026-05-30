@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Upload } from 'lucide-react'
+import { Plus, Upload } from '../../../platform/ui/icons/AppIcons'
 import type { SkillMarketDetail, SkillMarketEntry } from '../../../../types/skillMarket'
 import { useGoosed } from '../../../platform/providers/GoosedContext'
 import { useToast } from '../../../platform/providers/ToastContext'

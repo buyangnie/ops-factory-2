@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
@@ -276,8 +277,57 @@ public class ReplyController {
         }
     }
 
+    /**
+     * Lists tools available to the current session.
+     *
+     * @param agentId unique identifier of the target agent
+     * @param sessionId session identifier query parameter
+     * @param extensionName optional extension name filter
+     * @param request current HTTP request
+     * @return proxied goosed response body
+     */
+    @GetMapping(value = "/agent/tools", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String listAgentTools(@PathVariable("agentId") String agentId,
+        @RequestParam("session_id") String sessionId,
+        @RequestParam(value = "extension_name", required = false) String extensionName, HttpServletRequest request) {
+        String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
+        ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
+        instance.touch();
+        instanceManager.touchAllForUser(userId);
+        String path = appendQueryString("/agent/tools", request);
+        return goosedProxy.fetchJson(instance.getPort(), HttpMethod.GET, path, null, 30, instance.getSecretKey())
+            .block();
+    }
+
+    /**
+     * Calls a tool directly in the current session context.
+     *
+     * @param agentId unique identifier of the target agent
+     * @param body request body containing session ID, tool name, and arguments
+     * @param request current HTTP request
+     * @return proxied goosed response body
+     */
+    @PostMapping(value = "/agent/call_tool", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String callAgentTool(@PathVariable("agentId") String agentId, @RequestBody String body,
+        HttpServletRequest request) {
+        String userId = (String) request.getAttribute(UserContextFilter.USER_ID_ATTR);
+        ManagedInstance instance = instanceManager.getOrSpawn(agentId, userId).block();
+        instance.touch();
+        instanceManager.touchAllForUser(userId);
+        return goosedProxy.fetchJson(instance.getPort(), HttpMethod.POST, "/agent/call_tool", body, 30,
+            instance.getSecretKey()).block();
+    }
+
     private String goosedSessionPath(String sessionId, String suffix) {
         return "/sessions/" + UriUtils.encodePathSegment(sessionId, StandardCharsets.UTF_8) + "/" + suffix;
+    }
+
+    private String appendQueryString(String path, HttpServletRequest request) {
+        String queryString = request.getQueryString();
+        if (queryString == null || queryString.isBlank()) {
+            return path;
+        }
+        return path + "?" + queryString;
     }
 
     private String extractRequestId(String body) {

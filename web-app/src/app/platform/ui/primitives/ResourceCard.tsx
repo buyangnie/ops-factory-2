@@ -7,8 +7,8 @@ import {
     Settings,
     Square,
     Trash2,
-    type LucideIcon,
-} from 'lucide-react'
+    type AppIcon,
+} from '../icons/AppIcons'
 import { ItemActionButton, ItemActionGroup, type ItemActionTone } from './ItemAction'
 import './ResourceCard.css'
 
@@ -36,7 +36,7 @@ interface ResourceCardActionGroupProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 interface ResourceCardActionProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
-    icon: LucideIcon
+    icon: AppIcon
     label: string
     tone?: ItemActionTone
 }

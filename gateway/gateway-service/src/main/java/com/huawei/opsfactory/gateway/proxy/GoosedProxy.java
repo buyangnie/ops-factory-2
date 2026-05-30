@@ -28,6 +28,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -470,6 +471,47 @@ public class GoosedProxy {
                 "[GOOSED-PROXY] response method={} path={} port={} status=200 " + "bodyLen={} durationMs={}", method,
                 path, port, resp != null ? resp.length() : 0, System.currentTimeMillis() - start))
             .doOnError(err -> log.warn("[GOOSED-PROXY] error method={} path={} port={} error={} " + "durationMs={}",
+                method, path, port, err.getMessage(), System.currentTimeMillis() - start))
+            .onErrorMap(this::isProxyError, this::mapProxyError);
+    }
+
+    /**
+     * Fetches a textual response from goosed while preserving upstream status and headers.
+     *
+     * @param port port number of the target goosed instance
+     * @param method HTTP method for the request
+     * @param path target path on the goosed instance
+     * @param body optional request body, or null for no body
+     * @param timeoutSec request timeout in seconds
+     * @param secretKey secret key for authenticating with the goosed instance
+     * @return Mono emitting a response entity carrying the upstream status, headers, and text body
+     */
+    public Mono<ResponseEntity<String>> fetchTextResponse(int port, HttpMethod method, String path, String body,
+        int timeoutSec, String secretKey) {
+        String target = goosedBaseUrl(port) + path;
+        long start = System.currentTimeMillis();
+        log.info("[GOOSED-PROXY] text-request method={} path={} port={}", method, path, port);
+        WebClient.RequestBodySpec spec = webClient.method(method)
+            .uri(target)
+            .header(GatewayConstants.HEADER_SECRET_KEY, secretKey);
+        if (body != null) {
+            spec.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        }
+
+        WebClient.RequestHeadersSpec<?> ready = body != null ? spec.bodyValue(body) : spec;
+        return ready.exchangeToMono(upstream -> upstream.bodyToMono(String.class)
+            .defaultIfEmpty("")
+            .map(responseBody -> {
+                HttpHeaders headers = new HttpHeaders();
+                copyUpstreamHeaders(upstream.headers().asHttpHeaders(), headers);
+                return ResponseEntity.status(upstream.statusCode()).headers(headers).body(responseBody);
+            }))
+            .timeout(Duration.ofSeconds(timeoutSec))
+            .doOnNext(resp -> log.info(
+                "[GOOSED-PROXY] text-response method={} path={} port={} status={} bodyLen={} durationMs={}",
+                method, path, port, resp.getStatusCode().value(), resp.getBody() != null ? resp.getBody().length() : 0,
+                System.currentTimeMillis() - start))
+            .doOnError(err -> log.warn("[GOOSED-PROXY] text-error method={} path={} port={} error={} durationMs={}",
                 method, path, port, err.getMessage(), System.currentTimeMillis() - start))
             .onErrorMap(this::isProxyError, this::mapProxyError);
     }

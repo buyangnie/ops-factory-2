@@ -144,6 +144,54 @@ public class ReplyEndpointE2ETest extends BaseE2ETest {
     }
 
     /**
+     * Executes the agent tools authenticated user proxies query string to goosed operation.
+     */
+    @Test
+    public void listAgentTools_authenticatedUser_proxiesQueryString() {
+        when(instanceManager.getOrSpawn("test-agent", "alice")).thenReturn(Mono.just(mockInstance));
+        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.GET),
+            eq("/agent/tools?session_id=session-123&extension_name=control-center"), eq(null), anyInt(),
+            eq("test-secret"))).thenReturn(Mono.just("[]"));
+
+        webClient.get()
+            .uri("/gateway/agents/test-agent/agent/tools?session_id=session-123&extension_name=control-center")
+            .header(HEADER_SECRET_KEY, SECRET_KEY)
+            .header(HEADER_USER_ID, "alice")
+            .exchange()
+            .expectStatus()
+            .isOk();
+
+        verify(goosedProxy).fetchJson(eq(9999), eq(HttpMethod.GET),
+            eq("/agent/tools?session_id=session-123&extension_name=control-center"), eq(null), anyInt(),
+            eq("test-secret"));
+    }
+
+    /**
+     * Executes the agent call tool authenticated user proxies body to goosed operation.
+     */
+    @Test
+    public void callAgentTool_authenticatedUser_proxiesBody() {
+        when(instanceManager.getOrSpawn("test-agent", "alice")).thenReturn(Mono.just(mockInstance));
+        when(goosedProxy.fetchJson(eq(9999), eq(HttpMethod.POST), eq("/agent/call_tool"),
+            eq("{\"session_id\":\"session-123\",\"name\":\"demo_tool\",\"arguments\":{}}"), anyInt(),
+            eq("test-secret"))).thenReturn(Mono.just("{\"is_error\":true}"));
+
+        webClient.post()
+            .uri("/gateway/agents/test-agent/agent/call_tool")
+            .header(HEADER_SECRET_KEY, SECRET_KEY)
+            .header(HEADER_USER_ID, "alice")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("{\"session_id\":\"session-123\",\"name\":\"demo_tool\",\"arguments\":{}}")
+            .exchange()
+            .expectStatus()
+            .isOk();
+
+        verify(goosedProxy).fetchJson(eq(9999), eq(HttpMethod.POST), eq("/agent/call_tool"),
+            eq("{\"session_id\":\"session-123\",\"name\":\"demo_tool\",\"arguments\":{}}"), anyInt(),
+            eq("test-secret"));
+    }
+
+    /**
      * Executes the session reply get or spawn failure returns structured error operation.
      */
     @Test
