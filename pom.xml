@@ -11,11 +11,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.huawei.opsfactory</groupId>
-    <artifactId>ops-factory-parent</artifactId>
+    <groupId>com.huawei.msz</groupId>
+    <artifactId>ms-om-parent</artifactId>
     <version>1.5.1.1-SNAPSHOT</version>
 
-    <name>ops-factory-parent</name>
+    <name>ms-om-parent</name>
     <packaging>pom</packaging>
 
     <modules>
