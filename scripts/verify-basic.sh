@@ -51,41 +51,44 @@ require_cmd npm
 require_cmd java
 require_cmd mvn
 
-log_step "0/8" "Environment versions"
+log_step "0/9" "Environment versions"
 node --version
 npm --version
 java -version
 mvn -version | sed -n '1,2p'
 
-log_step "1/8" "Verifying web-app"
+log_step "1/9" "Verifying web-app"
 run_npm_ci_if_present "${ROOT_DIR}/web-app"
 (cd "${ROOT_DIR}/web-app" && npm run test:basic)
 (cd "${ROOT_DIR}/web-app" && npm run build)
 
-log_step "2/8" "Verifying TypeScript SDK"
+log_step "2/9" "Verifying TypeScript SDK"
 run_npm_ci_if_present "${ROOT_DIR}/typescript-sdk"
 (cd "${ROOT_DIR}/typescript-sdk" && npm run test:basic)
 (cd "${ROOT_DIR}/typescript-sdk" && npm run build)
 
-log_step "3/8" "Verifying integration test package"
+log_step "3/9" "Verifying integration test package"
 run_npm_ci_if_present "${ROOT_DIR}/test"
 (cd "${ROOT_DIR}/test" && npm run test:basic)
 
-log_step "4/8" "Verifying gateway"
+log_step "4/9" "Verifying QR SDK (dependency-free, node --test)"
+(cd "${ROOT_DIR}/gateway/tools/qr-sdk" && node --test)
+
+log_step "5/9" "Verifying gateway"
 (cd "${ROOT_DIR}/gateway" && mvn -pl gateway-common test)
 (cd "${ROOT_DIR}/gateway" && mvn -DskipTests package)
 
-log_step "5/8" "Verifying knowledge-service"
+log_step "6/9" "Verifying knowledge-service"
 (cd "${ROOT_DIR}/knowledge-service" && mvn test)
 (cd "${ROOT_DIR}/knowledge-service" && mvn -DskipTests package)
 
-log_step "6/8" "Verifying prometheus-exporter"
+log_step "7/9" "Verifying prometheus-exporter"
 (cd "${ROOT_DIR}/prometheus-exporter" && mvn test)
 (cd "${ROOT_DIR}/prometheus-exporter" && mvn -DskipTests package)
 
-log_step "7/8" "Checking docker-backed helper components"
+log_step "8/9" "Checking docker-backed helper components"
 validate_docker_compose_if_available "${ROOT_DIR}/langfuse"
 validate_docker_compose_if_available "${ROOT_DIR}/onlyoffice"
 
-log_step "8/8" "Basic repository verification completed"
+log_step "9/9" "Basic repository verification completed"
 echo "All required components passed basic verification."

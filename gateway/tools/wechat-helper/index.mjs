@@ -2,10 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import crypto from "node:crypto";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
-const QRCode = require("../whatsapp-web-helper/node_modules/qrcode");
+import { toDataUrl } from "../qr-sdk/index.mjs";
 
 const FIXED_BASE_URL = "https://ilinkai.weixin.qq.com";
 const DEFAULT_BOT_TYPE = "3";
@@ -146,7 +143,7 @@ async function fetchQrCode() {
 }
 
 async function qrPageUrlToDataUrl(qrPageUrl) {
-  return QRCode.toDataURL(qrPageUrl, {
+  return toDataUrl(qrPageUrl, {
     errorCorrectionLevel: "M",
     margin: 2,
     width: 320,
