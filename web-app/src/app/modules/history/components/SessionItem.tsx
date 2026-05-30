@@ -1,7 +1,7 @@
 import type { MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Session } from '@goosed/sdk'
-import { FileArchive, Inbox, Loader2, Pencil, Trash2 } from 'lucide-react'
+import { FileArchive, Inbox, Loader2, Pencil, Trash2 } from '../../../platform/ui/icons/AppIcons'
 import { isScheduledSession } from '../../../../config/runtime'
 import { ItemActionButton, ItemActionGroup } from '../../../platform/ui/primitives/ItemAction'
 import ListCard from '../../../platform/ui/list/ListCard'

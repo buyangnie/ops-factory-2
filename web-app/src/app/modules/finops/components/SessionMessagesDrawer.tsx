@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X, Clock, Zap, AlertTriangle, BarChart2 } from 'lucide-react'
+import { X, Clock, Zap, AlertTriangle, BarChart2 } from '../../../platform/ui/icons/AppIcons'
 import {
     type SessionUsage,
     type SessionMessagesResponse,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './CapabilityMarketPanel.css';
 import { useTranslation } from 'react-i18next';
-import { X, Search, Download, Check, Box, Code2, Activity, FileJson } from 'lucide-react';
+import { X, Search, Download, Check, Box, Code2, Activity, FileJson } from '../ui/icons/AppIcons';
 import Button from '../ui/primitives/Button';
 
 interface CapabilityMarketPanelProps {

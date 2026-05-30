@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw } from '../../../platform/ui/icons/AppIcons'
 import { useUser } from '../../../platform/providers/UserContext'
 import Button from '../../../platform/ui/primitives/Button'
 import FilterSelect from '../../../platform/ui/filters/FilterSelect'

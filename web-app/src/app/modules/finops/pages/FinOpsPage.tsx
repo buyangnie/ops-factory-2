@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { RefreshCw, Coins, CornerDownRight, CornerUpRight, MessageSquare, Users, Bot } from 'lucide-react'
+import { RefreshCw, Coins, CornerDownRight, CornerUpRight, MessageSquare, Users, Bot } from '../../../platform/ui/icons/AppIcons'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../../platform/ui/primitives/PageHeader'
 import Button from '../../../platform/ui/primitives/Button'

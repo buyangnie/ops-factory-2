@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import { FileDown, Network, Radar, RefreshCw, Save, Search, Trash2, Upload } from 'lucide-react'
+import { FileDown, Network, Radar, RefreshCw, Save, Search, Trash2, Upload } from '../../../platform/ui/icons/AppIcons'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../../platform/ui/primitives/PageHeader'
 import SectionCard from '../../../platform/ui/primitives/SectionCard'
