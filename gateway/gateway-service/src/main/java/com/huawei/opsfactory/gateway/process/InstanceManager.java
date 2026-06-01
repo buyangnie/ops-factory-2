@@ -335,7 +335,7 @@ public class InstanceManager {
             } finally {
                 conn.disconnect();
             }
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
             log.debug("Health check failed for port {}: {}", port, e.getMessage());
             return false;
         }
@@ -677,6 +677,8 @@ public class InstanceManager {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while waiting for goosed on port " + port, e);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid goosed health check URL on port " + port, e);
         }
     }
 
