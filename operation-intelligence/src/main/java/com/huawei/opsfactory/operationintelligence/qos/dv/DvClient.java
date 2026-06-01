@@ -414,9 +414,7 @@ public class DvClient {
      */
     private Map<String, String> parseValuesMap(JsonNode valuesNode) {
         Map<String, String> vals = new LinkedHashMap<>();
-        Iterator<Map.Entry<String, JsonNode>> fields = valuesNode.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> entry = fields.next();
+        for (Map.Entry<String, JsonNode> entry : valuesNode.properties()) {
             vals.put(entry.getKey(), entry.getValue().asText());
         }
         return vals;

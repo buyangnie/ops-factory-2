@@ -145,11 +145,6 @@
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
         </dependency>
-        <!-- Reactor Netty for WebClient -->
-        <dependency>
-            <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty</artifactId>
-        </dependency>
 
         <!-- DevTools: auto-restart on class change (dev only, excluded from packaged jar) -->
         <dependency>

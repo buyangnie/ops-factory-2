@@ -27,18 +27,22 @@ import com.huawei.opsfactory.gateway.proxy.GoosedProxy;
 import com.huawei.opsfactory.gateway.service.AgentConfigService;
 import com.huawei.opsfactory.gateway.service.FileService;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
+import reactor.test.StepVerifier;
 
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -197,7 +201,8 @@ public class ReplyControllerRealProxyTest {
                         .sendString(Mono.just("{\"request_id\":" + "\"00000000-0000-0000-0000-000000000001\"}")))
                 .get("/sessions/session-123/events",
                     (request, response) -> response.header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-                        .sendString(Mono.just("data: {\"type\":\"ActiveRequests\"," + "\"request_ids\":[]}\n\n"))))
+                        .sendString(Flux.just("data: {\"type\":\"ActiveRequests\"," + "\"request_ids\":[]}\n\n", "")
+                            .delayElements(Duration.ofMillis(100)))))
             .bindNow();
 
         try {
@@ -254,9 +259,12 @@ public class ReplyControllerRealProxyTest {
                 .andReturn();
 
             String eventBody = result.getResponse().getContentAsString();
-            org.junit.Assert.assertTrue(eventBody.contains("\"type\":\"ActiveRequests\""));
-            org.junit.Assert.assertTrue(eventBody.contains("\"type\":\"OutputFiles\""));
-            org.junit.Assert.assertTrue(eventBody.contains("\"request_id\":\"00000000-0000-0000-0000-000000000001\""));
+            org.junit.Assert.assertTrue("Event body should contain ActiveRequests event",
+                eventBody.contains("\"type\":\"ActiveRequests\""));
+            org.junit.Assert.assertTrue("Event body should contain OutputFiles event",
+                eventBody.contains("\"type\":\"OutputFiles\""));
+            org.junit.Assert.assertTrue("Event body should contain request_id",
+                eventBody.contains("\"request_id\":\"00000000-0000-0000-0000-000000000001\""));
         } finally {
             server.disposeNow();
         }

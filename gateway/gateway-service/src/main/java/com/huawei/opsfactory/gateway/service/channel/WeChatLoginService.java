@@ -8,6 +8,7 @@ import com.huawei.opsfactory.gateway.service.channel.model.ChannelConnectionConf
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelDetail;
 import com.huawei.opsfactory.gateway.service.channel.model.ChannelLoginState;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
@@ -344,7 +345,7 @@ public class WeChatLoginService {
                 Files.deleteIfExists(pidFile);
                 return;
             }
-            Map<String, Object> pidPayload = MAPPER.readValue(raw, Map.class);
+            Map<String, Object> pidPayload = MAPPER.readValue(raw, new TypeReference<>() {});
             Object pidObj = pidPayload.get("pid");
             if (!(pidObj instanceof Number number)) {
                 Files.deleteIfExists(pidFile);

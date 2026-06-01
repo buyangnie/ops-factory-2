@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -324,7 +325,7 @@ public class InstanceManager {
      */
     private boolean isHealthy(int port) {
         try {
-            URL url = new URL(goosedBaseUrl(port) + "/status");
+            URL url = URI.create(goosedBaseUrl(port) + "/status").toURL();
             HttpURLConnection conn = openConnection(url);
             conn.setConnectTimeout(3000);
             conn.setReadTimeout(3000);
@@ -334,7 +335,7 @@ public class InstanceManager {
             } finally {
                 conn.disconnect();
             }
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
             log.debug("Health check failed for port {}: {}", port, e.getMessage());
             return false;
         }
@@ -350,7 +351,7 @@ public class InstanceManager {
      * @throws IOException if the connection fails or cannot be read
      */
     private String httpGet(int port, String path, String secretKey) throws IOException {
-        URL url = new URL(goosedBaseUrl(port) + path);
+        URL url = URI.create(goosedBaseUrl(port) + path).toURL();
         HttpURLConnection conn = openConnection(url);
         conn.setConnectTimeout(5000);
         conn.setReadTimeout(5000);
@@ -378,7 +379,7 @@ public class InstanceManager {
      * @throws IOException if the connection fails or cannot be written
      */
     private boolean httpPost(int port, String path, String body, String secretKey) throws IOException {
-        URL url = new URL(goosedBaseUrl(port) + path);
+        URL url = URI.create(goosedBaseUrl(port) + path).toURL();
         HttpURLConnection conn = openConnection(url);
         conn.setConnectTimeout(5000);
         conn.setReadTimeout(5000);
@@ -676,12 +677,14 @@ public class InstanceManager {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while waiting for goosed on port " + port, e);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid goosed health check URL on port " + port, e);
         }
     }
 
     private void doWaitForReady(int port, Process process) throws IOException, InterruptedException {
         String baseUrl = goosedBaseUrl(port);
-        URL url = new URL(baseUrl + "/status");
+        URL url = URI.create(baseUrl + "/status").toURL();
         String healthCheckUrl = url.toString();
         log.info("[gooseTls config] waitForReady: using baseUrl={}, gooseScheme={}, health check URL: {}", baseUrl,
             properties.gooseScheme(), healthCheckUrl);

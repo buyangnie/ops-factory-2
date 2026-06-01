@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,6 +71,14 @@ public class MetricsBuffer {
     public MetricsBuffer(GatewayProperties properties) {
         Path gatewayRoot = properties.getGatewayRootPath();
         this.persistPath = gatewayRoot.resolve("data").resolve("monitoring").resolve("metrics.json");
+    }
+
+    /**
+     * Initialize the buffer by loading persisted metrics from disk.
+     * Called by Spring after constructor completion and dependency injection.
+     */
+    @PostConstruct
+    private void init() {
         loadFromDisk();
     }
 

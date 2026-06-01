@@ -56,6 +56,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests list solution types empty.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testListSolutionTypes_empty() throws Exception {
@@ -69,6 +71,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests list solution types with data.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testListSolutionTypes_withData() throws Exception {
@@ -87,6 +91,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests get solution type existing.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testGetSolutionType_existing() throws Exception {
@@ -104,6 +110,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests get solution type not found.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testGetSolutionType_notFound() throws Exception {
@@ -120,6 +128,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests create solution type success.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testCreateSolutionType_success() throws Exception {
@@ -142,6 +152,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests update solution type success.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testUpdateSolutionType_success() throws Exception {
@@ -162,6 +174,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests update solution type not found.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testUpdateSolutionType_notFound() throws Exception {
@@ -178,6 +192,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests delete solution type success.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testDeleteSolutionType_success() throws Exception {
@@ -192,6 +208,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests delete solution type not found.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testDeleteSolutionType_notFound() throws Exception {
@@ -207,6 +225,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests list solution types unauthorized no key.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testListSolutionTypes_unauthorized_noKey() throws Exception {
@@ -216,6 +236,8 @@ public class SolutionTypeControllerTest {
 
     /**
      * Tests list solution types succeeds for any authenticated user.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testListSolutionTypes_succeeds_forAnyUser() throws Exception {

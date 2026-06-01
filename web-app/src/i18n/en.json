@@ -2387,6 +2387,8 @@
     "importNoSampleData": "No sample data available",
     "importSelectFile": "Select File",
     "importNoFileSelected": "No file selected",
+    "importAddFile": "Add",
+    "importRemoveFile": "Remove file",
     "importStart": "Start Import",
     "importContinue": "Import More",
     "importClose": "Close",

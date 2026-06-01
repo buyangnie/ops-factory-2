@@ -570,48 +570,57 @@ public class GoosedProxy {
             spec = spec.header("Last-Event-ID", lastEventId);
         }
 
-        org.springframework.web.reactive.function.client.ClientResponse upstream =
-            spec.exchange().block(Duration.ofSeconds(10));
-        if (upstream == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Agent event stream unavailable");
-        }
-        if (upstream.statusCode().isError()) {
-            log.warn("[GOOSED-PROXY] sse-upstream-error port={} path={} status={} agentId={} sessionId={}", port,
-                path, upstream.statusCode().value(), agentId, sessionId);
-            String errorBody = upstream.bodyToMono(String.class).defaultIfEmpty("").block(Duration.ofSeconds(5));
-            throw toUpstreamResponseException(upstream.statusCode().value(), upstream.headers().asHttpHeaders(),
-                errorBody);
-        }
+        // 关键修复：在 exchangeToMono 回调内完成所有响应体操作，确保生命周期正确
+        SseEmitter emitter = spec.exchangeToMono(upstream -> {
+            if (upstream.statusCode().isError()) {
+                log.warn("[GOOSED-PROXY] sse-upstream-error port={} path={} status={} agentId={} sessionId={}", port,
+                    path, upstream.statusCode().value(), agentId, sessionId);
+                return upstream.bodyToMono(String.class)
+                    .defaultIfEmpty("")
+                    .flatMap(errorBody -> Mono.error(toUpstreamResponseException(
+                        upstream.statusCode().value(),
+                        upstream.headers().asHttpHeaders(),
+                        errorBody)));
+            }
 
-        SseEmitter emitter = createSseEmitter();
-        log.info("[GOOSED-PROXY] sse-connected port={} path={} status={} agentId={} sessionId={}", port, path,
-            upstream.statusCode(), agentId, sessionId);
+            log.info("[GOOSED-PROXY] sse-connected port={} path={} status={} agentId={} sessionId={}", port, path,
+                upstream.statusCode(), agentId, sessionId);
 
-        transformSessionEventFrames(
-            upstream.bodyToFlux(DataBuffer.class)
+            SseEmitter em = createSseEmitter();
+
+            // 在同一回调内消费响应体并立即订阅，防止响应体被释放
+            Flux<DataBuffer> eventStream = upstream.bodyToFlux(DataBuffer.class)
                 .onErrorResume(err -> Flux.just(DefaultDataBufferFactory.sharedInstance
                     .wrap(gatewayEventStreamError(err, agentId, userId, sessionId)
-                        .getBytes(StandardCharsets.UTF_8)))),
-            beforeTerminalEventFactory)
-            .doOnSubscribe(s -> log.info("[GOOSED-PROXY] sse-subscribed agentId={} sessionId={}", agentId, sessionId))
-            .doOnComplete(() -> {
-                log.info("[GOOSED-PROXY] sse-complete agentId={} sessionId={}", agentId, sessionId);
-                emitter.complete();
-            })
-            .doOnError(err -> {
-                log.warn("[GOOSED-PROXY] sse-error agentId={} sessionId={} error={}", agentId, sessionId,
-                    err.getMessage());
-                emitter.completeWithError(err);
-            })
-            .subscribe(frame -> {
-                try {
-                    sendSseFrame(emitter, frame);
-                } catch (IOException e) {
-                    log.warn("[GOOSED-PROXY] sse-send-error agentId={} sessionId={}", agentId, sessionId);
-                    emitter.completeWithError(e);
-                }
-            }, emitter::completeWithError, emitter::complete);
+                        .getBytes(StandardCharsets.UTF_8))));
 
+            transformSessionEventFrames(eventStream, beforeTerminalEventFactory)
+                .doOnSubscribe(s -> log.info("[GOOSED-PROXY] sse-subscribed agentId={} sessionId={}", agentId, sessionId))
+                .doOnComplete(() -> {
+                    log.info("[GOOSED-PROXY] sse-complete agentId={} sessionId={}", agentId, sessionId);
+                    em.complete();
+                })
+                .doOnError(err -> {
+                    log.warn("[GOOSED-PROXY] sse-error agentId={} sessionId={} error={}", agentId, sessionId,
+                        err.getMessage());
+                    em.completeWithError(err);
+                })
+                .subscribe(frame -> {
+                    try {
+                        sendSseFrame(em, frame);
+                    } catch (IOException e) {
+                        log.warn("[GOOSED-PROXY] sse-send-error agentId={} sessionId={}", agentId, sessionId);
+                        em.completeWithError(e);
+                    }
+                }, em::completeWithError, em::complete);
+
+            return Mono.just(em);
+        })
+        .block(Duration.ofSeconds(10));
+
+        if (emitter == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Agent event stream unavailable");
+        }
         return emitter;
     }
 

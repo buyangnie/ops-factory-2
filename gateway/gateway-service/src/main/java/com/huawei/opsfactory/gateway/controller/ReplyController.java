@@ -453,7 +453,7 @@ public class ReplyController {
             return status != null ? status : HttpStatus.INTERNAL_SERVER_ERROR;
         }
         if (err instanceof WebClientResponseException webClientResponseException) {
-            HttpStatus status = HttpStatus.resolve(webClientResponseException.getRawStatusCode());
+            HttpStatus status = HttpStatus.resolve(webClientResponseException.getStatusCode().value());
             return status != null ? status : HttpStatus.BAD_GATEWAY;
         }
         return HttpStatus.INTERNAL_SERVER_ERROR;
@@ -480,7 +480,7 @@ public class ReplyController {
         body.put("http_status", status.value());
         body.put("trace_id", UUID.randomUUID().toString());
         if (err instanceof WebClientResponseException webClientResponseException) {
-            body.put("upstream_status", webClientResponseException.getRawStatusCode());
+            body.put("upstream_status", webClientResponseException.getStatusCode().value());
         }
         return body;
     }

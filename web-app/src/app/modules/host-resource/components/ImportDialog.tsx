@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import DetailDialog from '../../../platform/ui/primitives/DetailDialog'
+import { X } from '../../../platform/ui/icons/AppIcons'
 import type { ImportType, ImportResult, ImportProgress } from '../hooks/useResourceImport'
 import { generateSampleXlsx, downloadWorkbook, readXlsxFile } from '../../../../utils/xlsxHelper'
 import { validateSheetStructure, type SheetValidationError } from '../../../../utils/xlsxValidator'
@@ -105,6 +106,13 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
         if (file && selectedType) {
             validateFile(file, selectedType)
         }
+    }
+
+    const handleRemoveFile = () => {
+        setSelectedFile(null)
+        setResult(null)
+        setFileValidation(null)
+        if (fileInputRef.current) fileInputRef.current.value = ''
     }
 
     // Trigger validation when type changes with a file selected
@@ -377,16 +385,33 @@ export default function ImportDialog({ open, onClose, importing, progress, onImp
                         />
                         <button
                             type="button"
-                            className="hr-import-file-btn"
+                            className="hr-import-add-btn"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={importing}
-                            title={selectedFile ? selectedFile.name : t('hostResource.importSelectFile')}
                         >
-                            {selectedFile ? selectedFile.name : t('hostResource.importSelectFile')}
+                            + {t('hostResource.importAddFile')}
                         </button>
-                        {!selectedFile && (
-                            <div className="hr-import-file-placeholder">{t('hostResource.importNoFileSelected')}</div>
-                        )}
+                        <div className={`hr-import-file-input-wrapper ${selectedFile ? 'hr-import-file-input-wrapper-filled' : ''}`}>
+                            <input
+                                type="text"
+                                className="hr-import-file-display"
+                                value={selectedFile ? selectedFile.name : ''}
+                                placeholder={t('hostResource.importNoFileSelected')}
+                                readOnly
+                                disabled={importing}
+                            />
+                            {selectedFile && (
+                                <button
+                                    type="button"
+                                    className="hr-import-clear-btn"
+                                    onClick={handleRemoveFile}
+                                    disabled={importing}
+                                    title={t('hostResource.importRemoveFile')}
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {validatingFile && (

@@ -54,6 +54,8 @@ public class SessionTraceControllerTest {
 
     /**
      * Tests start trace resolves path variables.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testStartTrace_resolvesPathVariables() throws Exception {
@@ -74,6 +76,8 @@ public class SessionTraceControllerTest {
 
     /**
      * Tests start trace succeeds for any authenticated user.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testStartTrace_succeeds_forAnyUser() throws Exception {
@@ -86,6 +90,8 @@ public class SessionTraceControllerTest {
 
     /**
      * Tests download trace returns file content as byte array.
+     *
+     * @throws Exception test fail
      */
     @Test
     public void testDownloadTrace_returnsFileContent() throws Exception {
