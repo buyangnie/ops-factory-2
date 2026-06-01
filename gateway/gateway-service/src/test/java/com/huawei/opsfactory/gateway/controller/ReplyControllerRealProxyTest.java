@@ -31,15 +31,18 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
+import reactor.test.StepVerifier;
 
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -199,7 +202,7 @@ public class ReplyControllerRealProxyTest {
                 .get("/sessions/session-123/events",
                     (request, response) -> response.header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
                         .sendString(Flux.just("data: {\"type\":\"ActiveRequests\"," + "\"request_ids\":[]}\n\n", "")
-                            .delayElements(java.time.Duration.ofMillis(100)))))
+                            .delayElements(Duration.ofMillis(100)))))
             .bindNow();
 
         try {
@@ -245,14 +248,23 @@ public class ReplyControllerRealProxyTest {
                         + "\"create a file\"}],\"metadata\":{\"userVisible\":true,\"agentVisible\":true}}}"))
                 .andExpect(status().isOk());
 
-            mockMvc.perform(get("/api/gateway/agents/test-agent/sessions/session-123/events")
+            MvcResult initialResult = mockMvc.perform(get("/api/gateway/agents/test-agent/sessions/session-123/events")
                     .accept(MediaType.TEXT_EVENT_STREAM))
                 .andExpect(status().isOk())
-                .andExpect(request().asyncStarted());
-            // NOTE: MockMvc cannot capture SSE async event stream content.
-            // The OutputFiles event injection via beforeTerminalEventFactory is tested
-            // implicitly via integration/e2e tests with real HTTP clients.
-            // TODO: Add dedicated SSE stream integration test with WebClient.
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+            MvcResult result = mockMvc.perform(asyncDispatch(initialResult))
+                .andExpect(status().isOk())
+                .andReturn();
+
+            String eventBody = result.getResponse().getContentAsString();
+            org.junit.Assert.assertTrue("Event body should contain ActiveRequests event",
+                eventBody.contains("\"type\":\"ActiveRequests\""));
+            org.junit.Assert.assertTrue("Event body should contain OutputFiles event",
+                eventBody.contains("\"type\":\"OutputFiles\""));
+            org.junit.Assert.assertTrue("Event body should contain request_id",
+                eventBody.contains("\"request_id\":\"00000000-0000-0000-0000-000000000001\""));
         } finally {
             server.disposeNow();
         }
